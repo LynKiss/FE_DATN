@@ -15,13 +15,22 @@ import {
   MapPin,
   Facebook,
   Youtube,
+  Heart,
 } from 'lucide-react';
 import { useClientSession } from '../hooks/useClientSession';
 import { useCart } from '../hooks/useCart';
-import { logoutClient } from '../lib/client-api';
+import { logoutClient, clientApi } from '../lib/client-api';
 import { lazy, Suspense } from 'react';
 
 const Chatbox = lazy(() => import('../components/client/Chatbox'));
+
+type SearchProduct = {
+  productId: string;
+  productName: string;
+  productPrice: string;
+  effectivePrice: string;
+  primaryImageUrl: string | null;
+};
 
 export default function ClientLayout() {
   const { session } = useClientSession();
@@ -31,9 +40,12 @@ export default function ClientLayout() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<SearchProduct[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -46,6 +58,9 @@ export default function ClientLayout() {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
       }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -55,13 +70,40 @@ export default function ClientLayout() {
     if (searchOpen) searchRef.current?.focus();
   }, [searchOpen]);
 
+  // Search autocomplete debounce
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      void clientApi
+        .get<{ meta: unknown; items: SearchProduct[] }>(`/products?search=${encodeURIComponent(searchQuery)}&limit=6`)
+        .then((data) => {
+          setSuggestions(data.items ?? []);
+          setShowSuggestions(true);
+        })
+        .catch(() => {});
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       setSearchOpen(false);
+      setShowSuggestions(false);
       void navigate(`/client/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
     }
+  };
+
+  const handleSuggestionClick = (productId: string) => {
+    setSearchOpen(false);
+    setShowSuggestions(false);
+    setSearchQuery('');
+    void navigate(`/client/products/${productId}`);
   };
 
   const handleLogout = async () => {
@@ -155,30 +197,77 @@ export default function ClientLayout() {
 
           {/* Actions */}
           <div className="ml-auto flex items-center gap-1 lg:gap-2">
-            {/* Search */}
+            {/* Search with autocomplete */}
             {searchOpen ? (
-              <form
-                onSubmit={handleSearch}
-                className="flex items-center rounded-full border border-[#006241]/30 bg-white px-4 py-2"
-              >
-                <input
-                  ref={searchRef}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Tìm sản phẩm..."
-                  className="w-48 bg-transparent text-sm outline-none"
-                />
-                <button type="submit" className="ml-2 text-[#006241]">
-                  <Search size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(false)}
-                  className="ml-1 text-gray-400"
+              <div ref={searchContainerRef} className="relative">
+                <form
+                  onSubmit={handleSearch}
+                  className="flex items-center rounded-full border border-[#006241]/30 bg-white px-4 py-2"
                 >
-                  <X size={14} />
-                </button>
-              </form>
+                  <input
+                    ref={searchRef}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    placeholder="Tìm sản phẩm..."
+                    className="w-48 bg-transparent text-sm outline-none"
+                  />
+                  <button type="submit" className="ml-2 text-[#006241]">
+                    <Search size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSearchOpen(false); setShowSuggestions(false); setSearchQuery(''); }}
+                    className="ml-1 text-gray-400"
+                  >
+                    <X size={14} />
+                  </button>
+                </form>
+
+                {/* Suggestions dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute left-0 top-full mt-2 w-72 overflow-hidden rounded-2xl border border-black/8 bg-white shadow-xl">
+                    {suggestions.map((p) => (
+                      <button
+                        key={p.productId}
+                        type="button"
+                        onClick={() => handleSuggestionClick(p.productId)}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-[#006241]/5"
+                      >
+                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[#f2f0eb]">
+                          {p.primaryImageUrl ? (
+                            <img src={p.primaryImageUrl} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center">
+                              <Leaf size={14} className="text-[#006241]/40" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-1 text-xs font-semibold text-[#1E3932]">{p.productName}</p>
+                          <p className="text-xs font-bold text-[#006241]">
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+                              Number(p.effectivePrice),
+                            )}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSuggestions(false);
+                        void navigate(`/client/products?search=${encodeURIComponent(searchQuery)}`);
+                        setSearchOpen(false);
+                        setSearchQuery('');
+                      }}
+                      className="flex w-full items-center justify-center gap-1.5 border-t border-black/5 py-2.5 text-xs font-semibold text-[#006241] hover:bg-[#006241]/5"
+                    >
+                      <Search size={12} /> Xem tất cả kết quả
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <button
                 onClick={() => setSearchOpen(true)}
@@ -187,6 +276,17 @@ export default function ClientLayout() {
               >
                 <Search size={18} />
               </button>
+            )}
+
+            {/* Wishlist */}
+            {session && (
+              <Link
+                to="/client/wishlist"
+                className="relative flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-[#006241]/10"
+                style={{ color: '#1E3932' }}
+              >
+                <Heart size={18} />
+              </Link>
             )}
 
             {/* Cart */}
@@ -245,6 +345,13 @@ export default function ClientLayout() {
                         className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#1E3932] transition hover:bg-[#006241]/8"
                       >
                         <Package size={15} /> Đơn hàng
+                      </Link>
+                      <Link
+                        to="/client/wishlist"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#1E3932] transition hover:bg-[#006241]/8"
+                      >
+                        <Heart size={15} /> Yêu thích
                       </Link>
                       <button
                         onClick={() => void handleLogout()}

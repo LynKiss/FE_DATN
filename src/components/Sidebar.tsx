@@ -10,6 +10,8 @@ import {
   MonitorSmartphone,
   Newspaper,
   Package,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   ShieldCheck,
   ShoppingCart,
@@ -24,6 +26,8 @@ import { useLanguage } from '../i18n/language-context';
 type SidebarProps = {
   open: boolean;
   onClose: () => void;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 };
 
 type NavItem = {
@@ -38,7 +42,7 @@ type NavItem = {
   }>;
 };
 
-export default function Sidebar({ open, onClose }: SidebarProps) {
+export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarProps) {
   const location = useLocation();
   const { session } = useAdminSession();
   const { language } = useLanguage();
@@ -198,37 +202,81 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       />
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-dvh w-72 max-w-[85vw] flex-col overflow-hidden bg-sidebar-bg p-6 shadow-2xl transition-transform duration-300 lg:w-64 lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-50 flex h-dvh flex-col overflow-hidden bg-sidebar-bg shadow-2xl transition-all duration-300 ${
+          collapsed ? 'lg:w-16' : 'lg:w-64'
+        } w-72 max-w-[85vw] p-3 lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="mb-4 flex items-start justify-between gap-4 px-3 lg:mb-6">
-          <div>
-            <h1 className="text-xl font-black uppercase tracking-widest text-white">
-              Cultivated Ledger
-            </h1>
-            <p className="mt-1 text-xs font-medium text-accent/60">
-              {isVietnamese ? 'Bảng điều khiển quản trị' : 'Administrative console'}
-            </p>
+        {/* Header */}
+        <div className={`mb-4 flex items-start gap-3 px-2 lg:mb-3 ${collapsed ? 'lg:flex-col lg:items-center' : 'justify-between'}`}>
+          {!collapsed && (
+            <div className="min-w-0 flex-1 lg:block hidden">
+              <h1 className="text-lg font-black uppercase tracking-widest text-white truncate">
+                Cultivated Ledger
+              </h1>
+              <p className="mt-0.5 text-[10px] font-medium text-accent/60">
+                {isVietnamese ? 'Bảng điều khiển quản trị' : 'Administrative console'}
+              </p>
+            </div>
+          )}
+
+          {/* Mobile: title + close */}
+          <div className="flex w-full items-start justify-between lg:hidden">
+            <div>
+              <h1 className="text-xl font-black uppercase tracking-widest text-white">
+                Cultivated Ledger
+              </h1>
+              <p className="mt-1 text-xs font-medium text-accent/60">
+                {isVietnamese ? 'Bảng điều khiển quản trị' : 'Administrative console'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white/70 transition hover:bg-white/10 hover:text-white"
+            >
+              <X size={18} />
+            </button>
           </div>
 
+          {/* Desktop collapse toggle */}
           <button
             type="button"
-            onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white/70 transition hover:bg-white/10 hover:text-white lg:hidden"
+            onClick={onToggleCollapse}
+            title={collapsed ? (isVietnamese ? 'Mở rộng' : 'Expand') : (isVietnamese ? 'Thu nhỏ' : 'Collapse')}
+            className="hidden lg:flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/60 transition hover:bg-white/10 hover:text-white shrink-0"
           >
-            <X size={18} />
+            {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           </button>
         </div>
 
-        <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto pr-1">
-          <nav className="flex flex-col gap-1">
+        <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto">
+          <nav className="flex flex-col gap-0.5">
             {navItems.map((item) => {
               if (item.children) {
                 const isGroupActive = item.children.some(
                   (child) => location.pathname === child.path,
                 );
                 const isOpen = openGroups[item.id] ?? false;
+
+                if (collapsed) {
+                  return (
+                    <NavLink
+                      key={item.id}
+                      to={item.children[0]?.path ?? '/admin/products'}
+                      onClick={onClose}
+                      title={item.label}
+                      className={`hidden lg:flex h-10 w-10 mx-auto items-center justify-center rounded-xl transition-all duration-200 ${
+                        isGroupActive
+                          ? 'bg-accent text-primary'
+                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <item.icon size={18} />
+                    </NavLink>
+                  );
+                }
 
                 return (
                   <div key={item.id} className="rounded-[1.5rem]">
@@ -289,6 +337,26 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 );
               }
 
+              if (collapsed) {
+                return (
+                  <NavLink
+                    key={item.id}
+                    to={item.path ?? '/admin'}
+                    onClick={onClose}
+                    title={item.label}
+                    className={({ isActive }) =>
+                      `hidden lg:flex h-10 w-10 mx-auto items-center justify-center rounded-xl transition-all duration-200 ${
+                        isActive
+                          ? 'bg-accent text-primary'
+                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                      }`
+                    }
+                  >
+                    <item.icon size={18} />
+                  </NavLink>
+                );
+              }
+
               return (
                 <NavLink
                   key={item.id}
@@ -310,19 +378,32 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           </nav>
         </div>
 
-        <div className="mt-6 border-t border-white/5 pt-6">
-          <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-accent/20 bg-accent/20 font-bold text-accent">
-              {initials || 'AD'}
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">{displayName}</p>
-              <p className="truncate text-xs text-white/40">
-                {session?.user.email || (isVietnamese ? 'phiên quản trị' : 'admin session')}
-              </p>
+        {!collapsed && (
+          <div className="mt-4 border-t border-white/5 pt-4">
+            <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent/20 bg-accent/20 font-bold text-accent text-sm">
+                {initials || 'AD'}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+                <p className="truncate text-xs text-white/40">
+                  {session?.user.email || (isVietnamese ? 'phiên quản trị' : 'admin session')}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {collapsed && (
+          <div className="mt-4 hidden border-t border-white/5 pt-4 lg:flex justify-center">
+            <div
+              title={displayName}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-accent/20 bg-accent/20 font-bold text-accent text-sm"
+            >
+              {initials || 'AD'}
+            </div>
+          </div>
+        )}
       </aside>
     </>
   );

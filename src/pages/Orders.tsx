@@ -81,6 +81,20 @@ const STATUS_OPTIONS: OrderStatus[] = [
   'returned',
 ];
 
+const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['processing', 'cancelled'],
+  processing: ['shipping', 'cancelled'],
+  shipping: ['delivered', 'returned'],
+  delivered: ['returned'],
+  cancelled: [],
+  returned: [],
+};
+
+function getAllowedNextStatuses(current: OrderStatus): OrderStatus[] {
+  return ALLOWED_TRANSITIONS[current] ?? [];
+}
+
 export default function Orders() {
   const { language } = useLanguage();
   const isVietnamese = language === 'vi';
@@ -193,7 +207,8 @@ export default function Orders() {
     try {
       const detail = await apiClient.get<OrderDetail>(`/orders/${orderId}`);
       setSelectedOrder(detail);
-      setNextStatus(detail.status);
+      const allowed = getAllowedNextStatuses(detail.status);
+      setNextStatus(allowed[0] ?? detail.status);
       setStatusNote('');
     } catch (detailError) {
       showToast({
@@ -411,37 +426,47 @@ export default function Orders() {
         footer={
           selectedOrder ? (
             <div className="flex flex-wrap items-center justify-end gap-3">
-              <select
-                value={nextStatus}
-                onChange={(event) => setNextStatus(event.target.value as OrderStatus)}
-                className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none"
-              >
-                {STATUS_OPTIONS.map((item) => (
-                  <option key={item} value={item}>
-                    {getStatusLabel(item, isVietnamese)}
-                  </option>
-                ))}
-              </select>
-              <input
-                value={statusNote}
-                onChange={(event) => setStatusNote(event.target.value)}
-                placeholder={isVietnamese ? 'Ghi chú cập nhật' : 'Status note'}
-                className="w-full rounded-2xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none sm:w-64"
-              />
-              <button
-                type="button"
-                onClick={() => void handleUpdateStatus()}
-                disabled={updatingStatus}
-                className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-black text-white disabled:opacity-60"
-              >
-                {updatingStatus
-                  ? isVietnamese
-                    ? 'Đang cập nhật...'
-                    : 'Updating...'
-                  : isVietnamese
-                    ? 'Cập nhật trạng thái'
-                    : 'Update status'}
-              </button>
+              {getAllowedNextStatuses(selectedOrder.status).length === 0 ? (
+                <span className="rounded-2xl border border-on-surface/10 bg-surface/60 px-4 py-2.5 text-sm text-on-surface-variant/60 italic">
+                  {isVietnamese ? 'Đơn hàng đã kết thúc' : 'Order is finalized'}
+                </span>
+              ) : (
+                <select
+                  value={nextStatus}
+                  onChange={(event) => setNextStatus(event.target.value as OrderStatus)}
+                  className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none"
+                >
+                  {getAllowedNextStatuses(selectedOrder.status).map((item) => (
+                    <option key={item} value={item}>
+                      {getStatusLabel(item, isVietnamese)}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {getAllowedNextStatuses(selectedOrder.status).length > 0 && (
+                <>
+                  <input
+                    value={statusNote}
+                    onChange={(event) => setStatusNote(event.target.value)}
+                    placeholder={isVietnamese ? 'Ghi chú cập nhật' : 'Status note'}
+                    className="w-full rounded-2xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none sm:w-64"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleUpdateStatus()}
+                    disabled={updatingStatus}
+                    className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-black text-white disabled:opacity-60"
+                  >
+                    {updatingStatus
+                      ? isVietnamese
+                        ? 'Đang cập nhật...'
+                        : 'Updating...'
+                      : isVietnamese
+                        ? 'Cập nhật trạng thái'
+                        : 'Update status'}
+                  </button>
+                </>
+              )}
             </div>
           ) : undefined
         }

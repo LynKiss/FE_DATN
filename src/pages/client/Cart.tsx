@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Minus, Plus, Trash2, ShoppingCart, Leaf, ArrowRight, Tag } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingCart, Leaf, ArrowRight, Tag, PackageCheck } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { useClientSession } from '../../hooks/useClientSession';
 import { clientApi } from '../../lib/client-api';
@@ -10,10 +10,15 @@ function formatPrice(price: number) {
 }
 
 type DiscountResult = {
-  isValid: boolean;
-  discountPercent?: number;
-  discountAmount?: number;
-  discountCode?: string;
+  valid: boolean;
+  discountId: string;
+  code: string;
+  name: string;
+  type: string;
+  value: number;
+  discountAmount: string;
+  finalPrice: string;
+  appliesTo: string;
 };
 
 export default function Cart() {
@@ -23,6 +28,7 @@ export default function Cart() {
 
   const [discountCode, setDiscountCode] = useState('');
   const [discountResult, setDiscountResult] = useState<DiscountResult | null>(null);
+  const [discountError, setDiscountError] = useState('');
   const [validatingCode, setValidatingCode] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
@@ -45,19 +51,32 @@ export default function Cart() {
     );
   }
 
+  const subtotal = Number(cart?.totalAmount ?? 0);
+
   const handleValidateCode = async () => {
     if (!discountCode.trim()) return;
+    setDiscountError('');
+    setDiscountResult(null);
     setValidatingCode(true);
     try {
+      const productIds = cart?.items.map((i) => i.productId) ?? [];
       const res = await clientApi.post<DiscountResult>('/discounts/validate', {
-        code: discountCode.trim(),
+        discountCode: discountCode.trim().toUpperCase(),
+        orderValue: subtotal.toString(),
+        ...(productIds.length ? { productIds } : {}),
       });
       setDiscountResult(res);
-    } catch {
-      setDiscountResult({ isValid: false });
+    } catch (err) {
+      setDiscountError(err instanceof Error ? err.message : 'Mã không hợp lệ hoặc đã hết hạn');
     } finally {
       setValidatingCode(false);
     }
+  };
+
+  const handleRemoveCode = () => {
+    setDiscountResult(null);
+    setDiscountCode('');
+    setDiscountError('');
   };
 
   const handleRemove = async (itemId: string) => {
@@ -65,17 +84,17 @@ export default function Cart() {
     try { await removeItem(itemId); } finally { setRemovingId(null); }
   };
 
-  const subtotal = cart?.totalAmount ?? 0;
-  const discountAmount =
-    discountResult?.isValid && discountResult.discountPercent
-      ? Math.round(subtotal * (discountResult.discountPercent / 100))
-      : (discountResult?.discountAmount ?? 0);
-  const total = Math.max(0, subtotal - discountAmount);
+  const discountAmount = discountResult ? Number(discountResult.discountAmount) : 0;
+  const shipping = subtotal >= 500000 ? 0 : 30000;
+  const total = Math.max(0, subtotal - discountAmount) + shipping;
 
   const handleCheckout = () => {
     if (!cart || cart.totalItems === 0) return;
     void navigate('/client/checkout', {
-      state: { discountCode: discountResult?.isValid ? discountCode : undefined },
+      state: {
+        discountCode: discountResult ? discountResult.code : undefined,
+        discountAmount,
+      },
     });
   };
 
@@ -110,74 +129,75 @@ export default function Cart() {
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
             {/* Cart items */}
             <div className="space-y-3">
-              {cart.items.map((item) => {
-                const img =
-                  item.product.images?.find((i) => i.isPrimary)?.imageUrl ??
-                  item.product.images?.[0]?.imageUrl;
-                return (
-                  <div
-                    key={item._id}
-                    className="flex items-start gap-4 rounded-2xl bg-white p-4 shadow-sm"
-                  >
-                    {/* Image */}
-                    <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#f2f0eb]">
-                      {img ? (
-                        <img src={img} alt={item.product.productName} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center">
-                          <Leaf size={24} className="text-[#006241]/20" />
-                        </div>
-                      )}
-                    </div>
+              {cart.items.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-start gap-4 rounded-2xl bg-white p-4 shadow-sm"
+                >
+                  {/* Image */}
+                  <Link to={`/client/products/${item.productId}`} className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#f2f0eb]">
+                    {item.primaryImageUrl ? (
+                      <img src={item.primaryImageUrl} alt={item.productName ?? ''} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Leaf size={24} className="text-[#006241]/20" />
+                      </div>
+                    )}
+                  </Link>
 
-                    {/* Details */}
-                    <div className="flex-1 min-w-0">
-                      <Link
-                        to={`/client/products/${item.product._id}`}
-                        className="line-clamp-2 text-sm font-bold text-[#1E3932] hover:text-[#006241]"
-                      >
-                        {item.product.productName}
-                      </Link>
-                      <p className="mt-1 text-xs text-gray-400">
-                        Đơn giá: {formatPrice(item.unitPrice)}
-                      </p>
+                  {/* Details */}
+                  <div className="flex-1 min-w-0">
+                    <Link
+                      to={`/client/products/${item.productId}`}
+                      className="line-clamp-2 text-sm font-bold text-[#1E3932] hover:text-[#006241]"
+                    >
+                      {item.productName}
+                    </Link>
+                    <p className="mt-1 text-xs text-gray-400">
+                      Đơn giá: {formatPrice(Number(item.unitPrice))}
+                    </p>
 
-                      {/* Quantity + remove */}
-                      <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => void updateItem(item._id, item.quantity - 1)}
-                            disabled={item.quantity <= 1}
-                            className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 transition hover:border-[#006241] disabled:opacity-40"
-                          >
-                            <Minus size={13} />
-                          </button>
-                          <span className="w-8 text-center text-sm font-bold text-[#1E3932]">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() => void updateItem(item._id, item.quantity + 1)}
-                            className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 transition hover:border-[#006241]"
-                          >
-                            <Plus size={13} />
-                          </button>
-                        </div>
+                    {/* Quantity + remove */}
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => void updateItem(item.id, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
+                          className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 transition hover:border-[#006241] disabled:opacity-40"
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <span className="w-8 text-center text-sm font-bold text-[#1E3932]">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => void updateItem(item.id, item.quantity + 1)}
+                          disabled={item.availableQuantity != null && item.quantity >= item.availableQuantity}
+                          className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 transition hover:border-[#006241] disabled:opacity-40"
+                        >
+                          <Plus size={13} />
+                        </button>
+                        {item.availableQuantity != null && item.quantity >= item.availableQuantity && (
+                          <span className="text-[10px] text-orange-500 font-semibold">Tối đa</span>
+                        )}
+                      </div>
 
-                        <div className="flex items-center gap-3">
-                          <span className="font-black text-[#006241]">{formatPrice(item.subtotal)}</span>
-                          <button
-                            onClick={() => void handleRemove(item._id)}
-                            disabled={removingId === item._id}
-                            className="flex h-8 w-8 items-center justify-center rounded-full text-gray-300 transition hover:bg-red-50 hover:text-red-400 disabled:opacity-40"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-black text-[#006241]">
+                          {formatPrice(Number(item.lineTotal))}
+                        </span>
+                        <button
+                          onClick={() => void handleRemove(item.id)}
+                          disabled={removingId === item.id}
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-gray-300 transition hover:bg-red-50 hover:text-red-400 disabled:opacity-40"
+                        >
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
 
               {/* Continue shopping */}
               <Link
@@ -195,39 +215,48 @@ export default function Cart() {
                 <p className="mb-3 flex items-center gap-2 text-sm font-bold text-[#1E3932]">
                   <Tag size={15} /> Mã giảm giá
                 </p>
-                <div className="flex gap-2">
-                  <input
-                    value={discountCode}
-                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                    placeholder="Nhập mã..."
-                    className="flex-1 rounded-full border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
-                  />
-                  <button
-                    onClick={() => void handleValidateCode()}
-                    disabled={validatingCode}
-                    className="rounded-full px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
-                    style={{ background: '#006241' }}
-                  >
-                    {validatingCode ? '...' : 'Áp dụng'}
-                  </button>
-                </div>
-                {discountResult && (
-                  <p
-                    className={`mt-2 text-xs font-semibold ${
-                      discountResult.isValid ? 'text-[#006241]' : 'text-[#c82014]'
-                    }`}
-                  >
-                    {discountResult.isValid
-                      ? `✓ Giảm ${discountResult.discountPercent ?? 0}% — bạn tiết kiệm ${formatPrice(discountAmount)}`
-                      : '✗ Mã không hợp lệ hoặc đã hết hạn'}
-                  </p>
+                {discountResult ? (
+                  <div className="flex items-center justify-between rounded-xl bg-[#d4e9e2] px-4 py-3">
+                    <div>
+                      <p className="text-sm font-bold text-[#006241]">✓ {discountResult.code}</p>
+                      <p className="text-xs text-[#1E3932]">
+                        {discountResult.name} — Giảm {formatPrice(discountAmount)}
+                      </p>
+                    </div>
+                    <button onClick={handleRemoveCode} className="text-xs text-gray-400 hover:text-red-500">
+                      Xóa
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        value={discountCode}
+                        onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => { if (e.key === 'Enter') void handleValidateCode(); }}
+                        placeholder="Nhập mã giảm giá..."
+                        className="flex-1 rounded-full border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
+                      />
+                      <button
+                        onClick={() => void handleValidateCode()}
+                        disabled={validatingCode || !discountCode.trim()}
+                        className="rounded-full px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+                        style={{ background: '#006241' }}
+                      >
+                        {validatingCode ? '...' : 'Áp dụng'}
+                      </button>
+                    </div>
+                    {discountError && (
+                      <p className="mt-2 text-xs font-semibold text-red-500">✗ {discountError}</p>
+                    )}
+                  </>
                 )}
               </div>
 
               {/* Order summary */}
               <div className="rounded-2xl bg-white p-5">
-                <p className="mb-4 text-sm font-black uppercase tracking-wider text-gray-400">
-                  Tóm tắt đơn hàng
+                <p className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wider text-gray-400">
+                  <PackageCheck size={15} /> Tóm tắt đơn hàng
                 </p>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
@@ -238,21 +267,19 @@ export default function Cart() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Phí vận chuyển</span>
-                    <span className="font-semibold text-[#006241]">
-                      {subtotal >= 500000 ? 'Miễn phí' : formatPrice(30000)}
+                    <span className={`font-semibold ${shipping === 0 ? 'text-[#006241]' : ''}`}>
+                      {shipping === 0 ? 'Miễn phí' : formatPrice(shipping)}
                     </span>
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">Giảm giá</span>
-                      <span className="font-semibold text-[#c82014]">-{formatPrice(discountAmount)}</span>
+                      <span className="font-semibold text-red-500">-{formatPrice(discountAmount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between border-t border-black/5 pt-3 text-base">
                     <span className="font-black text-[#1E3932]">Tổng cộng</span>
-                    <span className="font-black text-[#006241]">
-                      {formatPrice(total + (subtotal < 500000 ? 30000 : 0))}
-                    </span>
+                    <span className="font-black text-[#006241]">{formatPrice(total)}</span>
                   </div>
                 </div>
                 <button

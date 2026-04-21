@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, KeyRound, MapPin, Package, LogOut, Save, LoaderCircle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, KeyRound, MapPin, Package, LogOut, Save, LoaderCircle, CheckCircle2, AlertCircle, Heart } from 'lucide-react';
 import { clientApi, logoutClient } from '../../lib/client-api';
 import { useClientSession } from '../../hooks/useClientSession';
 
@@ -160,6 +160,12 @@ export default function Account() {
                 className="flex w-full items-center gap-3 px-4 py-3 text-sm font-semibold text-[#1E3932] transition hover:bg-black/3"
               >
                 <Package size={15} /> Lịch sử đơn hàng
+              </Link>
+              <Link
+                to="/client/wishlist"
+                className="flex w-full items-center gap-3 px-4 py-3 text-sm font-semibold text-[#1E3932] transition hover:bg-black/3"
+              >
+                <Heart size={15} /> Sản phẩm yêu thích
               </Link>
               <Link
                 to="/client/account/addresses"

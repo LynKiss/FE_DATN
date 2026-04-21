@@ -4,9 +4,18 @@ import { motion, AnimatePresence } from 'motion/react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
+const COLLAPSED_KEY = 'admin_sidebar_collapsed';
+
 export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(COLLAPSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -26,11 +35,26 @@ export default function Layout() {
     };
   }, [sidebarOpen]);
 
+  function handleToggleCollapse() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(COLLAPSED_KEY, String(next));
+      } catch {}
+      return next;
+    });
+  }
+
   return (
     <div className="min-h-screen bg-surface text-on-surface lg:flex">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={handleToggleCollapse}
+      />
 
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-64">
+      <div className={`flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300 ${collapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
         <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
 
         <main className="scrollbar-none flex-1 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-10 lg:py-8">

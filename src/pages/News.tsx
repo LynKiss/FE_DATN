@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import {
   Eye,
   EyeOff,
   FileText,
+  ImagePlus,
   LoaderCircle,
   Newspaper,
   Plus,
   Search,
   Trash2,
   Edit2,
+  X,
 } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { useLanguage } from '../i18n/language-context';
@@ -54,6 +56,8 @@ const defaultForm: FormState = {
   content: '',
 };
 
+type SavedArticle = { newsId: string } & Record<string, unknown>;
+
 function normalizeSlug(value: string) {
   return value
     .trim()
@@ -86,6 +90,10 @@ export default function News() {
   const [editTarget, setEditTarget] = useState<NewsArticle | null>(null);
   const [form, setForm] = useState<FormState>(defaultForm);
   const [saving, setSaving] = useState(false);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<NewsArticle | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -133,6 +141,8 @@ export default function News() {
   function openCreate() {
     setEditTarget(null);
     setForm(defaultForm);
+    setCoverFile(null);
+    setCoverPreview(null);
     setFormOpen(true);
   }
 
@@ -145,7 +155,24 @@ export default function News() {
       titleImageUrl: article.titleImageUrl ?? '',
       content: article.content ?? '',
     });
+    setCoverFile(null);
+    setCoverPreview(article.titleImageUrl ?? null);
     setFormOpen(true);
+  }
+
+  function handleCoverFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverFile(file);
+    const preview = URL.createObjectURL(file);
+    setCoverPreview(preview);
+  }
+
+  function clearCover() {
+    setCoverFile(null);
+    setCoverPreview(null);
+    setForm((f) => ({ ...f, titleImageUrl: '' }));
+    if (coverInputRef.current) coverInputRef.current.value = '';
   }
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -177,12 +204,30 @@ export default function News() {
         content: form.content || undefined,
       };
 
+      let savedId: string;
+
       if (editTarget) {
         await apiClient.patch(`/news/${editTarget.newsId}`, payload);
+        savedId = editTarget.newsId;
         showToast({ tone: 'success', title: isVietnamese ? 'Đã cập nhật bài viết' : 'Article updated' });
       } else {
-        await apiClient.post('/news', payload);
+        const created = await apiClient.post<SavedArticle>('/news', payload);
+        savedId = created.newsId;
         showToast({ tone: 'success', title: isVietnamese ? 'Đã tạo bài viết nháp' : 'Draft created' });
+      }
+
+      // Upload cover image if a new file was selected
+      if (coverFile && savedId) {
+        setUploadingCover(true);
+        try {
+          const fd = new FormData();
+          fd.append('file', coverFile);
+          await apiClient.postForm(`/news/${savedId}/cover-image`, fd);
+        } catch {
+          showToast({ tone: 'error', title: isVietnamese ? 'Ảnh bìa tải lên thất bại' : 'Cover image upload failed' });
+        } finally {
+          setUploadingCover(false);
+        }
       }
 
       setFormOpen(false);
@@ -508,13 +553,59 @@ export default function News() {
               />
             </FieldLabel>
 
-            <FieldLabel label={isVietnamese ? 'Ảnh bìa (URL)' : 'Cover image (URL)'}>
-              <input
-                value={form.titleImageUrl}
-                onChange={(e) => setField('titleImageUrl', e.target.value)}
-                className="w-full rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none transition focus:border-primary/30"
-                placeholder="https://..."
-              />
+            <FieldLabel label={isVietnamese ? 'Ảnh bìa' : 'Cover image'}>
+              <div className="space-y-2">
+                {coverPreview ? (
+                  <div className="relative overflow-hidden rounded-2xl">
+                    <img
+                      src={coverPreview}
+                      alt="Cover preview"
+                      className="h-40 w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={clearCover}
+                      className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => coverInputRef.current?.click()}
+                    className="flex h-32 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-on-surface/15 bg-surface/50 text-on-surface-variant transition hover:border-primary/30 hover:bg-primary/5"
+                  >
+                    <ImagePlus size={22} className="text-on-surface-variant/50" />
+                    <span className="text-xs font-medium">
+                      {isVietnamese ? 'Chọn ảnh bìa' : 'Choose cover image'}
+                    </span>
+                    <span className="text-[10px] text-on-surface-variant/40">JPG, PNG, WebP</span>
+                  </button>
+                )}
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleCoverFileChange}
+                />
+                {coverPreview && !coverFile && (
+                  <button
+                    type="button"
+                    onClick={() => coverInputRef.current?.click()}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    {isVietnamese ? 'Đổi ảnh khác' : 'Change image'}
+                  </button>
+                )}
+                {uploadingCover && (
+                  <p className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                    <LoaderCircle size={12} className="animate-spin" />
+                    {isVietnamese ? 'Đang tải ảnh lên...' : 'Uploading image...'}
+                  </p>
+                )}
+              </div>
             </FieldLabel>
           </div>
 

@@ -10,35 +10,34 @@ import {
   ArrowLeft,
   Leaf,
   LoaderCircle,
+  MapPin,
 } from 'lucide-react';
 import { clientApi } from '../../lib/client-api';
-import { refreshGlobalCart } from '../../hooks/useCart';
+import { refreshGlobalCart, useCart } from '../../hooks/useCart';
 import { useClientSession } from '../../hooks/useClientSession';
 
-type Cart = {
-  totalItems: number;
-  totalAmount: number;
-  items: Array<{
-    _id: string;
-    product: { _id: string; productName: string; images?: Array<{ imageUrl: string; isPrimary: boolean }> };
-    quantity: number;
-    subtotal: number;
-  }>;
-};
-
 type LocationState = {
-  addressId?: string;
+  shippingAddressId?: string;
+  deliveryId?: string;
   shippingAddress?: string;
+  deliveryName?: string;
+  shippingCost?: number;
   note?: string;
   discountCode?: string;
-  cart?: Cart;
+  discountAmount?: number;
+  subtotal?: number;
   total?: number;
 };
 
 type CreateOrderResponse = {
-  _id: string;
-  orderCode: string;
-  totalAmount: number;
+  id: string;
+  status: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  totalPayment: string;
+  totalQuantity: number;
+  createdAt: string;
+  address: string;
 };
 
 function formatPrice(price: number) {
@@ -73,42 +72,41 @@ export default function Payment() {
   const navigate = useNavigate();
   const location = useLocation();
   const { session } = useClientSession();
+  const { cart } = useCart();
   const state = (location.state as LocationState) || {};
 
   const [method, setMethod] = useState('cod');
   const [placing, setPlacing] = useState(false);
-  const [success, setSuccess] = useState<{ orderCode: string; orderId: string } | null>(null);
+  const [success, setSuccess] = useState<{ orderId: string; totalPayment: string } | null>(null);
 
   if (!session) {
     void navigate('/client/login');
     return null;
   }
 
-  const cart = state.cart;
-  const subtotal = cart?.totalAmount ?? 0;
-  const shipping = subtotal >= 500000 ? 0 : 30000;
-  const total = state.total ?? subtotal + shipping;
+  if (!state.shippingAddressId || !state.deliveryId) {
+    void navigate('/client/checkout');
+    return null;
+  }
+
+  const subtotal = state.subtotal ?? Number(cart?.totalAmount ?? 0);
+  const discountAmount = state.discountAmount ?? 0;
+  const shipping = state.shippingCost ?? 0;
+  const total = state.total ?? (subtotal - discountAmount + shipping);
 
   const handlePlaceOrder = async () => {
     setPlacing(true);
     try {
       const order = await clientApi.post<CreateOrderResponse>('/orders', {
-        shippingAddress: state.shippingAddress ?? '',
-        note: state.note,
+        shippingAddressId: state.shippingAddressId,
+        deliveryId: state.deliveryId,
         paymentMethod: method,
-        discountCode: state.discountCode,
+        note: state.note || undefined,
+        discountCode: state.discountCode || undefined,
       });
 
-      if (method !== 'cod') {
-        try {
-          await clientApi.post(`/payments/orders/${order._id}/initiate`, {
-            provider: method,
-          });
-        } catch {}
-      }
-
       await refreshGlobalCart();
-      setSuccess({ orderCode: order.orderCode, orderId: order._id });
+      setSuccess({ orderId: order.id, totalPayment: order.totalPayment });
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Đặt hàng thất bại. Vui lòng thử lại.');
     } finally {
@@ -128,28 +126,42 @@ export default function Payment() {
           </div>
           <h1 className="text-2xl font-black text-[#1E3932]">Đặt hàng thành công! 🎉</h1>
           <p className="mt-2 text-sm text-gray-500">
-            Cảm ơn bạn đã tin tưởng Cultivated Ledger.
+            Cảm ơn bạn đã tin tưởng Cultivated Ledger. Chúng tôi sẽ xử lý đơn hàng của bạn sớm nhất.
           </p>
           <div className="mt-6 rounded-2xl bg-white p-5 text-left shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Mã đơn hàng</p>
-            <p className="mt-1 text-xl font-black text-[#006241]">{success.orderCode}</p>
-            <p className="mt-3 text-sm text-gray-500">
-              Chúng tôi sẽ xử lý và giao hàng trong 2–4 ngày làm việc. Bạn sẽ nhận được thông báo qua email.
-            </p>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Tổng thanh toán</p>
+              <p className="text-xl font-black text-[#006241]">
+                {formatPrice(Number(success.totalPayment))}
+              </p>
+            </div>
+            {method === 'cod' && (
+              <p className="text-sm text-gray-600">
+                Vui lòng chuẩn bị <span className="font-bold text-[#1E3932]">{formatPrice(Number(success.totalPayment))}</span> khi nhận hàng.
+              </p>
+            )}
             {method === 'bank_transfer' && (
-              <div className="mt-3 rounded-xl bg-[#f2f0eb] p-3">
+              <div className="rounded-xl bg-[#f2f0eb] p-3">
                 <p className="text-xs font-bold text-[#1E3932]">Thông tin chuyển khoản:</p>
                 <p className="mt-1 text-xs text-gray-600">
                   Ngân hàng: Vietcombank · STK: 1234567890<br />
                   Tên TK: CONG TY TNHH CULTIVATED LEDGER<br />
-                  Nội dung: Thanh toán đơn {success.orderCode}
+                  Nội dung: DH{success.orderId.slice(-8).toUpperCase()}
                 </p>
               </div>
             )}
+            {method === 'momo' && (
+              <p className="text-sm text-gray-600">
+                Quét mã MoMo hoặc chuyển tiền tới số <span className="font-bold">0901234567</span> (NGUYEN VAN A).
+              </p>
+            )}
+            <p className="mt-3 text-xs text-gray-400">
+              Đơn hàng sẽ được giao trong 2–4 ngày làm việc. Bạn có thể theo dõi trong mục đơn hàng.
+            </p>
           </div>
           <div className="mt-6 flex gap-3">
             <Link
-              to="/client/orders"
+              to={`/client/orders/${success.orderId}`}
               className="flex-1 rounded-full border border-[#006241] py-3 text-sm font-bold text-[#006241] transition hover:bg-[#006241] hover:text-white"
             >
               Xem đơn hàng
@@ -174,7 +186,7 @@ export default function Payment() {
         <div className="mb-8 flex items-center justify-center gap-3 text-sm">
           {[
             { label: 'Giỏ hàng', done: true },
-            { label: 'Địa chỉ giao', done: true },
+            { label: 'Địa chỉ & Vận chuyển', done: true },
             { label: 'Thanh toán', active: true },
             { label: 'Xác nhận' },
           ].map((step, i) => (
@@ -222,13 +234,27 @@ export default function Payment() {
               ))}
             </div>
 
-            {/* Shipping info */}
-            {state.shippingAddress && (
-              <div className="mt-4 rounded-2xl bg-white p-4">
-                <p className="mb-2 text-xs font-black uppercase tracking-wider text-gray-400">
-                  Địa chỉ nhận hàng
-                </p>
-                <p className="text-sm text-[#1E3932]">{state.shippingAddress}</p>
+            {/* Delivery + address summary */}
+            {(state.shippingAddress || state.deliveryName) && (
+              <div className="mt-4 rounded-2xl bg-white p-4 space-y-2">
+                {state.shippingAddress && (
+                  <div className="flex items-start gap-2">
+                    <MapPin size={15} className="mt-0.5 shrink-0 text-[#006241]" />
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Địa chỉ nhận hàng</p>
+                      <p className="text-sm text-[#1E3932]">{state.shippingAddress}</p>
+                    </div>
+                  </div>
+                )}
+                {state.deliveryName && (
+                  <div className="flex items-start gap-2">
+                    <Truck size={15} className="mt-0.5 shrink-0 text-[#006241]" />
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Phương thức vận chuyển</p>
+                      <p className="text-sm text-[#1E3932]">{state.deliveryName}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -267,33 +293,28 @@ export default function Payment() {
               </p>
               {cart && (
                 <div className="max-h-52 space-y-3 overflow-y-auto">
-                  {cart.items.map((item) => {
-                    const img =
-                      item.product.images?.find((i) => i.isPrimary)?.imageUrl ??
-                      item.product.images?.[0]?.imageUrl;
-                    return (
-                      <div key={item._id} className="flex items-start gap-3">
-                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#f2f0eb]">
-                          {img ? (
-                            <img src={img} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="flex h-full items-center justify-center">
-                              <Leaf size={18} className="text-[#006241]/30" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="line-clamp-2 text-xs font-semibold text-[#1E3932]">
-                            {item.product.productName}
-                          </p>
-                          <p className="text-xs text-gray-400">x{item.quantity}</p>
-                        </div>
-                        <p className="shrink-0 text-xs font-bold text-[#006241]">
-                          {formatPrice(item.subtotal)}
-                        </p>
+                  {cart.items.map((item) => (
+                    <div key={item.id} className="flex items-start gap-3">
+                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#f2f0eb]">
+                        {item.primaryImageUrl ? (
+                          <img src={item.primaryImageUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full items-center justify-center">
+                            <Leaf size={18} className="text-[#006241]/30" />
+                          </div>
+                        )}
                       </div>
-                    );
-                  })}
+                      <div className="flex-1 min-w-0">
+                        <p className="line-clamp-2 text-xs font-semibold text-[#1E3932]">
+                          {item.productName}
+                        </p>
+                        <p className="text-xs text-gray-400">x{item.quantity}</p>
+                      </div>
+                      <p className="shrink-0 text-xs font-bold text-[#006241]">
+                        {formatPrice(Number(item.lineTotal))}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               )}
               <div className="mt-4 space-y-2 border-t border-black/5 pt-4 text-sm">
@@ -301,6 +322,12 @@ export default function Payment() {
                   <span className="text-gray-500">Tạm tính</span>
                   <span className="font-semibold">{formatPrice(subtotal)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Giảm giá</span>
+                    <span className="font-semibold text-red-500">-{formatPrice(discountAmount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-500">Vận chuyển</span>
                   <span className={`font-semibold ${shipping === 0 ? 'text-[#006241]' : ''}`}>
