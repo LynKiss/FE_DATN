@@ -1,6 +1,7 @@
 import {
   BarChart3,
   ChevronDown,
+  CreditCard,
   FolderTree,
   Globe,
   Hash,
@@ -15,6 +16,7 @@ import {
   Settings,
   ShieldCheck,
   ShoppingCart,
+  Star,
   Users,
   X,
 } from 'lucide-react';
@@ -138,6 +140,18 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'Bài viết' : 'Articles',
       icon: Newspaper,
       path: '/admin/news',
+    },
+    {
+      id: 'reviews',
+      label: isVietnamese ? 'Đánh giá sản phẩm' : 'Product reviews',
+      icon: Star,
+      path: '/admin/reviews',
+    },
+    {
+      id: 'payments',
+      label: isVietnamese ? 'Thanh toán' : 'Payments',
+      icon: CreditCard,
+      path: '/admin/payments',
     },
     {
       id: 'reports',

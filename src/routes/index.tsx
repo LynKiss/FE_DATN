@@ -28,6 +28,8 @@ const SettingsPage = lazy(() => import('../features/admin/settings/page'));
 const OriginsPage = lazy(() => import('../features/admin/origins/page'));
 const TagsPage = lazy(() => import('../features/admin/tags/page'));
 const NewsPage = lazy(() => import('../features/admin/news/page'));
+const ReviewsPage = lazy(() => import('../features/admin/reviews/page'));
+const PaymentsPage = lazy(() => import('../features/admin/payments/page'));
 
 // Client pages
 const ClientHomePage = lazy(() => import('../features/client/home/page'));
@@ -91,6 +93,8 @@ export const router = createBrowserRouter([
               { path: 'orders', element: withSuspense(<OrdersPage />) },
               { path: 'customers', element: withSuspense(<CustomersPage />) },
               { path: 'news', element: withSuspense(<NewsPage />) },
+              { path: 'reviews', element: withSuspense(<ReviewsPage />) },
+              { path: 'payments', element: withSuspense(<PaymentsPage />) },
               { path: 'reports', element: withSuspense(<ReportsPage />) },
               { path: 'permissions', element: withSuspense(<PermissionsPage />) },
               { path: 'interface', element: withSuspense(<InterfacePage />) },

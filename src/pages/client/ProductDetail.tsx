@@ -14,6 +14,8 @@ import {
   MessageSquare,
   Send,
   LoaderCircle,
+  ThumbsUp,
+  ThumbsDown,
 } from 'lucide-react';
 import { clientApi } from '../../lib/client-api';
 import { useCart } from '../../hooks/useCart';
@@ -62,6 +64,7 @@ type Review = {
   content: string;
   rating: number;
   likeCount: number;
+  dislikeCount: number;
   createdAt: string;
 };
 
@@ -132,6 +135,10 @@ export default function ProductDetail() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMsg, setReviewMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [alreadyReviewed, setAlreadyReviewed] = useState(false);
+  // Track voted reviews in state: reviewId -> 'like' | 'dislike' | null
+  const [reviewVotes, setReviewVotes] = useState<Record<string, 'like' | 'dislike' | null>>({});
+  // Local counts override from API responses
+  const [reviewCounts, setReviewCounts] = useState<Record<string, { likeCount: number; dislikeCount: number }>>({});
 
   useEffect(() => {
     if (!id) return;
@@ -252,6 +259,34 @@ export default function ProductDetail() {
     } finally {
       setSubmittingReview(false);
       setTimeout(() => setReviewMsg(null), 4000);
+    }
+  };
+
+  const handleReviewVote = async (reviewId: string, voteType: 'like' | 'dislike') => {
+    const current = reviewVotes[reviewId] ?? null;
+    const base = reviewCounts[reviewId] ?? reviews.find((r) => r.id === reviewId) ?? { likeCount: 0, dislikeCount: 0 };
+
+    if (current === voteType) {
+      // undo vote
+      try {
+        const res = await clientApi.delete<{ likeCount: number; dislikeCount: number }>(
+          `/reviews/${reviewId}/${voteType}`,
+        );
+        setReviewVotes((v) => ({ ...v, [reviewId]: null }));
+        setReviewCounts((c) => ({ ...c, [reviewId]: res }));
+      } catch {}
+    } else {
+      // undo opposite if exists, then set new
+      if (current) {
+        await clientApi.delete(`/reviews/${reviewId}/${current}`).catch(() => {});
+      }
+      try {
+        const res = await clientApi.post<{ likeCount: number; dislikeCount: number }>(
+          `/reviews/${reviewId}/${voteType}`,
+        );
+        setReviewVotes((v) => ({ ...v, [reviewId]: voteType }));
+        setReviewCounts((c) => ({ ...c, [reviewId]: res }));
+      } catch {}
     }
   };
 
@@ -470,6 +505,42 @@ export default function ProductDetail() {
               </button>
             </div>
 
+            {/* Share */}
+            <div className="mt-6 flex items-center gap-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Chia sẻ:</span>
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1877F2] text-white transition hover:opacity-80"
+                title="Chia sẻ Facebook"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              </a>
+              <a
+                href={`https://zalo.me/share/url?url=${encodeURIComponent(window.location.href)}&title=${encodeURIComponent(product?.productName ?? '')}`}
+                target="_blank" rel="noopener noreferrer"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0068FF] text-white transition hover:opacity-80"
+                title="Chia sẻ Zalo"
+              >
+                <span className="text-xs font-black">Z</span>
+              </a>
+              <a
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(product?.productName ?? '')}`}
+                target="_blank" rel="noopener noreferrer"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-black text-white transition hover:opacity-80"
+                title="Chia sẻ X (Twitter)"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+              <button
+                onClick={() => { void navigator.clipboard.writeText(window.location.href); alert('Đã sao chép link!'); }}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-[#006241] hover:text-[#006241]"
+                title="Sao chép link"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              </button>
+            </div>
+
             {/* Trust badges */}
             <div className="mt-5 grid grid-cols-2 gap-2">
               {[
@@ -674,9 +745,37 @@ export default function ProductDetail() {
                           <StarRating value={r.rating} />
                         </div>
                         <p className="mt-3 text-sm leading-relaxed text-gray-600">{r.content}</p>
-                        {r.likeCount > 0 && (
-                          <p className="mt-2 text-[11px] text-gray-400">👍 {r.likeCount} người thấy hữu ích</p>
-                        )}
+                        <div className="mt-3 flex items-center gap-3">
+                          <span className="text-[11px] text-gray-400">Hữu ích không?</span>
+                          <button
+                            type="button"
+                            onClick={() => { void handleReviewVote(r.id, 'like'); }}
+                            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+                              reviewVotes[r.id] === 'like'
+                                ? 'border-[#006241] bg-[#006241]/10 text-[#006241]'
+                                : 'border-black/10 text-gray-400 hover:border-[#006241]/40 hover:text-[#006241]'
+                            }`}
+                          >
+                            <ThumbsUp size={11} />
+                            {(reviewCounts[r.id]?.likeCount ?? r.likeCount) > 0
+                              ? reviewCounts[r.id]?.likeCount ?? r.likeCount
+                              : ''}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { void handleReviewVote(r.id, 'dislike'); }}
+                            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+                              reviewVotes[r.id] === 'dislike'
+                                ? 'border-red-400 bg-red-50 text-red-500'
+                                : 'border-black/10 text-gray-400 hover:border-red-300 hover:text-red-400'
+                            }`}
+                          >
+                            <ThumbsDown size={11} />
+                            {(reviewCounts[r.id]?.dislikeCount ?? r.dislikeCount) > 0
+                              ? reviewCounts[r.id]?.dislikeCount ?? r.dislikeCount
+                              : ''}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

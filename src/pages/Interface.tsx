@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type DragEvent, useEffect, useState } from 'react';
 import {
   Palette,
   Layout,
@@ -23,6 +23,8 @@ import {
   ToggleLeft,
   ToggleRight,
   Sliders,
+  Pencil,
+  X,
 } from 'lucide-react';
 import { useLanguage } from '../i18n/language-context';
 import { apiClient } from '../lib/api';
@@ -44,11 +46,241 @@ type HomepageSection = {
   enabled: boolean;
 };
 
+const SECTIONS_STORAGE_KEY = 'homepage_sections_config';
+const CONTENT_STORAGE_KEY = 'homepage_content_config';
+
+type HomepageContentConfig = {
+  hero?: { title?: string; subtitle?: string; buttonText?: string; bgColor?: string };
+  stats?: Array<{ value: string; label: string }>;
+  sale_banner?: { title?: string; subtitle?: string; buttonText?: string };
+  why_us?: Array<{ title: string; description: string }>;
+};
+
+const DEFAULT_STATS: Array<{ value: string; label: string }> = [
+  { value: '15.000+', label: 'Nông dân tin tưởng' },
+  { value: '500+', label: 'Sản phẩm chính hãng' },
+  { value: '63', label: 'Tỉnh thành giao hàng' },
+  { value: '98%', label: 'Tỷ lệ hài lòng' },
+];
+
+const DEFAULT_WHY_US: Array<{ title: string; description: string }> = [
+  { title: 'Hàng chính hãng 100%', description: 'Toàn bộ sản phẩm có giấy chứng nhận và nguồn gốc rõ ràng. Cam kết không hàng giả, hàng nhái.' },
+  { title: 'Giao hàng toàn quốc', description: 'Đối tác vận chuyển uy tín, giao hàng 2–4 ngày. Miễn phí vận chuyển đơn hàng từ 500.000đ.' },
+  { title: 'Hỗ trợ kỹ thuật', description: 'Đội ngũ kỹ sư nông nghiệp tư vấn trực tiếp. Hotline miễn phí 1800 6863, hỗ trợ 7 ngày/tuần.' },
+  { title: 'Đổi trả dễ dàng', description: 'Chính sách đổi trả trong 7 ngày nếu sản phẩm lỗi hoặc không đúng mô tả. Hoàn tiền 100%.' },
+];
+
+function loadContentConfig(): HomepageContentConfig {
+  try {
+    const raw = localStorage.getItem(CONTENT_STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as HomepageContentConfig;
+  } catch {}
+  return {};
+}
+
+// ── Content Edit Modal ────────────────────────────────────────────────────────
+
+function ContentEditModal({
+  sectionId,
+  config,
+  onSave,
+  onClose,
+}: {
+  sectionId: string;
+  config: HomepageContentConfig;
+  onSave: (next: HomepageContentConfig) => void;
+  onClose: () => void;
+}) {
+  // Local draft state per section
+  const [hero, setHero] = useState({
+    title: config.hero?.title ?? 'Mọi mùa vụ đều bắt đầu từ đây.',
+    subtitle: config.hero?.subtitle ?? 'Cung cấp đầy đủ vật tư nông nghiệp — phân bón, thuốc BVTV, hạt giống, dụng cụ — chính hãng, giá tốt, giao nhanh toàn quốc.',
+    buttonText: config.hero?.buttonText ?? 'Khám phá ngay',
+    bgColor: config.hero?.bgColor ?? '#1E3932',
+  });
+
+  const [stats, setStats] = useState<Array<{ value: string; label: string }>>(
+    config.stats ?? DEFAULT_STATS.map((s) => ({ ...s })),
+  );
+
+  const [saleBanner, setSaleBanner] = useState({
+    title: config.sale_banner?.title ?? 'Giảm giá lên đến 30% cho nhiều sản phẩm 🔥',
+    subtitle: config.sale_banner?.subtitle ?? 'Đừng bỏ lỡ! Số lượng có hạn.',
+    buttonText: config.sale_banner?.buttonText ?? 'Xem ưu đãi →',
+  });
+
+  const [whyUs, setWhyUs] = useState<Array<{ title: string; description: string }>>(
+    config.why_us ?? DEFAULT_WHY_US.map((s) => ({ ...s })),
+  );
+
+  const handleSave = () => {
+    const next: HomepageContentConfig = { ...config };
+    if (sectionId === 'hero') next.hero = hero;
+    if (sectionId === 'stats') next.stats = stats;
+    if (sectionId === 'sale_banner') next.sale_banner = saleBanner;
+    if (sectionId === 'why_us') next.why_us = whyUs;
+    onSave(next);
+  };
+
+  const inputCls = 'w-full rounded-xl border border-on-surface-variant/20 bg-on-surface-variant/5 px-4 py-2.5 text-sm outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10';
+  const labelCls = 'block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1.5';
+
+  const sectionTitle: Record<string, string> = {
+    hero: 'Banner Hero',
+    stats: 'Thống kê',
+    categories: 'Danh mục sản phẩm',
+    featured: 'Sản phẩm nổi bật',
+    sale_banner: 'Banner khuyến mãi',
+    why_us: 'Tại sao chọn chúng tôi',
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg overflow-hidden rounded-[2rem] bg-white shadow-2xl flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-on-surface-variant/8 shrink-0">
+          <h3 className="text-base font-black text-on-surface">
+            Chỉnh nội dung — {sectionTitle[sectionId] ?? sectionId}
+          </h3>
+          <button onClick={onClose} className="rounded-xl p-1.5 text-on-surface-variant/50 transition hover:text-primary">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto px-6 py-5 space-y-5 flex-1">
+          {/* HERO */}
+          {sectionId === 'hero' && (
+            <>
+              <div>
+                <label className={labelCls}>Tiêu đề chính</label>
+                <input className={inputCls} value={hero.title} onChange={(e) => setHero((h) => ({ ...h, title: e.target.value }))} />
+              </div>
+              <div>
+                <label className={labelCls}>Mô tả phụ</label>
+                <textarea rows={3} className={inputCls + ' resize-none'} value={hero.subtitle} onChange={(e) => setHero((h) => ({ ...h, subtitle: e.target.value }))} />
+              </div>
+              <div>
+                <label className={labelCls}>Văn bản nút CTA</label>
+                <input className={inputCls} value={hero.buttonText} onChange={(e) => setHero((h) => ({ ...h, buttonText: e.target.value }))} />
+              </div>
+              <div>
+                <label className={labelCls}>Màu nền (hex)</label>
+                <div className="flex items-center gap-3">
+                  <input type="color" value={hero.bgColor} onChange={(e) => setHero((h) => ({ ...h, bgColor: e.target.value }))}
+                    className="h-10 w-14 cursor-pointer rounded-xl border border-on-surface-variant/20 bg-transparent p-1" />
+                  <input className={inputCls + ' flex-1'} value={hero.bgColor} onChange={(e) => setHero((h) => ({ ...h, bgColor: e.target.value }))} placeholder="#1E3932" />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* STATS */}
+          {sectionId === 'stats' && (
+            <div className="space-y-3">
+              {stats.map((stat, i) => (
+                <div key={i} className="rounded-2xl border border-on-surface-variant/10 p-4 space-y-3">
+                  <p className="text-xs font-black uppercase tracking-wider text-on-surface-variant/50">Thống kê {i + 1}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Giá trị</label>
+                      <input className={inputCls} value={stat.value}
+                        onChange={(e) => setStats((arr) => arr.map((s, j) => j === i ? { ...s, value: e.target.value } : s))} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Nhãn</label>
+                      <input className={inputCls} value={stat.label}
+                        onChange={(e) => setStats((arr) => arr.map((s, j) => j === i ? { ...s, label: e.target.value } : s))} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* CATEGORIES */}
+          {sectionId === 'categories' && (
+            <div className="rounded-2xl bg-on-surface-variant/5 px-5 py-4 text-sm text-on-surface-variant">
+              Danh mục được lấy từ DB tự động — không cần chỉnh sửa tại đây.
+            </div>
+          )}
+
+          {/* FEATURED */}
+          {sectionId === 'featured' && (
+            <div className="rounded-2xl bg-on-surface-variant/5 px-5 py-4 text-sm text-on-surface-variant">
+              Sản phẩm nổi bật được quản lý trong tab <strong>"Sản phẩm nổi bật"</strong> bên dưới.
+            </div>
+          )}
+
+          {/* SALE BANNER */}
+          {sectionId === 'sale_banner' && (
+            <>
+              <div>
+                <label className={labelCls}>Tiêu đề banner</label>
+                <input className={inputCls} value={saleBanner.title} onChange={(e) => setSaleBanner((b) => ({ ...b, title: e.target.value }))} />
+              </div>
+              <div>
+                <label className={labelCls}>Mô tả phụ</label>
+                <input className={inputCls} value={saleBanner.subtitle} onChange={(e) => setSaleBanner((b) => ({ ...b, subtitle: e.target.value }))} />
+              </div>
+              <div>
+                <label className={labelCls}>Văn bản nút</label>
+                <input className={inputCls} value={saleBanner.buttonText} onChange={(e) => setSaleBanner((b) => ({ ...b, buttonText: e.target.value }))} />
+              </div>
+            </>
+          )}
+
+          {/* WHY US */}
+          {sectionId === 'why_us' && (
+            <div className="space-y-3">
+              {whyUs.map((item, i) => (
+                <div key={i} className="rounded-2xl border border-on-surface-variant/10 p-4 space-y-3">
+                  <p className="text-xs font-black uppercase tracking-wider text-on-surface-variant/50">Lý do {i + 1}</p>
+                  <div>
+                    <label className={labelCls}>Tiêu đề</label>
+                    <input className={inputCls} value={item.title}
+                      onChange={(e) => setWhyUs((arr) => arr.map((it, j) => j === i ? { ...it, title: e.target.value } : it))} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Mô tả</label>
+                    <textarea rows={2} className={inputCls + ' resize-none'} value={item.description}
+                      onChange={(e) => setWhyUs((arr) => arr.map((it, j) => j === i ? { ...it, description: e.target.value } : it))} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* DEFAULT */}
+          {!['hero', 'stats', 'categories', 'featured', 'sale_banner', 'why_us'].includes(sectionId) && (
+            <div className="rounded-2xl bg-on-surface-variant/5 px-5 py-4 text-sm text-on-surface-variant">
+              Nội dung được tự động lấy từ hệ thống — không cần chỉnh sửa tại đây.
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-on-surface-variant/8 shrink-0">
+          <button onClick={onClose}
+            className="rounded-2xl border border-on-surface-variant/15 px-5 py-2.5 text-sm font-bold text-on-surface-variant transition hover:bg-on-surface-variant/5">
+            Huỷ
+          </button>
+          <button onClick={handleSave}
+            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90">
+            Lưu nội dung
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const INITIAL_SECTIONS: HomepageSection[] = [
   { id: 'hero', label: 'Banner Hero (trang chủ)', enabled: true },
   { id: 'stats', label: 'Thống kê (15.000+ khách hàng...)', enabled: true },
   { id: 'categories', label: 'Danh mục sản phẩm', enabled: true },
   { id: 'featured', label: 'Sản phẩm nổi bật (carousel)', enabled: true },
+  { id: 'best_sellers', label: 'Sản phẩm bán chạy (carousel)', enabled: true },
   { id: 'sale_banner', label: 'Banner khuyến mãi', enabled: true },
   { id: 'sale_products', label: 'Sản phẩm khuyến mãi', enabled: true },
   { id: 'why_us', label: 'Tại sao chọn chúng tôi', enabled: true },
@@ -94,12 +326,36 @@ export default function Interface() {
   const [activeTab, setActiveTab] = useState('homepage');
 
   // Homepage management state
-  const [sections, setSections] = useState<HomepageSection[]>(INITIAL_SECTIONS);
+  const [sections, setSections] = useState<HomepageSection[]>(() => {
+    try {
+      const saved = localStorage.getItem(SECTIONS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as HomepageSection[];
+        // Merge with INITIAL_SECTIONS to include any new sections added later
+        return INITIAL_SECTIONS.map(s => ({
+          ...s,
+          enabled: parsed.find(p => p.id === s.id)?.enabled ?? s.enabled,
+        }));
+      }
+    } catch {}
+    return INITIAL_SECTIONS;
+  });
   const [featuredProducts, setFeaturedProducts] = useState<ProductItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ProductItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // Content editing state
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [contentConfig, setContentConfig] = useState<HomepageContentConfig>(loadContentConfig);
+
+  const handleSaveContent = (next: HomepageContentConfig) => {
+    setContentConfig(next);
+    try { localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(next)); } catch {}
+    setEditingSection(null);
+    showToast({ tone: 'success', title: 'Đã lưu nội dung section' });
+  };
 
   // Theme state
   const [activeTheme, setActiveTheme] = useState('botanical');
@@ -110,6 +366,10 @@ export default function Interface() {
 
   // Block state
   const [blocks, setBlocks] = useState<Block[]>(INITIAL_BLOCKS);
+
+  // Drag-and-drop state for sections
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Load featured products on mount
   useEffect(() => {
@@ -168,11 +428,53 @@ export default function Interface() {
   };
 
   const toggleSection = (id: string) => {
-    setSections((prev) => prev.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s)));
+    setSections((prev) => {
+      const next = prev.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s));
+      try { localStorage.setItem(SECTIONS_STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
   };
 
   const toggleBlock = (id: string) => {
     setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, status: b.status === 'active' ? 'hidden' : 'active' } : b)));
+  };
+
+  const handleDragStart = (index: number) => {
+    setDragIndex(index);
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>, dropIndex: number) => {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === dropIndex) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const reordered = [...sections];
+    const [moved] = reordered.splice(dragIndex, 1);
+    reordered.splice(dropIndex, 0, moved);
+    setSections(reordered);
+    try { localStorage.setItem(SECTIONS_STORAGE_KEY, JSON.stringify(reordered)); } catch {}
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleSaveTheme = () => {
+    const themeConfig = { themeId: activeTheme, fontId: activeTypo, mode, density };
+    try { localStorage.setItem('client_theme_config', JSON.stringify(themeConfig)); } catch {}
+    // Apply CSS variables from selected theme
+    const theme = THEME_OPTIONS.find((t) => t.id === activeTheme);
+    if (theme) {
+      document.documentElement.style.setProperty('--client-primary', theme.primary);
+      document.documentElement.style.setProperty('--client-accent', theme.accent);
+      document.documentElement.style.setProperty('--client-bg', theme.bg);
+    }
+    showToast({ tone: 'success', title: 'Đã lưu cài đặt giao diện', description: 'Thay đổi được áp dụng cho cửa hàng client.' });
   };
 
   return (
@@ -215,22 +517,39 @@ export default function Interface() {
             </div>
             <div className="overflow-hidden rounded-[2rem] border border-on-surface-variant/8 bg-white">
               {sections.map((sec, i) => (
-                <div key={sec.id} className={`flex items-center justify-between px-5 py-4 transition hover:bg-primary/[0.02] ${i > 0 ? 'border-t border-on-surface-variant/5' : ''}`}>
+                <div
+                  key={sec.id}
+                  draggable
+                  onDragStart={() => handleDragStart(i)}
+                  onDragOver={(e) => handleDragOver(e, i)}
+                  onDrop={(e) => handleDrop(e, i)}
+                  onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
+                  className={`flex items-center justify-between px-5 py-4 transition hover:bg-primary/[0.02] ${i > 0 ? 'border-t border-on-surface-variant/5' : ''} ${dragOverIndex === i && dragIndex !== i ? 'bg-primary/5 ring-2 ring-inset ring-primary/20' : ''} ${dragIndex === i ? 'opacity-50' : ''}`}
+                >
                   <div className="flex items-center gap-3">
+                    <GripVertical size={16} className="cursor-grab text-on-surface-variant/25 hover:text-primary/50 active:cursor-grabbing" />
                     <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${sec.enabled ? 'bg-primary/10' : 'bg-on-surface-variant/8'}`}>
                       <Layout size={16} className={sec.enabled ? 'text-primary' : 'text-on-surface-variant/30'} />
                     </div>
                     <p className={`text-sm font-semibold ${sec.enabled ? 'text-on-surface' : 'text-on-surface-variant/40'}`}>{sec.label}</p>
                   </div>
-                  <button onClick={() => toggleSection(sec.id)} className="transition hover:scale-110">
-                    {sec.enabled
-                      ? <ToggleRight size={28} className="text-primary" />
-                      : <ToggleLeft size={28} className="text-on-surface-variant/30" />}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setEditingSection(sec.id)}
+                      title="Chỉnh nội dung"
+                      className="flex h-8 w-8 items-center justify-center rounded-xl border border-on-surface-variant/10 text-on-surface-variant/40 transition hover:border-primary/30 hover:text-primary"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button onClick={() => toggleSection(sec.id)} className="transition hover:scale-110">
+                      {sec.enabled
+                        ? <ToggleRight size={28} className="text-primary" />
+                        : <ToggleLeft size={28} className="text-on-surface-variant/30" />}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-xs text-on-surface-variant/50">* Cấu hình này lưu cục bộ trong phiên này. Tính năng lưu server sẽ có trong phiên bản tiếp theo.</p>
           </section>
 
           {/* Featured products manager */}
@@ -335,6 +654,16 @@ export default function Interface() {
         </div>
       )}
 
+      {/* Content edit modal */}
+      {editingSection !== null && (
+        <ContentEditModal
+          sectionId={editingSection}
+          config={contentConfig}
+          onSave={handleSaveContent}
+          onClose={() => setEditingSection(null)}
+        />
+      )}
+
       {/* ===== TAB: THEME ===== */}
       {activeTab === 'theme' && (
         <div className="space-y-8">
@@ -413,6 +742,17 @@ export default function Interface() {
                 </div>
               </div>
             </div>
+          </section>
+
+          {/* Save theme button */}
+          <section className="flex justify-end">
+            <button
+              onClick={handleSaveTheme}
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-black text-white shadow-md shadow-primary/20 transition hover:opacity-90 active:scale-95"
+            >
+              <CheckCircle2 size={16} />
+              Lưu cài đặt giao diện
+            </button>
           </section>
 
           {/* Preview */}

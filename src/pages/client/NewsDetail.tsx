@@ -1,6 +1,6 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Share2, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Calendar, Share2, ArrowRight, Copy, Check, Facebook } from 'lucide-react';
 import { clientApi } from '../../lib/client-api';
 
 type NewsDetail = {
@@ -12,6 +12,8 @@ type NewsDetail = {
   content?: string;
   isPublished: boolean;
   createdAt: string;
+  views: number;
+  likeCount: number;
   author?: { username: string; fullName?: string };
 };
 
@@ -23,6 +25,20 @@ type RelatedNews = {
   createdAt: string;
 };
 
+const LIKED_NEWS_KEY = 'liked_news';
+
+function getLikedNews(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(LIKED_NEWS_KEY) ?? '[]') as string[];
+  } catch {
+    return [];
+  }
+}
+
+function setLikedNews(ids: string[]) {
+  localStorage.setItem(LIKED_NEWS_KEY, JSON.stringify(ids));
+}
+
 export default function NewsDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -31,28 +47,98 @@ export default function NewsDetail() {
   const [related, setRelated] = useState<RelatedNews[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Like state
+  const [likeCount, setLikeCount] = useState(0);
+  const [liked, setLiked] = useState(false);
+
+  // View count — call once only (guard against StrictMode double-invoke)
+  const viewTracked = useRef(false);
+
+  // Copy link state
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
+    viewTracked.current = false;
 
-    // Try to find by slug via news list
     void clientApi
-      .get<{ items?: NewsDetail[] } | NewsDetail[]>(`/news?slug=${slug}&limit=1`)
-      .then(async (data) => {
-        const item = Array.isArray(data) ? data[0] : data.items?.[0];
-        if (!item) { void navigate('/client/news'); return; }
+      .get<NewsDetail>(`/news/public/by-slug/${slug}`)
+      .then(async (item) => {
         setArticle(item);
+        setLikeCount(item.likeCount ?? 0);
 
-        // Fetch related (latest excluding this)
+        const likedIds = getLikedNews();
+        setLiked(likedIds.includes(item._id));
+
+        // Fetch related
         const rel = await clientApi
-          .get<{ items?: RelatedNews[] } | RelatedNews[]>('/news?limit=4&status=published')
+          .get<{ items?: RelatedNews[]; meta?: unknown } | RelatedNews[]>('/news/public/list?limit=4')
           .catch(() => [] as RelatedNews[]);
-        const relItems = Array.isArray(rel) ? rel : (rel.items ?? []);
+        const relItems = Array.isArray(rel) ? rel : ((rel as { items?: RelatedNews[] }).items ?? []);
         setRelated(relItems.filter((r) => r._id !== item._id).slice(0, 3));
       })
       .catch(() => { void navigate('/client/news'); })
       .finally(() => setLoading(false));
   }, [slug, navigate]);
+
+  // Increment view once after article is loaded
+  useEffect(() => {
+    if (!article || viewTracked.current) return;
+    viewTracked.current = true;
+    void clientApi
+      .patch<{ views: number }>(`/news/public/${article._id}/view`)
+      .then((res) => {
+        setArticle((prev) => prev ? { ...prev, views: res.views } : prev);
+      })
+      .catch(() => {});
+  }, [article?._id]);
+
+  const handleLike = async () => {
+    if (!article) return;
+    if (!liked) {
+      try {
+        const res = await clientApi.post<{ likeCount: number }>(`/news/public/${article._id}/like`);
+        setLikeCount(res.likeCount);
+        setLiked(true);
+        const ids = getLikedNews();
+        setLikedNews([...ids, article._id]);
+      } catch {
+        // silently ignore
+      }
+    } else {
+      try {
+        const res = await clientApi.delete<{ likeCount: number }>(`/news/public/${article._id}/like`);
+        setLikeCount(res.likeCount);
+        setLiked(false);
+        const ids = getLikedNews().filter((id) => id !== article._id);
+        setLikedNews(ids);
+      } catch {
+        // silently ignore
+      }
+    }
+  };
+
+  const handleCopyLink = () => {
+    void navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleShareFacebook = () => {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`,
+      '_blank',
+    );
+  };
+
+  const handleShareZalo = () => {
+    window.open(
+      `https://zalo.me/share/url?url=${encodeURIComponent(window.location.href)}`,
+      '_blank',
+    );
+  };
 
   if (loading) {
     return (
@@ -109,6 +195,16 @@ export default function NewsDetail() {
               <p className="mt-3 text-base leading-relaxed text-gray-500">{article.subTitle}</p>
             )}
 
+            {/* Stats bar */}
+            <div className="mt-4 flex items-center gap-4 text-sm text-gray-400">
+              <span className="flex items-center gap-1">
+                👁 <span>{article.views ?? 0} lượt đọc</span>
+              </span>
+              <span className="flex items-center gap-1">
+                ❤️ <span>{likeCount} lượt thích</span>
+              </span>
+            </div>
+
             <div className="my-6 h-px bg-black/5" />
 
             {article.content ? (
@@ -124,12 +220,46 @@ export default function NewsDetail() {
               <p className="italic text-gray-400">Nội dung đang được cập nhật...</p>
             )}
 
-            <div className="mt-8 flex items-center gap-3 border-t border-black/5 pt-6">
+            {/* Action bar: Like + Share */}
+            <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-black/5 pt-6">
+              {/* Like button */}
               <button
-                onClick={() => navigator.share?.({ title: article.title, url: window.location.href }).catch(() => {})}
-                className="flex items-center gap-2 rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-gray-500 transition hover:border-[#006241] hover:text-[#006241]"
+                onClick={() => { void handleLike(); }}
+                className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                  liked
+                    ? 'border-red-400 bg-red-50 text-red-500'
+                    : 'border-black/10 text-gray-500 hover:border-red-300 hover:text-red-400'
+                }`}
               >
-                <Share2 size={13} /> Chia sẻ
+                <span className="text-base leading-none">{liked ? '❤️' : '🤍'}</span>
+                <span>{liked ? 'Đã thích' : 'Thích'}</span>
+              </button>
+
+              {/* Facebook share */}
+              <button
+                onClick={handleShareFacebook}
+                className="flex items-center gap-2 rounded-full border border-black/10 px-4 py-2 text-sm font-semibold text-gray-500 transition hover:border-blue-400 hover:text-blue-600"
+              >
+                <Facebook size={14} />
+                <span>Facebook</span>
+              </button>
+
+              {/* Zalo share */}
+              <button
+                onClick={handleShareZalo}
+                className="flex items-center gap-2 rounded-full border border-black/10 px-4 py-2 text-sm font-semibold text-gray-500 transition hover:border-blue-300 hover:text-blue-500"
+              >
+                <Share2 size={14} />
+                <span>Zalo</span>
+              </button>
+
+              {/* Copy link */}
+              <button
+                onClick={handleCopyLink}
+                className="flex items-center gap-2 rounded-full border border-black/10 px-4 py-2 text-sm font-semibold text-gray-500 transition hover:border-[#006241] hover:text-[#006241]"
+              >
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                <span>{copied ? 'Đã sao chép!' : 'Sao chép link'}</span>
               </button>
             </div>
           </article>

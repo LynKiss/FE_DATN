@@ -14,9 +14,18 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAdminSession } from '../hooks/useAdminSession';
 import { useToast } from '../hooks/useToast';
-import { logoutAdmin } from '../lib/api';
+import { apiClient, logoutAdmin } from '../lib/api';
 import { useLanguage } from '../i18n/language-context';
 import { useTheme } from '../theme/theme-context';
+
+type NotifItem = {
+  id: string | null;
+  title: string;
+  message: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string | null;
+  channel: string;
+};
 
 type TopbarProps = {
   onOpenSidebar: () => void;
@@ -31,6 +40,10 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotifItem[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
   const isVietnamese = language === 'vi';
 
   const initials = useMemo(
@@ -49,11 +62,15 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
       if (!accountMenuRef.current?.contains(event.target as Node)) {
         setAccountMenuOpen(false);
       }
+      if (!notifRef.current?.contains(event.target as Node)) {
+        setNotifOpen(false);
+      }
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setAccountMenuOpen(false);
+        setNotifOpen(false);
       }
     }
 
@@ -65,6 +82,18 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
       document.removeEventListener('keydown', handleEscape);
     };
   }, []);
+
+  const loadNotifications = async () => {
+    setNotifLoading(true);
+    try {
+      const data = await apiClient.get<NotifItem[]>('/notifications/admin/summary');
+      setNotifications(data ?? []);
+    } catch {
+      setNotifications([]);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -136,13 +165,54 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
         </nav>
 
         <div className="flex items-center gap-3 border-l border-on-surface-variant/10 pl-3 text-on-surface-variant/80 sm:gap-4 sm:pl-4 lg:pl-6">
-          <button
-            type="button"
-            className="relative p-1 transition-colors hover:text-primary"
-          >
-            <Bell size={20} />
-            <span className="absolute right-0 top-0 h-2 w-2 rounded-full border-2 border-surface bg-red-500" />
-          </button>
+          <div ref={notifRef} className="relative">
+            <button
+              type="button"
+              onClick={() => { if (!notifOpen) void loadNotifications(); setNotifOpen(o => !o); }}
+              className="relative p-1 transition-colors hover:text-primary"
+            >
+              <Bell size={20} />
+              {notifications.length > 0 && (
+                <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full border-2 border-surface bg-red-500 text-[8px] font-black text-white">
+                  {notifications.length > 9 ? '9+' : notifications.length}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-80 overflow-hidden rounded-[1.75rem] border border-on-surface-variant/10 bg-white shadow-2xl">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-on-surface-variant/8">
+                  <p className="text-sm font-black text-on-surface">Thông báo</p>
+                  <button onClick={() => void loadNotifications()} className="text-xs text-primary hover:underline">Làm mới</button>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifLoading ? (
+                    <div className="flex justify-center py-8">
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="py-10 text-center text-sm text-on-surface-variant">
+                      Không có thông báo mới
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-on-surface-variant/5">
+                      {notifications.slice(0, 10).map((n, i) => (
+                        <div key={n.id ?? i} className="px-5 py-3.5 hover:bg-surface/50 transition">
+                          <p className="text-sm font-semibold text-on-surface">{n.title}</p>
+                          <p className="mt-0.5 text-xs text-on-surface-variant/70 line-clamp-2">{n.message}</p>
+                          {n.createdAt && (
+                            <p className="mt-1 text-[10px] text-on-surface-variant/40">
+                              {new Date(n.createdAt).toLocaleString('vi-VN')}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           <button
             type="button"
@@ -203,97 +273,100 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
             </button>
 
             {accountMenuOpen ? (
-              <div className="app-elevated absolute right-0 top-[calc(100%+0.75rem)] z-50 w-72 overflow-hidden rounded-[1.75rem] border border-on-surface-variant/10 p-3">
-                <div className="rounded-[1.25rem] bg-on-surface-variant/5 px-4 py-4">
-                  <p className="text-sm font-black text-on-surface">
-                    {session?.user.username || (isVietnamese ? 'Quản trị viên' : 'Administrator')}
-                  </p>
-                  <p className="mt-1 text-xs text-on-surface-variant">
-                    {session?.user.email || 'admin@local'}
-                  </p>
+              <div className="app-elevated absolute right-0 top-[calc(100%+0.75rem)] z-50 w-80 overflow-hidden rounded-[1.75rem] border border-on-surface-variant/10 bg-white shadow-2xl">
+                {/* Profile header */}
+                <div className="bg-gradient-to-br from-primary/8 to-primary-container/10 px-5 py-5">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-fixed to-primary text-lg font-black text-white shadow-md">
+                      {initials || 'AD'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-black text-on-surface">
+                        {session?.user.username || (isVietnamese ? 'Quản trị viên' : 'Administrator')}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-on-surface-variant">
+                        {session?.user.email || 'admin@local'}
+                      </p>
+                      {session?.user.role && (
+                        <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary">
+                          <ShieldCheck size={10} />
+                          {session.user.role.name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="mt-3 grid gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAccountMenuOpen(false);
-                      navigate('/admin/security');
-                    }}
-                    className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
-                  >
-                    <ShieldCheck size={18} />
-                    <span>{isVietnamese ? 'Bảo mật tài khoản' : 'Account security'}</span>
-                  </button>
+                {/* Action items */}
+                <div className="p-3">
+                  <div className="grid gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        navigate('/admin/security');
+                      }}
+                      className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
+                    >
+                      <ShieldCheck size={18} />
+                      <span>{isVietnamese ? 'Bảo mật tài khoản' : 'Account security'}</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAccountMenuOpen(false);
-                      navigate('/admin/settings');
-                    }}
-                    className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
-                  >
-                    <Settings size={18} />
-                    <span>{isVietnamese ? 'Cài đặt giao diện' : 'Appearance settings'}</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        navigate('/admin/settings');
+                      }}
+                      className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
+                    >
+                      <Settings size={18} />
+                      <span>{isVietnamese ? 'Cài đặt giao diện' : 'Appearance settings'}</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={toggleTheme}
-                    className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
-                  >
-                    {resolvedTheme === 'dark' ? <SunMedium size={18} /> : <MoonStar size={18} />}
-                    <span>
-                      {resolvedTheme === 'dark'
-                        ? isVietnamese
-                          ? 'Đổi sang giao diện sáng'
-                          : 'Switch to light mode'
-                        : isVietnamese
-                          ? 'Đổi sang giao diện tối'
-                          : 'Switch to dark mode'}
-                    </span>
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={toggleTheme}
+                      className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
+                    >
+                      {resolvedTheme === 'dark' ? <SunMedium size={18} /> : <MoonStar size={18} />}
+                      <span>
+                        {resolvedTheme === 'dark'
+                          ? isVietnamese
+                            ? 'Đổi sang giao diện sáng'
+                            : 'Switch to light mode'
+                          : isVietnamese
+                            ? 'Đổi sang giao diện tối'
+                            : 'Switch to dark mode'}
+                      </span>
+                    </button>
+                  </div>
 
-                <div className="mt-3 border-t border-on-surface-variant/8 pt-3">
-                  <button
-                    type="button"
-                    onClick={() => void handleLogout()}
-                    disabled={loggingOut}
-                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-red-600 transition hover:bg-red-50 disabled:opacity-60"
-                  >
-                    <LogOut size={18} />
-                    <span>
-                      {loggingOut
-                        ? isVietnamese
-                          ? 'Đang đăng xuất...'
-                          : 'Signing out...'
-                        : isVietnamese
-                          ? 'Đăng xuất'
-                          : 'Sign out'}
-                    </span>
-                  </button>
+                  <div className="mt-2 border-t border-on-surface-variant/8 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleLogout()}
+                      disabled={loggingOut}
+                      className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                    >
+                      <LogOut size={18} />
+                      <span>
+                        {loggingOut
+                          ? isVietnamese
+                            ? 'Đang đăng xuất...'
+                            : 'Signing out...'
+                          : isVietnamese
+                            ? 'Đăng xuất'
+                            : 'Sign out'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : null}
           </div>
         </div>
 
-        <button
-          onClick={() => void handleLogout()}
-          disabled={loggingOut}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-container px-3 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition-all hover:shadow-xl disabled:opacity-60 sm:px-5"
-        >
-          <LogOut size={16} />
-          <span className="hidden sm:inline">
-            {loggingOut
-              ? isVietnamese
-                ? 'Đang đăng xuất...'
-                : 'Signing out...'
-              : session?.user.username || (isVietnamese ? 'Đăng xuất' : 'Sign out')}
-          </span>
-        </button>
       </div>
     </header>
   );

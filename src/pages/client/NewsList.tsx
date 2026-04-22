@@ -17,6 +17,7 @@ type NewsResponse = {
   items?: NewsItem[];
   total?: number;
   totalPages?: number;
+  meta?: { total: number; page: number; limit: number; totalPages: number };
 };
 
 const PAGE_SIZE = 9;
@@ -37,11 +38,10 @@ export default function NewsList() {
     const params = new URLSearchParams();
     params.set('page', String(page));
     params.set('limit', String(PAGE_SIZE));
-    params.set('status', 'published');
     if (search) params.set('search', search);
 
     void clientApi
-      .get<NewsResponse | NewsItem[]>(`/news?${params.toString()}`)
+      .get<NewsResponse | NewsItem[]>(`/news/public/list?${params.toString()}`)
       .then((data) => {
         if (Array.isArray(data)) {
           setArticles(data);
@@ -49,8 +49,8 @@ export default function NewsList() {
           setTotalPages(1);
         } else {
           setArticles(data.items ?? []);
-          setTotal(data.total ?? 0);
-          setTotalPages(data.totalPages ?? 1);
+          setTotal(data.meta?.total ?? data.total ?? 0);
+          setTotalPages(data.meta?.totalPages ?? data.totalPages ?? 1);
         }
       })
       .catch(() => setArticles([]))

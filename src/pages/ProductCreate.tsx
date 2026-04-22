@@ -23,6 +23,11 @@ type Origin = {
   originName: string;
 };
 
+type Tag = {
+  tagId: string;
+  tagName: string;
+};
+
 type ProductCreatePayload = {
   productId: string;
   productName: string;
@@ -72,6 +77,8 @@ export default function ProductCreate() {
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [origins, setOrigins] = useState<Origin[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [formState, setFormState] = useState<ProductCreatePayload>(defaultPayload);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
@@ -83,13 +90,15 @@ export default function ProductCreate() {
 
     async function loadData() {
       try {
-        const [cats, origs] = await Promise.all([
+        const [cats, origs, tagsData] = await Promise.all([
           apiClient.get<CategoryNode[]>('/categories/admin/tree'),
           apiClient.get<Origin[]>('/origins').catch(() => [] as Origin[]),
+          apiClient.get<Tag[]>('/tags').catch(() => [] as Tag[]),
         ]);
         if (!cancelled) {
           setCategories(cats);
           setOrigins(Array.isArray(origs) ? origs : []);
+          setTags(Array.isArray(tagsData) ? tagsData : []);
         }
       } catch (error) {
         if (!cancelled) {
@@ -160,6 +169,7 @@ export default function ProductCreate() {
         quantityPerBox: formState.quantityPerBox ? Number(formState.quantityPerBox) : undefined,
         barcode: formState.barcode.trim() || undefined,
         boxBarcode: formState.boxBarcode.trim() || undefined,
+        tagIds: selectedTagIds,
       });
 
       if (imageFile) {
@@ -292,6 +302,24 @@ export default function ProductCreate() {
                     <Star size={14} className="text-amber-500" />
                     {isVietnamese ? 'Đánh dấu nổi bật (hiển thị carousel trang chủ)' : 'Mark as featured (homepage carousel)'}
                   </label>
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">Nhãn sản phẩm</label>
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((tag) => {
+                    const selected = selectedTagIds.includes(tag.tagId);
+                    return (
+                      <button key={tag.tagId} type="button"
+                        onClick={() => setSelectedTagIds(prev => selected ? prev.filter(id => id !== tag.tagId) : [...prev, tag.tagId])}
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold border-2 transition ${selected ? 'border-amber-500 bg-amber-500 text-white' : 'border-gray-200 bg-white text-gray-600 hover:border-amber-300'}`}>
+                        # {tag.tagName}
+                      </button>
+                    );
+                  })}
+                  {tags.length === 0 && <p className="text-xs text-gray-400">Chưa có nhãn nào</p>}
                 </div>
               </div>
 

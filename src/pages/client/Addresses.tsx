@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   MapPin,
@@ -16,6 +16,10 @@ import {
 } from 'lucide-react';
 import { clientApi } from '../../lib/client-api';
 import { useClientSession } from '../../hooks/useClientSession';
+
+type Province = { code: number; name: string };
+type District = { code: number; name: string };
+type Ward = { code: number; name: string };
 
 type Address = {
   id: string;
@@ -67,6 +71,15 @@ export default function Addresses() {
 
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
 
+  // Cascading address data
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
+  const provincesCache = useRef<Province[] | null>(null);
+
   useEffect(() => {
     if (!session) {
       void navigate('/client/login');
@@ -92,10 +105,64 @@ export default function Addresses() {
     setTimeout(() => setToast(null), 3500);
   }
 
+  async function fetchProvinces() {
+    if (provincesCache.current) {
+      setProvinces(provincesCache.current);
+      return;
+    }
+    setLoadingProvinces(true);
+    try {
+      const res = await fetch('https://provinces.open-api.vn/api/?depth=1');
+      const data = (await res.json()) as Province[];
+      provincesCache.current = data;
+      setProvinces(data);
+    } catch {
+      setProvinces([]);
+    } finally {
+      setLoadingProvinces(false);
+    }
+  }
+
+  async function fetchDistricts(provinceCode: number) {
+    setLoadingDistricts(true);
+    setDistricts([]);
+    setWards([]);
+    try {
+      const res = await fetch(
+        `https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`,
+      );
+      const data = (await res.json()) as { name: string; districts: District[] };
+      setDistricts(data.districts ?? []);
+    } catch {
+      setDistricts([]);
+    } finally {
+      setLoadingDistricts(false);
+    }
+  }
+
+  async function fetchWards(districtCode: number) {
+    setLoadingWards(true);
+    setWards([]);
+    try {
+      const res = await fetch(
+        `https://provinces.open-api.vn/api/d/${districtCode}?depth=2`,
+      );
+      const data = (await res.json()) as { name: string; wards: Ward[] };
+      setWards(data.wards ?? []);
+    } catch {
+      setWards([]);
+    } finally {
+      setLoadingWards(false);
+    }
+  }
+
   function openCreate() {
     setEditTarget(null);
     setForm({ ...defaultForm, isDefault: addresses.length === 0 });
     setFormErrors({});
+    setDistricts([]);
+    setWards([]);
+    void fetchProvinces();
     setFormOpen(true);
   }
 
@@ -111,6 +178,9 @@ export default function Addresses() {
       isDefault: addr.isDefault,
     });
     setFormErrors({});
+    setDistricts([]);
+    setWards([]);
+    void fetchProvinces();
     setFormOpen(true);
   }
 
@@ -386,38 +456,76 @@ export default function Addresses() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-gray-500">
-                    Phường / Xã
-                  </label>
-                  <input
-                    value={form.ward}
-                    onChange={(e) => setForm((f) => ({ ...f, ward: e.target.value }))}
-                    placeholder="Phường 1"
-                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-gray-500">
-                    Quận / Huyện
-                  </label>
-                  <input
-                    value={form.district}
-                    onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))}
-                    placeholder="Quận 1"
-                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
-                  />
-                </div>
+                {/* Province */}
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-gray-500">
                     Tỉnh / Thành phố
                   </label>
-                  <input
+                  <select
                     value={form.province}
-                    onChange={(e) => setForm((f) => ({ ...f, province: e.target.value }))}
-                    placeholder="TP. HCM"
-                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
-                  />
+                    disabled={loadingProvinces}
+                    onChange={(e) => {
+                      const selectedName = e.target.value;
+                      setForm((f) => ({ ...f, province: selectedName, district: '', ward: '' }));
+                      const found = provinces.find((p) => p.name === selectedName);
+                      if (found) void fetchDistricts(found.code);
+                      else { setDistricts([]); setWards([]); }
+                    }}
+                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241] disabled:opacity-60"
+                  >
+                    <option value="">
+                      {loadingProvinces ? 'Đang tải...' : '-- Chọn tỉnh/thành phố --'}
+                    </option>
+                    {provinces.map((p) => (
+                      <option key={p.code} value={p.name}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* District */}
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500">
+                    Quận / Huyện
+                  </label>
+                  <select
+                    value={form.district}
+                    disabled={!form.province || loadingDistricts}
+                    onChange={(e) => {
+                      const selectedName = e.target.value;
+                      setForm((f) => ({ ...f, district: selectedName, ward: '' }));
+                      const found = districts.find((d) => d.name === selectedName);
+                      if (found) void fetchWards(found.code);
+                      else setWards([]);
+                    }}
+                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241] disabled:opacity-60"
+                  >
+                    <option value="">
+                      {loadingDistricts ? 'Đang tải...' : !form.province ? '-- Chọn tỉnh trước --' : '-- Chọn quận/huyện --'}
+                    </option>
+                    {districts.map((d) => (
+                      <option key={d.code} value={d.name}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Ward */}
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500">
+                    Phường / Xã
+                  </label>
+                  <select
+                    value={form.ward}
+                    disabled={!form.district || loadingWards}
+                    onChange={(e) => setForm((f) => ({ ...f, ward: e.target.value }))}
+                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241] disabled:opacity-60"
+                  >
+                    <option value="">
+                      {loadingWards ? 'Đang tải...' : !form.district ? '-- Chọn quận trước --' : '-- Chọn phường/xã --'}
+                    </option>
+                    {wards.map((w) => (
+                      <option key={w.code} value={w.name}>{w.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

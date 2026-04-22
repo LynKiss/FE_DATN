@@ -16,10 +16,13 @@ import {
   Facebook,
   Youtube,
   Heart,
+  Globe,
 } from 'lucide-react';
+import { useLanguage } from '../i18n/language-context';
 import { useClientSession } from '../hooks/useClientSession';
 import { useCart } from '../hooks/useCart';
 import { logoutClient, clientApi } from '../lib/client-api';
+import { getSocialLinks } from '../pages/Settings';
 import { lazy, Suspense } from 'react';
 
 const Chatbox = lazy(() => import('../components/client/Chatbox'));
@@ -36,6 +39,7 @@ export default function ClientLayout() {
   const { session } = useClientSession();
   const { cart } = useCart();
   const navigate = useNavigate();
+  const { language, setLanguage } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -51,6 +55,26 @@ export default function ClientLayout() {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Apply client theme from Interface settings
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('client_theme_config');
+      if (!raw) return;
+      const cfg = JSON.parse(raw) as { themeId?: string; primaryColor?: string; fontId?: string };
+      const THEMES: Record<string, { primary: string; accent: string; bg: string }> = {
+        botanical: { primary: '#1b5e20', accent: '#d9f7c9', bg: '#f4f7f1' },
+        harvest: { primary: '#92400e', accent: '#fde68a', bg: '#fffbeb' },
+        midnight: { primary: '#8bdc8b', accent: '#1d3a29', bg: '#0f1713' },
+      };
+      const theme = cfg.themeId ? THEMES[cfg.themeId] : null;
+      if (theme) {
+        document.documentElement.style.setProperty('--client-primary', theme.primary);
+        document.documentElement.style.setProperty('--client-accent', theme.accent);
+        document.documentElement.style.setProperty('--client-bg', theme.bg);
+      }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -114,6 +138,7 @@ export default function ClientLayout() {
 
   const cartCount = cart?.totalItems ?? 0;
   const displayName = session?.user.fullName || session?.user.username || '';
+  const socialLinks = getSocialLinks();
 
   const navLinks = [
     { to: '/client', label: 'Trang chủ', end: true },
@@ -278,6 +303,16 @@ export default function ClientLayout() {
               </button>
             )}
 
+            {/* Language switcher */}
+            <button
+              onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
+              className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-[#006241]/10 text-sm"
+              title={language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+            >
+              <Globe size={15} className="absolute opacity-0 w-0" aria-hidden="true" />
+              {language === 'vi' ? '🇻🇳' : '🇬🇧'}
+            </button>
+
             {/* Wishlist */}
             {session && (
               <Link
@@ -292,6 +327,7 @@ export default function ClientLayout() {
             {/* Cart */}
             <Link
               to="/client/cart"
+              data-cart-icon="true"
               className="relative flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-[#006241]/10"
               style={{ color: '#1E3932' }}
             >
@@ -454,12 +490,21 @@ export default function ClientLayout() {
                 — giá tốt — giao nhanh.
               </p>
               <div className="mt-5 flex gap-3">
-                <a href="#" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-white/30 hover:text-white">
-                  <Facebook size={16} />
-                </a>
-                <a href="#" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-white/30 hover:text-white">
-                  <Youtube size={16} />
-                </a>
+                {(socialLinks.facebook || '#') && (
+                  <a href={socialLinks.facebook || '#'} target={socialLinks.facebook ? '_blank' : undefined} rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-white/30 hover:text-white">
+                    <Facebook size={16} />
+                  </a>
+                )}
+                {(socialLinks.youtube || '#') && (
+                  <a href={socialLinks.youtube || '#'} target={socialLinks.youtube ? '_blank' : undefined} rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-white/30 hover:text-white">
+                    <Youtube size={16} />
+                  </a>
+                )}
+                {socialLinks.zalo && (
+                  <a href={socialLinks.zalo} target="_blank" rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-white/30 hover:text-white text-xs font-black">
+                    Zalo
+                  </a>
+                )}
               </div>
             </div>
 

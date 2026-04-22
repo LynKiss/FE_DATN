@@ -1,4 +1,4 @@
-import { type FC, useEffect, useState } from 'react';
+import { type FC, useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -12,6 +12,8 @@ import {
   XCircle,
   AlertCircle,
   Star,
+  Navigation,
+  RefreshCw,
 } from 'lucide-react';
 import { clientApi } from '../../lib/client-api';
 import { useClientSession } from '../../hooks/useClientSession';
@@ -92,6 +94,9 @@ export default function OrderDetail() {
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapLoading, setMapLoading] = useState(false);
+  const geocodedRef = useRef(false);
 
   useEffect(() => {
     if (!session) { void navigate('/client/login'); return; }
@@ -103,6 +108,25 @@ export default function OrderDetail() {
       .catch(() => { void navigate('/client/orders'); })
       .finally(() => setLoading(false));
   }, [session, id, navigate]);
+
+  // Geocode delivery address when order is in shipping/delivered status
+  useEffect(() => {
+    if (!order || geocodedRef.current) return;
+    if (order.status !== 'shipping' && order.status !== 'delivered') return;
+    if (!order.address) return;
+    geocodedRef.current = true;
+    setMapLoading(true);
+    const query = encodeURIComponent(`${order.address}, Việt Nam`);
+    fetch(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&accept-language=vi`)
+      .then((r) => r.json())
+      .then((data: Array<{ lat: string; lon: string }>) => {
+        if (data[0]) {
+          setMapCoords({ lat: Number(data[0].lat), lng: Number(data[0].lon) });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setMapLoading(false));
+  }, [order]);
 
   if (loading) {
     return (
@@ -148,6 +172,80 @@ export default function OrderDetail() {
 
         <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           <div className="space-y-5">
+            {/* Delivery tracking map — shown when shipping or delivered */}
+            {(order.status === 'shipping' || order.status === 'delivered') && (
+              <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+                <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                  <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-gray-400">
+                    <Navigation size={13} /> Theo dõi giao hàng
+                  </h3>
+                  {order.status === 'shipping' && (
+                    <span className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
+                      <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+                      Đang vận chuyển
+                    </span>
+                  )}
+                  {order.status === 'delivered' && (
+                    <span className="flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-600">
+                      <CheckCircle2 size={12} />
+                      Đã giao thành công
+                    </span>
+                  )}
+                </div>
+
+                {/* Map */}
+                <div className="relative mx-5 mb-5 overflow-hidden rounded-xl bg-gray-100" style={{ height: 240 }}>
+                  {mapLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                      <RefreshCw size={20} className="animate-spin text-gray-400" />
+                    </div>
+                  )}
+                  {mapCoords && !mapLoading && (
+                    <iframe
+                      title="delivery-map"
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${mapCoords.lng - 0.05},${mapCoords.lat - 0.05},${mapCoords.lng + 0.05},${mapCoords.lat + 0.05}&layer=mapnik&marker=${mapCoords.lat},${mapCoords.lng}`}
+                    />
+                  )}
+                  {!mapCoords && !mapLoading && (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
+                      <MapPin size={28} />
+                      <p className="text-xs">Không thể tải bản đồ</p>
+                    </div>
+                  )}
+                  {/* Destination pin overlay */}
+                  {mapCoords && !mapLoading && (
+                    <div className="absolute bottom-2 left-2 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#1E3932] shadow backdrop-blur">
+                      <span className="mr-1.5">📍</span>
+                      {order.address.split(',').slice(-2).join(',').trim()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Tracking info row */}
+                <div className="grid grid-cols-3 divide-x divide-black/5 border-t border-black/5">
+                  <div className="px-4 py-3 text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Đơn hàng</p>
+                    <p className="mt-0.5 text-sm font-black text-[#1E3932]">#{order.id.slice(-6).toUpperCase()}</p>
+                  </div>
+                  <div className="px-4 py-3 text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Trạng thái</p>
+                    <p className="mt-0.5 text-sm font-black" style={{ color: statusInfo.color }}>
+                      {statusInfo.label}
+                    </p>
+                  </div>
+                  <div className="px-4 py-3 text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Địa chỉ</p>
+                    <p className="mt-0.5 line-clamp-1 text-xs font-semibold text-[#1E3932]">
+                      {order.address.split(',').slice(-1)[0]?.trim() ?? order.address}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Status timeline */}
             {!isCancelled && (
               <div className="rounded-2xl bg-white p-5 shadow-sm">

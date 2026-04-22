@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { MapPin, Plus, Check, ChevronRight, ArrowLeft, Leaf, Truck } from 'lucide-react';
+
+const VIETNAM_PROVINCES = [
+  'An Giang','Bà Rịa - Vũng Tàu','Bắc Giang','Bắc Kạn','Bạc Liêu','Bắc Ninh','Bến Tre','Bình Định','Bình Dương','Bình Phước',
+  'Bình Thuận','Cà Mau','Cần Thơ','Cao Bằng','Đà Nẵng','Đắk Lắk','Đắk Nông','Điện Biên','Đồng Nai','Đồng Tháp',
+  'Gia Lai','Hà Giang','Hà Nam','Hà Nội','Hà Tĩnh','Hải Dương','Hải Phòng','Hậu Giang','Hòa Bình','Hưng Yên',
+  'Khánh Hòa','Kiên Giang','Kon Tum','Lai Châu','Lâm Đồng','Lạng Sơn','Lào Cai','Long An','Nam Định','Nghệ An',
+  'Ninh Bình','Ninh Thuận','Phú Thọ','Phú Yên','Quảng Bình','Quảng Nam','Quảng Ngãi','Quảng Ninh','Quảng Trị','Sóc Trăng',
+  'Sơn La','Tây Ninh','Thái Bình','Thái Nguyên','Thanh Hóa','Thừa Thiên Huế','Tiền Giang','TP. Hồ Chí Minh','Trà Vinh',
+  'Tuyên Quang','Vĩnh Long','Vĩnh Phúc','Yên Bái',
+];
 import { clientApi } from '../../lib/client-api';
 import { useCart } from '../../hooks/useCart';
 import { useClientSession } from '../../hooks/useClientSession';
@@ -228,7 +238,6 @@ export default function Checkout() {
                           { key: 'addressLine', label: 'Địa chỉ cụ thể *', placeholder: '123 Đường ABC', span: true },
                           { key: 'ward', label: 'Phường/Xã', placeholder: 'Phường 5' },
                           { key: 'district', label: 'Quận/Huyện', placeholder: 'Quận 12' },
-                          { key: 'province', label: 'Tỉnh/Thành phố *', placeholder: 'TP. Hồ Chí Minh' },
                           { key: 'label', label: 'Nhãn (tùy chọn)', placeholder: 'Nhà, Công ty...' },
                         ].map((field) => (
                           <div key={field.key} className={(field as { span?: boolean }).span ? 'sm:col-span-2' : ''}>
@@ -241,6 +250,19 @@ export default function Checkout() {
                             />
                           </div>
                         ))}
+                        <div>
+                          <label className="mb-1 block text-xs font-semibold text-gray-500">Tỉnh/Thành phố *</label>
+                          <select
+                            value={form.province}
+                            onChange={(e) => setForm((f) => ({ ...f, province: e.target.value }))}
+                            className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
+                          >
+                            <option value="">-- Chọn tỉnh/thành phố --</option>
+                            {VIETNAM_PROVINCES.map((p) => (
+                              <option key={p} value={p}>{p}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                       <div className="mt-4 flex gap-2">
                         <button

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, type FormEvent } from 'react';
+import { useEffect, useState, useCallback, type FormEvent, type MouseEvent } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -15,6 +15,7 @@ import {
 import { clientApi } from '../../lib/client-api';
 import { useCart } from '../../hooks/useCart';
 import { useClientSession } from '../../hooks/useClientSession';
+import { triggerCartFlyAnimation } from '../../hooks/useCartAnimation';
 
 type Product = {
   productId: string;
@@ -34,6 +35,8 @@ type Product = {
 
 type Category = { categoryId: string; categoryName: string; categorySlug: string };
 type Subcategory = { subcategoryId: string; subcategoryName: string; categoryId: string };
+type Tag = { tagId: string; tagName: string };
+type Origin = { originId: string; originName: string };
 
 type ProductsResponse = {
   items: Product[];
@@ -92,6 +95,8 @@ export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [origins, setOrigins] = useState<Origin[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -99,10 +104,13 @@ export default function Products() {
   const [addingId, setAddingId] = useState<string | null>(null);
   const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
   const [togglingWishlistId, setTogglingWishlistId] = useState<string | null>(null);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(true);
 
   const search = searchParams.get('search') ?? '';
   const categoryId = searchParams.get('categoryId') ?? '';
   const subcategoryId = searchParams.get('subcategoryId') ?? '';
+  const tagId = searchParams.get('tagId') ?? '';
+  const originId = searchParams.get('originId') ?? '';
   const sort = searchParams.get('sort') ?? '';
   const priceMin = searchParams.get('priceMin') ?? '';
   const priceMax = searchParams.get('priceMax') ?? '';
@@ -145,6 +153,8 @@ export default function Products() {
       if (search) params.set('search', search);
       if (categoryId) params.set('categoryId', categoryId);
       if (subcategoryId) params.set('subcategoryId', subcategoryId);
+      if (tagId) params.set('tagId', tagId);
+      if (originId) params.set('originId', originId);
       if (priceMin) params.set('priceMin', priceMin);
       if (priceMax) params.set('priceMax', priceMax);
       if (sort === 'price_asc') { params.set('sortBy', 'product_price'); params.set('sortOrder', 'ASC'); }
@@ -161,7 +171,7 @@ export default function Products() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, categoryId, subcategoryId, priceMin, priceMax, sort]);
+  }, [page, search, categoryId, subcategoryId, tagId, originId, priceMin, priceMax, sort]);
 
   useEffect(() => { void fetchProducts(); }, [fetchProducts]);
 
@@ -190,7 +200,8 @@ export default function Products() {
     updateMultiple({ priceMin: localPriceMin.trim(), priceMax: localPriceMax.trim() });
   };
 
-  const handleAddToCart = async (productId: string) => {
+  const handleAddToCart = async (productId: string, e: MouseEvent<HTMLButtonElement>) => {
+    triggerCartFlyAnimation(e.currentTarget);
     if (!session) { void navigate('/client/login'); return; }
     setAddingId(productId);
     try { await addItem(productId, 1); } finally { setAddingId(null); }
@@ -302,7 +313,7 @@ export default function Products() {
 
         <div className="flex gap-6">
           {/* Sidebar */}
-          <aside className={`${filtersOpen ? 'fixed inset-0 z-50 overflow-y-auto bg-white' : 'hidden'} w-full lg:relative lg:block lg:w-64 lg:shrink-0`}>
+          <aside className={`${filtersOpen ? 'fixed inset-0 z-50 overflow-y-auto bg-white' : 'hidden'} w-full lg:relative lg:block lg:w-56 lg:shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto lg:[&::-webkit-scrollbar]:hidden`}>
             {filtersOpen && (
               <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-5">
                 <h3 className="font-bold text-[#1E3932]">Bộ lọc</h3>
@@ -322,20 +333,32 @@ export default function Products() {
 
               {/* Category */}
               <div>
-                <p className="mb-3 text-[11px] font-black uppercase tracking-wider text-gray-400">Danh mục</p>
-                <div className="space-y-1">
-                  <button onClick={() => { updateMultiple({ categoryId: '', subcategoryId: '' }); setFiltersOpen(false); }}
-                    className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${!categoryId ? 'bg-[#006241] text-white' : 'text-[#1E3932] hover:bg-[#006241]/8'}`}>
-                    Tất cả sản phẩm
-                  </button>
-                  {categories.map((cat) => (
-                    <button key={cat.categoryId}
-                      onClick={() => { updateMultiple({ categoryId: cat.categoryId, subcategoryId: '' }); setFiltersOpen(false); }}
-                      className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${categoryId === cat.categoryId ? 'bg-[#006241] text-white' : 'text-[#1E3932] hover:bg-[#006241]/8'}`}>
-                      {cat.categoryName}
+                <button
+                  type="button"
+                  onClick={() => setCategoriesExpanded((v) => !v)}
+                  className="mb-3 flex w-full items-center justify-between"
+                >
+                  <p className="text-[11px] font-black uppercase tracking-wider text-gray-400">Danh mục</p>
+                  <ChevronRight
+                    size={14}
+                    className={`text-gray-400 transition-transform ${categoriesExpanded ? 'rotate-90' : ''}`}
+                  />
+                </button>
+                {categoriesExpanded && (
+                  <div className="space-y-1">
+                    <button onClick={() => { updateMultiple({ categoryId: '', subcategoryId: '' }); setFiltersOpen(false); }}
+                      className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${!categoryId ? 'bg-[#006241] text-white' : 'text-[#1E3932] hover:bg-[#006241]/8'}`}>
+                      Tất cả sản phẩm
                     </button>
-                  ))}
-                </div>
+                    {categories.map((cat) => (
+                      <button key={cat.categoryId}
+                        onClick={() => { updateMultiple({ categoryId: cat.categoryId, subcategoryId: '' }); setFiltersOpen(false); }}
+                        className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${categoryId === cat.categoryId ? 'bg-[#006241] text-white' : 'text-[#1E3932] hover:bg-[#006241]/8'}`}>
+                        {cat.categoryName}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Subcategory */}
@@ -399,11 +422,20 @@ export default function Products() {
               </div>
             </div>
 
+            {/* Info bar */}
+            {!loading && total > 0 && (
+              <p className="mb-3 text-xs text-gray-400">
+                Hiển thị <span className="font-semibold text-gray-600">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)}</span> / <span className="font-semibold text-gray-600">{total}</span> sản phẩm
+              </p>
+            )}
+
+            {/* Scrollable grid area */}
+            <div className="overflow-y-auto max-h-[calc(100vh-280px)] [&::-webkit-scrollbar]:hidden">
             {loading ? (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="overflow-hidden rounded-2xl bg-white shadow-sm">
-                    <div className="h-56 animate-pulse bg-gray-100" />
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="overflow-hidden rounded-2xl border border-[#006241]/10 bg-white shadow-sm">
+                    <div className="h-44 animate-pulse bg-gray-100" />
                     <div className="space-y-2 p-4">
                       <div className="h-3 w-1/3 animate-pulse rounded-full bg-gray-100" />
                       <div className="h-4 w-3/4 animate-pulse rounded-full bg-gray-100" />
@@ -426,7 +458,7 @@ export default function Products() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 {products.map((product) => {
                   const base = Number(product.basePrice);
                   const effective = Number(product.effectivePrice);
@@ -439,7 +471,7 @@ export default function Products() {
 
                   return (
                     <div key={product.productId}
-                      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                      className="group flex flex-col overflow-hidden rounded-2xl border border-[#006241]/12 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#006241]/30 hover:shadow-lg">
                       {/* Image area */}
                       <div className="relative overflow-hidden bg-gray-50" style={{ aspectRatio: '4/3' }}>
                         <Link to={`/client/products/${product.productId}`}>
@@ -557,7 +589,7 @@ export default function Products() {
                             </Link>
                             <button
                               disabled={addingId === product.productId || outOfStock}
-                              onClick={() => void handleAddToCart(product.productId)}
+                              onClick={(e) => void handleAddToCart(product.productId, e)}
                               className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold text-white transition disabled:opacity-50 active:scale-95"
                               style={{ background: outOfStock ? '#9ca3af' : '#00754A' }}
                             >
@@ -578,15 +610,9 @@ export default function Products() {
                 })}
               </div>
             )}
+            </div>{/* end scrollable grid area */}
 
             {renderPagination()}
-
-            {/* Result count */}
-            {!loading && total > 0 && (
-              <p className="mt-4 text-center text-xs text-gray-400">
-                Hiển thị {Math.min((page - 1) * PAGE_SIZE + 1, total)}–{Math.min(page * PAGE_SIZE, total)} / {total} sản phẩm
-              </p>
-            )}
           </div>
         </div>
       </div>

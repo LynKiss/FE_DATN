@@ -30,6 +30,11 @@ const GROUP_LABELS: Record<string, { vi: string; en: string }> = {
   reports: { vi: 'Báo cáo', en: 'Reports' },
   users: { vi: 'Người dùng', en: 'Users' },
   general: { vi: 'Chung', en: 'General' },
+  inventory: { vi: 'Kho hàng', en: 'Inventory' },
+  settings: { vi: 'Cài đặt', en: 'Settings' },
+  interface: { vi: 'Giao diện', en: 'Interface' },
+  discounts: { vi: 'Khuyến mãi', en: 'Discounts' },
+  delivery: { vi: 'Vận chuyển', en: 'Delivery' },
 };
 
 function getGroupLabel(key: string, isVietnamese: boolean): string {

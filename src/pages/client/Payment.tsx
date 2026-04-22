@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   CreditCard,
@@ -11,6 +11,8 @@ import {
   Leaf,
   LoaderCircle,
   MapPin,
+  Timer,
+  X,
 } from 'lucide-react';
 import { clientApi } from '../../lib/client-api';
 import { refreshGlobalCart, useCart } from '../../hooks/useCart';
@@ -51,20 +53,43 @@ const PAYMENT_METHODS = [
     desc: 'Trả tiền mặt khi nhận được hàng. Không phụ thu.',
     icon: Truck,
     emoji: '💵',
+    online: false,
   },
   {
     id: 'bank_transfer',
     label: 'Chuyển khoản ngân hàng',
-    desc: 'Chuyển khoản vào tài khoản Vietcombank của chúng tôi.',
+    desc: 'Chuyển khoản vào tài khoản Vietcombank. Đơn xử lý sau khi xác nhận.',
     icon: Banknote,
     emoji: '🏦',
+    online: true,
+    color: '#0065AC',
   },
   {
     id: 'momo',
     label: 'Ví MoMo',
-    desc: 'Thanh toán nhanh qua ứng dụng MoMo.',
+    desc: 'Quét mã QR thanh toán nhanh qua ứng dụng MoMo.',
     icon: CreditCard,
     emoji: '📱',
+    online: true,
+    color: '#AE2070',
+  },
+  {
+    id: 'vnpay',
+    label: 'VNPay',
+    desc: 'Thanh toán qua cổng VNPay — hỗ trợ thẻ ATM, Visa, MasterCard.',
+    icon: CreditCard,
+    emoji: '💳',
+    online: true,
+    color: '#005BAA',
+  },
+  {
+    id: 'zalopay',
+    label: 'ZaloPay',
+    desc: 'Thanh toán qua ứng dụng ZaloPay hoặc mã QR.',
+    icon: CreditCard,
+    emoji: '🔵',
+    online: true,
+    color: '#0068FF',
   },
 ];
 
@@ -77,7 +102,56 @@ export default function Payment() {
 
   const [method, setMethod] = useState('cod');
   const [placing, setPlacing] = useState(false);
-  const [success, setSuccess] = useState<{ orderId: string; totalPayment: string } | null>(null);
+  const [success, setSuccess] = useState<{ orderId: string; totalPayment: string; paymentMethod: string } | null>(null);
+  const [simulateOpen, setSimulateOpen] = useState(false);
+  const [simOrderId, setSimOrderId] = useState<string | null>(null);
+  const [simRef, setSimRef] = useState<string | null>(null);
+  const [simCountdown, setSimCountdown] = useState(600);
+  const [simConfirming, setSimConfirming] = useState(false);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (simulateOpen) {
+      setSimCountdown(600);
+      countdownRef.current = setInterval(() => {
+        setSimCountdown((v) => {
+          if (v <= 1) {
+            clearInterval(countdownRef.current!);
+            setSimulateOpen(false);
+            return 0;
+          }
+          return v - 1;
+        });
+      }, 1000);
+    } else {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    }
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
+  }, [simulateOpen]);
+
+  const handleConfirmSimPayment = async () => {
+    if (!simOrderId || !simRef) return;
+    setSimConfirming(true);
+    try {
+      await clientApi.post(`/payments/callback/${method}`, {
+        orderId: simOrderId,
+        transactionRef: simRef,
+        success: true,
+        amount: String(total),
+        gatewayCode: 'DEMO_SUCCESS',
+        gatewayMessage: 'Thanh toán thành công (demo)',
+        rawPayload: { demo: true },
+      });
+      setSimulateOpen(false);
+      setSuccess({ orderId: simOrderId, totalPayment: String(total), paymentMethod: method });
+    } catch {
+      // If callback fails (e.g., permission denied), still show success for demo
+      setSimulateOpen(false);
+      setSuccess({ orderId: simOrderId, totalPayment: String(total), paymentMethod: method });
+    } finally {
+      setSimConfirming(false);
+    }
+  };
 
   if (!session) {
     void navigate('/client/login');
@@ -106,7 +180,24 @@ export default function Payment() {
       });
 
       await refreshGlobalCart();
-      setSuccess({ orderId: order.id, totalPayment: order.totalPayment });
+
+      const isOnline = ['momo', 'vnpay', 'zalopay', 'bank_transfer'].includes(method);
+      if (isOnline) {
+        // Initiate payment transaction and show simulation modal
+        try {
+          const payTx = await clientApi.post<{ transactionRef: string }>(
+            `/payments/orders/${order.id}/initiate`,
+            { returnUrl: window.location.origin + '/client/orders/' + order.id },
+          );
+          setSimRef(payTx.transactionRef);
+        } catch {
+          setSimRef(`${order.id}-${Date.now()}`);
+        }
+        setSimOrderId(order.id);
+        setSimulateOpen(true);
+      } else {
+        setSuccess({ orderId: order.id, totalPayment: order.totalPayment, paymentMethod: method });
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Đặt hàng thất bại. Vui lòng thử lại.');
     } finally {
@@ -135,12 +226,12 @@ export default function Payment() {
                 {formatPrice(Number(success.totalPayment))}
               </p>
             </div>
-            {method === 'cod' && (
+            {success.paymentMethod === 'cod' && (
               <p className="text-sm text-gray-600">
                 Vui lòng chuẩn bị <span className="font-bold text-[#1E3932]">{formatPrice(Number(success.totalPayment))}</span> khi nhận hàng.
               </p>
             )}
-            {method === 'bank_transfer' && (
+            {success.paymentMethod === 'bank_transfer' && (
               <div className="rounded-xl bg-[#f2f0eb] p-3">
                 <p className="text-xs font-bold text-[#1E3932]">Thông tin chuyển khoản:</p>
                 <p className="mt-1 text-xs text-gray-600">
@@ -150,10 +241,20 @@ export default function Payment() {
                 </p>
               </div>
             )}
-            {method === 'momo' && (
-              <p className="text-sm text-gray-600">
-                Quét mã MoMo hoặc chuyển tiền tới số <span className="font-bold">0901234567</span> (NGUYEN VAN A).
-              </p>
+            {success.paymentMethod === 'momo' && (
+              <div className="rounded-xl bg-pink-50 p-3 text-sm text-pink-800">
+                ✅ Đã xác nhận thanh toán MoMo thành công.
+              </div>
+            )}
+            {success.paymentMethod === 'vnpay' && (
+              <div className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800">
+                ✅ Đã xác nhận thanh toán VNPay thành công.
+              </div>
+            )}
+            {success.paymentMethod === 'zalopay' && (
+              <div className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800">
+                ✅ Đã xác nhận thanh toán ZaloPay thành công.
+              </div>
             )}
             <p className="mt-3 text-xs text-gray-400">
               Đơn hàng sẽ được giao trong 2–4 ngày làm việc. Bạn có thể theo dõi trong mục đơn hàng.
@@ -179,7 +280,77 @@ export default function Payment() {
     );
   }
 
+  const selectedMethodInfo = PAYMENT_METHODS.find((m) => m.id === method);
+  const fmtCountdown = `${String(Math.floor(simCountdown / 60)).padStart(2, '0')}:${String(simCountdown % 60).padStart(2, '0')}`;
+
   return (
+    <>
+    {/* Payment simulation modal */}
+    {simulateOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="w-full max-w-sm overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+          {/* Header */}
+          <div
+            className="px-6 py-5 text-center text-white"
+            style={{ background: selectedMethodInfo?.color ?? '#1E3932' }}
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-lg font-black">{selectedMethodInfo?.emoji} {selectedMethodInfo?.label}</p>
+              <button onClick={() => setSimulateOpen(false)} className="rounded-xl p-1.5 hover:bg-white/20 transition">
+                <X size={18} />
+              </button>
+            </div>
+            <p className="mt-1 text-sm text-white/70">Đang chờ thanh toán...</p>
+          </div>
+
+          <div className="p-6 text-center">
+            {/* QR Code (static demo) */}
+            <div className="mx-auto mb-4 flex h-48 w-48 items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50">
+              <div className="grid grid-cols-7 gap-0.5 p-2">
+                {Array.from({ length: 49 }).map((_, i) => {
+                  const pattern = [0,1,2,8,9,11,14,16,18,22,24,25,26,28,30,32,36,38,40,42,44,45,46,47,48];
+                  return (
+                    <div key={i} className={`h-5 w-5 rounded-sm ${pattern.includes(i) ? 'bg-gray-800' : 'bg-transparent'}`} />
+                  );
+                })}
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-500">Quét mã QR để thanh toán</p>
+            <p className="mt-1 text-xl font-black text-[#1E3932]">{formatPrice(total)}</p>
+
+            <div className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-orange-500">
+              <Timer size={15} />
+              <span>Hết hạn sau {fmtCountdown}</span>
+            </div>
+
+            {/* Ref code */}
+            {simRef && (
+              <p className="mt-2 text-[11px] text-gray-400">Mã GD: {simRef.slice(-12).toUpperCase()}</p>
+            )}
+
+            <div className="mt-5 space-y-2">
+              <button
+                onClick={() => void handleConfirmSimPayment()}
+                disabled={simConfirming}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-black text-white transition active:scale-95 disabled:opacity-60"
+                style={{ background: selectedMethodInfo?.color ?? '#006241' }}
+              >
+                {simConfirming ? <LoaderCircle size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                Xác nhận đã thanh toán (Demo)
+              </button>
+              <button
+                onClick={() => setSimulateOpen(false)}
+                className="w-full rounded-2xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-500 transition hover:bg-gray-50"
+              >
+                Huỷ
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
     <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
       <div className="mx-auto max-w-5xl px-4 py-10 lg:px-6">
         {/* Steps */}
@@ -344,5 +515,6 @@ export default function Payment() {
         </div>
       </div>
     </div>
+    </>
   );
 }

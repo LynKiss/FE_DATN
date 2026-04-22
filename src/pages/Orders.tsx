@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Eye, LoaderCircle, Search, ShoppingCart } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Eye, LoaderCircle, RefreshCw, Search, ShoppingCart } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { apiClient } from '../lib/api';
 import { useLanguage } from '../i18n/language-context';
@@ -116,6 +116,9 @@ export default function Orders() {
   const [limit, setLimit] = useState(Number(searchParams.get('limit') ?? '10'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -172,6 +175,7 @@ export default function Orders() {
         if (!cancelled) {
           setOrders(data.items);
           setOrdersMeta(data.meta);
+          setLastUpdated(new Date());
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -194,7 +198,17 @@ export default function Orders() {
     return () => {
       cancelled = true;
     };
-  }, [search, status, isVietnamese, page, limit]);
+  }, [search, status, isVietnamese, page, limit, reloadKey]);
+
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setReloadKey((k) => k + 1);
+    }, 60_000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setPage(1);
@@ -271,7 +285,7 @@ export default function Orders() {
       </div>
 
       <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
-        <div className="grid gap-3 lg:grid-cols-[1.3fr_240px_140px]">
+        <div className="grid gap-3 lg:grid-cols-[1.3fr_240px_140px_auto]">
           <label className="relative">
             <Search
               size={16}
@@ -316,8 +330,47 @@ export default function Orders() {
               </option>
             ))}
           </select>
+
+          <div className="flex flex-col items-end justify-center gap-1">
+            <button
+              type="button"
+              onClick={() => setReloadKey((k) => k + 1)}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary disabled:opacity-50"
+            >
+              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+              {isVietnamese ? 'Làm mới' : 'Refresh'}
+            </button>
+            {lastUpdated && (
+              <p className="text-[10px] text-on-surface-variant/50">
+                {isVietnamese ? 'Cập nhật lần cuối: ' : 'Last updated: '}
+                {lastUpdated.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </p>
+            )}
+          </div>
         </div>
       </section>
+
+      {/* Stats bar */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { status: 'pending', label: isVietnamese ? 'Chờ xử lý' : 'Pending', color: 'amber' },
+          { status: 'confirmed', label: isVietnamese ? 'Đã xác nhận' : 'Confirmed', color: 'sky' },
+          { status: 'processing', label: isVietnamese ? 'Đang xử lý' : 'Processing', color: 'slate' },
+          { status: 'shipping', label: isVietnamese ? 'Đang giao' : 'Shipping', color: 'blue' },
+        ].map(({ status: s, label }) => {
+          const count = orders.filter((o) => o.status === s).length;
+          return (
+            <div
+              key={s}
+              className="rounded-2xl border border-on-surface/8 bg-white p-4 text-center shadow-sm"
+            >
+              <p className="text-2xl font-black text-primary">{count}</p>
+              <p className="mt-1 text-xs text-on-surface-variant">{label}</p>
+            </div>
+          );
+        })}
+      </div>
 
       {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
