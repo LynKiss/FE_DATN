@@ -1,0 +1,438 @@
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import {
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  MessageSquare,
+  RefreshCw,
+  Search,
+  Trash2,
+} from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import Pagination from '../components/shared/Pagination';
+import { useToast } from '../hooks/useToast';
+import { useLanguage } from '../i18n/language-context';
+import { apiClient } from '../lib/api';
+
+type CommentStatus = 'visible' | 'hidden' | 'deleted';
+
+type CommentItem = {
+  id: string;
+  content: string;
+  status: CommentStatus;
+  likeCount: number;
+  dislikeCount: number;
+  createdAt: string;
+  author: { username: string };
+  article: { newsId: string; title: string };
+};
+
+type CommentsResponse = {
+  meta: { page: number; limit: number; total: number; totalPages: number };
+  items: CommentItem[];
+};
+
+type CommentStats = {
+  total: number;
+  totalVisible: number;
+  totalHidden: number;
+  totalDeleted: number;
+  totalReactions: number;
+  commentsToday: number;
+};
+
+type FilterStatus = 'all' | CommentStatus;
+
+function StatusBadge({ status }: { status: CommentStatus }) {
+  const cfg: Record<CommentStatus, { label: string; cls: string }> = {
+    visible: { label: 'Hien thi', cls: 'bg-emerald-100 text-emerald-700' },
+    hidden: { label: 'An', cls: 'bg-amber-100 text-amber-700' },
+    deleted: { label: 'Da xoa', cls: 'bg-red-100 text-red-700' },
+  };
+  const { label, cls } = cfg[status];
+
+  return (
+    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
+export default function NewsComments() {
+  const { language } = useLanguage();
+  const isVietnamese = language === 'vi';
+  const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [meta, setMeta] = useState({
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 1,
+  });
+  const [stats, setStats] = useState<CommentStats | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>(
+    (searchParams.get('status') as FilterStatus) ?? 'all',
+  );
+  const [page, setPage] = useState(Number(searchParams.get('page') ?? '1'));
+
+  const LIMIT = 12;
+
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(isVietnamese ? 'vi-VN' : 'en-US', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      }),
+    [isVietnamese],
+  );
+
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (search.trim()) {
+      next.set('search', search.trim());
+    }
+    if (filterStatus !== 'all') {
+      next.set('status', filterStatus);
+    }
+    if (page > 1) {
+      next.set('page', String(page));
+    }
+    setSearchParams(next, { replace: true });
+  }, [filterStatus, page, search, setSearchParams]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterStatus, search]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatsLoading(true);
+
+    void apiClient
+      .get<CommentStats>('/news/admin/comments/stats')
+      .then((data) => {
+        if (!cancelled) {
+          setStats(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) {
+          setStatsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    const query = new URLSearchParams({
+      page: String(page),
+      limit: String(LIMIT),
+    });
+    if (filterStatus !== 'all') {
+      query.set('status', filterStatus);
+    }
+    if (search.trim()) {
+      query.set('search', search.trim());
+    }
+
+    void apiClient
+      .get<CommentsResponse>(`/news/admin/comments?${query.toString()}`)
+      .then((data) => {
+        if (!cancelled) {
+          setComments(data.items);
+          setMeta(data.meta);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Khong tai duoc danh sach binh luan bai viet',
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filterStatus, page, reloadKey, search]);
+
+  async function handleToggleVisibility(id: string) {
+    try {
+      await apiClient.patch(`/news/admin/comments/${id}/hide`);
+      showToast({ tone: 'success', title: 'Da cap nhat trang thai binh luan' });
+      setReloadKey((current) => current + 1);
+    } catch (err) {
+      showToast({
+        tone: 'error',
+        title: 'Cap nhat that bai',
+        description: err instanceof Error ? err.message : '',
+      });
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!window.confirm('Xoa binh luan nay?')) {
+      return;
+    }
+
+    try {
+      await apiClient.delete(`/news/admin/comments/${id}`);
+      showToast({ tone: 'success', title: 'Da xoa binh luan' });
+      setReloadKey((current) => current + 1);
+    } catch (err) {
+      showToast({
+        tone: 'error',
+        title: 'Xoa that bai',
+        description: err instanceof Error ? err.message : '',
+      });
+    }
+  }
+
+  return (
+    <div className="space-y-6 pb-12">
+      <div>
+        <h1 className="text-4xl font-black tracking-tight text-primary">
+          Quan ly binh luan bai viet
+        </h1>
+        <p className="mt-1 text-sm text-on-surface-variant">
+          Kiem duyet binh luan tu doc gia, an hoac xoa noi dung khong phu hop.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {statsLoading || !stats ? (
+          Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="rounded-2xl border border-on-surface/8 bg-white p-4 text-center shadow-sm"
+            >
+              <div className="mx-auto h-7 w-12 animate-pulse rounded-lg bg-surface" />
+              <div className="mx-auto mt-2 h-3 w-16 animate-pulse rounded bg-surface" />
+            </div>
+          ))
+        ) : (
+          <>
+            <StatCard label="Tong binh luan" value={stats.total} />
+            <StatCard label="Hien thi" value={stats.totalVisible} accent="emerald" />
+            <StatCard label="Dang an" value={stats.totalHidden} accent="amber" />
+            <StatCard label="Da xoa" value={stats.totalDeleted} accent="red" />
+            <StatCard label="Tuong tac" value={stats.totalReactions} />
+            <StatCard label="Hom nay" value={stats.commentsToday} />
+          </>
+        )}
+      </div>
+
+      <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
+        <div className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
+          <label className="relative">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50"
+            />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Tim trong noi dung, tac gia, bai viet..."
+              className="w-full rounded-2xl border border-on-surface/10 bg-surface py-3 pl-11 pr-4 text-sm outline-none focus:border-primary/40"
+            />
+          </label>
+
+          <select
+            value={filterStatus}
+            onChange={(event) => setFilterStatus(event.target.value as FilterStatus)}
+            className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
+          >
+            <option value="all">Tat ca</option>
+            <option value="visible">Hien thi</option>
+            <option value="hidden">An</option>
+            <option value="deleted">Da xoa</option>
+          </select>
+
+          <button
+            type="button"
+            onClick={() => setReloadKey((current) => current + 1)}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary disabled:opacity-50"
+          >
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+            Lam moi
+          </button>
+        </div>
+      </section>
+
+      {error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+          {error}
+        </div>
+      ) : null}
+
+      <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left">
+            <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
+              <tr>
+                <th className="px-4 py-4">Bai viet</th>
+                <th className="px-4 py-4">Tac gia</th>
+                <th className="px-4 py-4">Noi dung</th>
+                <th className="px-4 py-4 text-center">Tuong tac</th>
+                <th className="px-4 py-4">Trang thai</th>
+                <th className="px-4 py-4">Ngay</th>
+                <th className="px-4 py-4 text-center">Hanh dong</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-on-surface/6 text-sm">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-16 text-center text-on-surface-variant">
+                    <span className="inline-flex items-center gap-2">
+                      <LoaderCircle size={16} className="animate-spin" />
+                      Dang tai binh luan...
+                    </span>
+                  </td>
+                </tr>
+              ) : comments.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-16 text-center text-on-surface-variant">
+                    <MessageSquare size={28} className="mx-auto mb-3 text-primary/30" />
+                    Khong co binh luan phu hop
+                  </td>
+                </tr>
+              ) : (
+                comments.map((comment) => (
+                  <tr key={comment.id} className="hover:bg-surface/40">
+                    <td className="max-w-[220px] px-4 py-4">
+                      <p className="line-clamp-2 font-semibold text-on-surface">
+                        {comment.article.title || '—'}
+                      </p>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-4 text-on-surface-variant">
+                      {comment.author.username || '—'}
+                    </td>
+                    <td className="max-w-[280px] px-4 py-4">
+                      <p className="line-clamp-2 text-on-surface">{comment.content}</p>
+                    </td>
+                    <td className="px-4 py-4 text-center text-on-surface-variant">
+                      <span className="text-emerald-600">{comment.likeCount}</span>
+                      {' / '}
+                      <span className="text-red-500">{comment.dislikeCount}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <StatusBadge status={comment.status} />
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-4 text-xs text-on-surface-variant">
+                      {dateFormatter.format(new Date(comment.createdAt))}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center justify-center gap-1">
+                        {comment.status === 'visible' ? (
+                          <button
+                            type="button"
+                            title="An binh luan"
+                            onClick={() => void handleToggleVisibility(comment.id)}
+                            className="rounded-xl p-2 text-amber-600 transition hover:bg-amber-50"
+                          >
+                            <EyeOff size={16} />
+                          </button>
+                        ) : comment.status === 'hidden' ? (
+                          <button
+                            type="button"
+                            title="Hien thi binh luan"
+                            onClick={() => void handleToggleVisibility(comment.id)}
+                            className="rounded-xl p-2 text-emerald-600 transition hover:bg-emerald-50"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        ) : null}
+
+                        {comment.status !== 'deleted' && (
+                          <button
+                            type="button"
+                            title="Xoa binh luan"
+                            onClick={() => void handleDelete(comment.id)}
+                            className="rounded-xl p-2 text-red-500 transition hover:bg-red-50"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="px-5 pb-5">
+          <Pagination
+            page={meta.page}
+            limit={meta.limit}
+            total={meta.total}
+            totalPages={meta.totalPages}
+            isVietnamese={isVietnamese}
+            onPageChange={setPage}
+            onLimitChange={(next) => {
+              setPage(1);
+              void next;
+            }}
+            pageSizeOptions={[12]}
+          />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  accent,
+  icon,
+}: {
+  label: string;
+  value: string | number;
+  accent?: 'emerald' | 'amber' | 'red';
+  icon?: ReactNode;
+}) {
+  const colorCls =
+    accent === 'emerald'
+      ? 'text-emerald-600'
+      : accent === 'amber'
+        ? 'text-amber-600'
+        : accent === 'red'
+          ? 'text-red-600'
+          : 'text-primary';
+
+  return (
+    <div className="rounded-2xl border border-on-surface/8 bg-white p-4 text-center shadow-sm">
+      <p className={`flex items-center justify-center gap-1 text-2xl font-black ${colorCls}`}>
+        {icon}
+        {value}
+      </p>
+      <p className="mt-1 text-xs text-on-surface-variant">{label}</p>
+    </div>
+  );
+}

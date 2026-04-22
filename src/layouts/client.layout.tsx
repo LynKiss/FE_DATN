@@ -17,6 +17,7 @@ import {
   Youtube,
   Heart,
   Globe,
+  Bell,
 } from 'lucide-react';
 import { useLanguage } from '../i18n/language-context';
 import { useClientSession } from '../hooks/useClientSession';
@@ -35,6 +36,14 @@ type SearchProduct = {
   primaryImageUrl: string | null;
 };
 
+type Notification = {
+  id: string | null;
+  title: string;
+  message: string;
+  metadata: { orderId?: string; type?: string } | null;
+  createdAt: string | null;
+};
+
 export default function ClientLayout() {
   const { session } = useClientSession();
   const { cart } = useCart();
@@ -47,7 +56,10 @@ export default function ClientLayout() {
   const [suggestions, setSuggestions] = useState<SearchProduct[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
@@ -78,9 +90,17 @@ export default function ClientLayout() {
   }, []);
 
   useEffect(() => {
+    if (!session) return;
+    void clientApi.get<Notification[]>('/notifications/me').then(setNotifications).catch(() => {});
+  }, [session]);
+
+  useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
       }
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
@@ -312,6 +332,54 @@ export default function ClientLayout() {
               <Globe size={15} className="absolute opacity-0 w-0" aria-hidden="true" />
               {language === 'vi' ? '🇻🇳' : '🇬🇧'}
             </button>
+
+            {/* Notification bell */}
+            {session && (
+              <div ref={notifRef} className="relative">
+                <button
+                  onClick={() => setNotifOpen(!notifOpen)}
+                  className="relative flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-[#006241]/10"
+                  style={{ color: '#1E3932' }}
+                >
+                  <Bell size={18} />
+                  {notifications.length > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">
+                      {notifications.length > 9 ? '9+' : notifications.length}
+                    </span>
+                  )}
+                </button>
+                {notifOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-2xl border border-black/8 bg-white shadow-xl">
+                    <div className="border-b border-black/5 px-4 py-3">
+                      <p className="text-sm font-bold text-[#1E3932]">Thông báo</p>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <Bell size={28} className="mb-2 text-gray-200" />
+                          <p className="text-xs text-gray-400">Chưa có thông báo</p>
+                        </div>
+                      ) : (
+                        notifications.slice(0, 20).map((n, idx) => (
+                          <div
+                            key={n.id ?? idx}
+                            className="border-b border-black/5 px-4 py-3 last:border-0"
+                          >
+                            <p className="text-xs font-semibold text-[#1E3932]">{n.title}</p>
+                            <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">{n.message}</p>
+                            {n.createdAt && (
+                              <p className="mt-1 text-[10px] text-gray-400">
+                                {new Date(n.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Wishlist */}
             {session && (

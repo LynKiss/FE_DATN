@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -341,7 +341,7 @@ export default function Home() {
     try { await addItem(productId, 1); } finally { setAddingId(null); }
   };
 
-  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+  const handleNewsletterSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!newsletterEmail.trim()) return;
     setNewsletterStatus('loading');

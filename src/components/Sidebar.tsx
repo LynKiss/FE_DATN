@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Layers,
   Mail,
+  MessageSquare,
   MonitorSmartphone,
   Newspaper,
   Package,
@@ -141,6 +142,12 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'Bài viết' : 'Articles',
       icon: Newspaper,
       path: '/admin/news',
+    },
+    {
+      id: 'news-comments',
+      label: isVietnamese ? 'Bình luận' : 'Comments',
+      icon: MessageSquare,
+      path: '/admin/news-comments',
     },
     {
       id: 'reviews',
