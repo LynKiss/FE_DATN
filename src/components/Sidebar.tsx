@@ -8,6 +8,7 @@ import {
   KeyRound,
   LayoutDashboard,
   Layers,
+  Mail,
   MonitorSmartphone,
   Newspaper,
   Package,
@@ -152,6 +153,12 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'Thanh toán' : 'Payments',
       icon: CreditCard,
       path: '/admin/payments',
+    },
+    {
+      id: 'newsletter',
+      label: isVietnamese ? 'Newsletter' : 'Newsletter',
+      icon: Mail,
+      path: '/admin/newsletter',
     },
     {
       id: 'reports',

@@ -183,12 +183,18 @@ export default function Payment() {
 
       const isOnline = ['momo', 'vnpay', 'zalopay', 'bank_transfer'].includes(method);
       if (isOnline) {
-        // Initiate payment transaction and show simulation modal
         try {
-          const payTx = await clientApi.post<{ transactionRef: string }>(
+          const returnUrl = `${window.location.origin}/client/orders/${order.id}`;
+          const payTx = await clientApi.post<{ transactionRef: string; paymentUrl: string }>(
             `/payments/orders/${order.id}/initiate`,
-            { returnUrl: window.location.origin + '/client/orders/' + order.id },
+            { returnUrl },
           );
+          // If backend returned a real gateway URL, redirect to it
+          if (payTx.paymentUrl && !payTx.paymentUrl.includes('payment-gateway.local')) {
+            window.location.href = payTx.paymentUrl;
+            return;
+          }
+          // Fallback: show simulation modal
           setSimRef(payTx.transactionRef);
         } catch {
           setSimRef(`${order.id}-${Date.now()}`);

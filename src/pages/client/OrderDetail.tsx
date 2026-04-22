@@ -1,5 +1,5 @@
 import { type FC, useEffect, useRef, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Package,
@@ -90,6 +90,7 @@ function formatDate(d: string) {
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { session } = useClientSession();
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
@@ -97,6 +98,7 @@ export default function OrderDetail() {
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [mapLoading, setMapLoading] = useState(false);
   const geocodedRef = useRef(false);
+  const momoVerifiedRef = useRef(false);
 
   useEffect(() => {
     if (!session) { void navigate('/client/login'); return; }
@@ -108,6 +110,43 @@ export default function OrderDetail() {
       .catch(() => { void navigate('/client/orders'); })
       .finally(() => setLoading(false));
   }, [session, id, navigate]);
+
+  // Handle MoMo redirect: verify payment result and refresh order
+  useEffect(() => {
+    const resultCode = searchParams.get('resultCode');
+    const requestId = searchParams.get('requestId');
+    if (resultCode === null || !requestId || momoVerifiedRef.current) return;
+    momoVerifiedRef.current = true;
+
+    void clientApi
+      .post('/payments/momo/verify', {
+        orderId: searchParams.get('orderId'),
+        requestId,
+        resultCode: Number(resultCode),
+        transId: searchParams.get('transId') ? Number(searchParams.get('transId')) : undefined,
+        amount: searchParams.get('amount') ? Number(searchParams.get('amount')) : undefined,
+        message: searchParams.get('message') ?? '',
+        partnerCode: searchParams.get('partnerCode') ?? '',
+        orderInfo: searchParams.get('orderInfo') ?? '',
+        orderType: searchParams.get('orderType') ?? '',
+        payType: searchParams.get('payType') ?? '',
+        extraData: searchParams.get('extraData') ?? '',
+        signature: searchParams.get('signature') ?? '',
+      })
+      .then(() => {
+        if (id) {
+          void clientApi
+            .get<OrderDetail>(`/users/me/orders/${id}`)
+            .then((data) => setOrder(data))
+            .catch(() => {});
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setSearchParams({}, { replace: true });
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Geocode delivery address when order is in shipping/delivered status
   useEffect(() => {

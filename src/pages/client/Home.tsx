@@ -265,6 +265,8 @@ export default function Home() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [loadingFeatured, setLoadingFeatured] = useState(true);
   const [loadingBest, setLoadingBest] = useState(true);
   const [loadingSale, setLoadingSale] = useState(true);
@@ -337,6 +339,19 @@ export default function Home() {
     if (!session) { window.location.href = '/client/login'; return; }
     setAddingId(productId);
     try { await addItem(productId, 1); } finally { setAddingId(null); }
+  };
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim()) return;
+    setNewsletterStatus('loading');
+    try {
+      await clientApi.post('/newsletter/subscribe', { email: newsletterEmail });
+      setNewsletterStatus('success');
+      setNewsletterEmail('');
+    } catch {
+      setNewsletterStatus('error');
+    }
   };
 
   return (
@@ -702,15 +717,33 @@ export default function Home() {
           </div>
           <h2 className="text-2xl font-black" style={{ color: '#1E3932' }}>Nhận thông tin khuyến mãi</h2>
           <p className="mt-2 text-sm text-gray-500">Đăng ký email để nhận ưu đãi độc quyền và kiến thức nông nghiệp mỗi tuần.</p>
-          <form className="mt-6 flex gap-2" onSubmit={(e) => e.preventDefault()}>
-            <input type="email" placeholder="Nhập email của bạn..."
-              className="flex-1 rounded-full border border-black/10 bg-[#f2f0eb] px-5 py-3 text-sm outline-none focus:border-[#006241]" />
-            <button type="submit"
-              className="rounded-full px-6 py-3 text-sm font-bold text-white transition active:scale-95"
-              style={{ background: '#00754A' }}>
-              Đăng ký
-            </button>
-          </form>
+          {newsletterStatus === 'success' ? (
+            <div className="mt-6 flex items-center justify-center gap-2 rounded-full bg-[#d4e9e2] px-6 py-3 text-sm font-bold text-[#006241]">
+              ✓ Đăng ký thành công! Cảm ơn bạn.
+            </div>
+          ) : (
+            <form className="mt-6 flex gap-2" onSubmit={(e) => void handleNewsletterSubmit(e)}>
+              <input
+                type="email"
+                value={newsletterEmail}
+                onChange={(e) => { setNewsletterEmail(e.target.value); setNewsletterStatus('idle'); }}
+                placeholder="Nhập email của bạn..."
+                required
+                className="flex-1 rounded-full border border-black/10 bg-[#f2f0eb] px-5 py-3 text-sm outline-none focus:border-[#006241]"
+              />
+              <button
+                type="submit"
+                disabled={newsletterStatus === 'loading'}
+                className="rounded-full px-6 py-3 text-sm font-bold text-white transition active:scale-95 disabled:opacity-60"
+                style={{ background: '#00754A' }}
+              >
+                {newsletterStatus === 'loading' ? '...' : 'Đăng ký'}
+              </button>
+            </form>
+          )}
+          {newsletterStatus === 'error' && (
+            <p className="mt-2 text-xs text-red-500">Có lỗi xảy ra, vui lòng thử lại.</p>
+          )}
           <p className="mt-3 text-xs text-gray-400">Không spam. Hủy đăng ký bất cứ lúc nào.</p>
         </div>
       </section>
