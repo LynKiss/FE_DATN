@@ -33,6 +33,7 @@ const PaymentsPage = lazy(() => import('../features/admin/payments/page'));
 const NewsletterPage = lazy(() => import('../features/admin/newsletter/page'));
 const NewsCommentsPage = lazy(() => import('../features/admin/news-comments/page'));
 const SupportChatsPage = lazy(() => import('../features/admin/support-chats/page'));
+const RiceDiagnosisAdminPage = lazy(() => import('../features/admin/rice-diagnosis/page'));
 
 // Client pages
 const ClientHomePage = lazy(() => import('../features/client/home/page'));
@@ -50,6 +51,7 @@ const ClientOrdersPage = lazy(() => import('../features/client/orders/page'));
 const ClientOrderDetailPage = lazy(() => import('../features/client/order-detail/page'));
 const ClientWishlistPage = lazy(() => import('../features/client/wishlist/page'));
 const ClientAddressesPage = lazy(() => import('../features/client/addresses/page'));
+const ClientRiceDiagnosisPage = lazy(() => import('../features/client/rice-diagnosis/page'));
 
 const LoginPage = lazy(() => import('../pages/Login'));
 
@@ -101,6 +103,7 @@ export const router = createBrowserRouter([
               { path: 'payments', element: withSuspense(<PaymentsPage />) },
               { path: 'newsletter', element: withSuspense(<NewsletterPage />) },
               { path: 'support-chats', element: withSuspense(<SupportChatsPage />) },
+              { path: 'rice-diagnosis', element: withSuspense(<RiceDiagnosisAdminPage />) },
               { path: 'reports', element: withSuspense(<ReportsPage />) },
               { path: 'permissions', element: withSuspense(<PermissionsPage />) },
               { path: 'interface', element: withSuspense(<InterfacePage />) },
@@ -129,6 +132,7 @@ export const router = createBrowserRouter([
           { path: 'orders/:id', element: clientSuspense(<ClientOrderDetailPage />) },
           { path: 'wishlist', element: clientSuspense(<ClientWishlistPage />) },
           { path: 'account/addresses', element: clientSuspense(<ClientAddressesPage />) },
+          { path: 'rice-diagnosis', element: clientSuspense(<ClientRiceDiagnosisPage />) },
         ],
       },
       { path: 'login', element: withSuspense(<LoginPage />) },

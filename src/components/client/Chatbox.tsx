@@ -165,6 +165,25 @@ export default function Chatbox() {
   }, [activeTab, open]);
 
   useEffect(() => {
+    const handleOpenRequest = (event: Event) => {
+      const detail =
+        event instanceof CustomEvent
+          ? (event.detail as { tab?: BotTab } | undefined)
+          : undefined;
+
+      setOpen(true);
+      setActiveTab(detail?.tab === 'support' ? 'support' : 'bot');
+    };
+
+    window.addEventListener('support-chat:open', handleOpenRequest as EventListener);
+    return () =>
+      window.removeEventListener(
+        'support-chat:open',
+        handleOpenRequest as EventListener,
+      );
+  }, []);
+
+  useEffect(() => {
     currentConversationIdRef.current = conversation?.conversationId ?? null;
   }, [conversation?.conversationId]);
 

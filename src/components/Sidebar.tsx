@@ -8,6 +8,7 @@ import {
   KeyRound,
   LayoutDashboard,
   Layers,
+  Leaf,
   Mail,
   MessageCircleMore,
   MessageSquare,
@@ -167,6 +168,12 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'Chat hỗ trợ' : 'Support chat',
       icon: MessageCircleMore,
       path: '/admin/support-chats',
+    },
+    {
+      id: 'rice-diagnosis',
+      label: isVietnamese ? 'AI benh lua' : 'Rice AI diagnosis',
+      icon: Leaf,
+      path: '/admin/rice-diagnosis',
     },
     {
       id: 'newsletter',

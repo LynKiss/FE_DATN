@@ -159,6 +159,10 @@ export default function ClientLayout() {
   const cartCount = cart?.totalItems ?? 0;
   const displayName = session?.user.fullName || session?.user.username || '';
   const socialLinks = getSocialLinks();
+  const aiDiagnosisLink = {
+    to: '/client/rice-diagnosis',
+    label: 'AI Chan Doan Benh Lua',
+  };
 
   const navLinks = [
     { to: '/client', label: 'Trang chủ', end: true },
@@ -237,6 +241,21 @@ export default function ClientLayout() {
               className="rounded-full px-4 py-2 text-sm font-semibold text-[#c82014] transition-all hover:bg-[#c82014]/10"
             >
               🔥 Khuyến mãi
+            </NavLink>
+            <NavLink
+              to={aiDiagnosisLink.to}
+              className={({ isActive }) =>
+                `rounded-full border px-4 py-2 text-sm font-black transition-all motion-reduce:animate-none ${
+                  isActive
+                    ? 'border-[#006241] bg-[#006241] text-white'
+                    : 'animate-pulse border-[#006241]/25 bg-[#edf3ee] text-[#006241] hover:border-[#006241] hover:bg-[#dff1e4]'
+                }`
+              }
+            >
+              <span className="inline-flex items-center gap-2">
+                <Leaf size={14} />
+                {aiDiagnosisLink.label}
+              </span>
             </NavLink>
           </nav>
 
@@ -507,6 +526,22 @@ export default function ClientLayout() {
                   {link.label}
                 </NavLink>
               ))}
+              <NavLink
+                to={aiDiagnosisLink.to}
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  `rounded-xl px-4 py-2.5 text-sm font-black transition motion-reduce:animate-none ${
+                    isActive
+                      ? 'bg-[#006241] text-white'
+                      : 'animate-pulse border border-[#006241]/20 bg-[#edf3ee] text-[#006241]'
+                  }`
+                }
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Leaf size={14} />
+                  {aiDiagnosisLink.label}
+                </span>
+              </NavLink>
               {!session ? (
                 <div className="mt-2 flex gap-2 pt-2 border-t border-black/5">
                   <Link
