@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Layers,
   Mail,
+  MessageCircleMore,
   MessageSquare,
   MonitorSmartphone,
   Newspaper,
@@ -160,6 +161,12 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'Thanh toán' : 'Payments',
       icon: CreditCard,
       path: '/admin/payments',
+    },
+    {
+      id: 'support-chats',
+      label: isVietnamese ? 'Chat hỗ trợ' : 'Support chat',
+      icon: MessageCircleMore,
+      path: '/admin/support-chats',
     },
     {
       id: 'newsletter',

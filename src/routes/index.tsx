@@ -32,6 +32,7 @@ const ReviewsPage = lazy(() => import('../features/admin/reviews/page'));
 const PaymentsPage = lazy(() => import('../features/admin/payments/page'));
 const NewsletterPage = lazy(() => import('../features/admin/newsletter/page'));
 const NewsCommentsPage = lazy(() => import('../features/admin/news-comments/page'));
+const SupportChatsPage = lazy(() => import('../features/admin/support-chats/page'));
 
 // Client pages
 const ClientHomePage = lazy(() => import('../features/client/home/page'));
@@ -99,6 +100,7 @@ export const router = createBrowserRouter([
               { path: 'reviews', element: withSuspense(<ReviewsPage />) },
               { path: 'payments', element: withSuspense(<PaymentsPage />) },
               { path: 'newsletter', element: withSuspense(<NewsletterPage />) },
+              { path: 'support-chats', element: withSuspense(<SupportChatsPage />) },
               { path: 'reports', element: withSuspense(<ReportsPage />) },
               { path: 'permissions', element: withSuspense(<PermissionsPage />) },
               { path: 'interface', element: withSuspense(<InterfacePage />) },

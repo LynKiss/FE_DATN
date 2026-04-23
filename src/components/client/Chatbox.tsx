@@ -1,23 +1,60 @@
-import { useState, useRef, useEffect, type FormEvent } from 'react';
-import { MessageCircle, X, Send, Leaf, ChevronDown } from 'lucide-react';
+import {
+  ChevronDown,
+  Leaf,
+  LoaderCircle,
+  LogIn,
+  MessageCircle,
+  RefreshCw,
+  Send,
+  X,
+} from 'lucide-react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useClientSession } from '../../hooks/useClientSession';
+import { useToast } from '../../hooks/useToast';
+import { clientApi } from '../../lib/client-api';
+import {
+  SUPPORT_STATUS_LABELS,
+  SUPPORT_STATUS_STYLES,
+  type SupportConversation,
+  type SupportMessage,
+  createSupportChatSocket,
+  sortSupportConversations,
+} from '../../lib/support-chat';
 
-type Message = {
+type BotTab = 'bot' | 'support';
+
+type BotMessage = {
   id: number;
   from: 'user' | 'bot';
   text: string;
 };
 
 const FAQ_RESPONSES: Record<string, string> = {
-  'giao hàng': 'Chúng tôi giao hàng toàn quốc trong 2–4 ngày làm việc. Miễn phí vận chuyển cho đơn từ 500.000đ.',
-  'đổi trả': 'Bạn có thể đổi trả sản phẩm trong vòng 7 ngày kể từ ngày nhận hàng nếu sản phẩm bị lỗi hoặc không đúng mô tả.',
-  'thanh toán': 'Chúng tôi hỗ trợ: Thanh toán khi nhận hàng (COD), Chuyển khoản ngân hàng, Ví MoMo.',
-  'phân bón': 'Chúng tôi cung cấp đầy đủ các loại phân bón hữu cơ, phân NPK, phân vi sinh. Hãy xem thêm tại mục Sản phẩm.',
-  'thuốc': 'Chúng tôi bán thuốc bảo vệ thực vật chính hãng, có đầy đủ giấy phép lưu hành. Vui lòng xem tại mục Sản phẩm.',
-  'liên hệ': 'Hotline: 1800 6863 (miễn phí). Email: support@cultivatedledger.vn. Giờ làm việc: 7:00 – 21:00 mỗi ngày.',
-  'khuyến mãi': 'Chúng tôi thường xuyên có chương trình giảm giá. Đăng ký nhận email để cập nhật sớm nhất!',
+  'giao hàng':
+    'Chúng tôi giao hàng toàn quốc trong 2-4 ngày làm việc. Miễn phí vận chuyển cho đơn từ 500.000đ.',
+  'đổi trả':
+    'Bạn có thể đổi trả sản phẩm trong vòng 7 ngày kể từ ngày nhận hàng nếu sản phẩm bị lỗi hoặc không đúng mô tả.',
+  'thanh toán':
+    'Chúng tôi hỗ trợ thanh toán khi nhận hàng, chuyển khoản ngân hàng và ví MoMo.',
+  'phân bón':
+    'Chúng tôi có đủ phân bón hữu cơ, phân NPK và phân vi sinh. Bạn có thể xem thêm trong mục sản phẩm.',
+  'thuốc':
+    'Chúng tôi bán thuốc bảo vệ thực vật chính hãng và có đầy đủ giấy phép lưu hành.',
+  'liên hệ':
+    'Hotline: 1800 6863. Email: support@cultivatedledger.vn. Giờ làm việc: 7:00 - 21:00 mỗi ngày.',
+  'khuyến mãi':
+    'Cửa hàng thường xuyên có chương trình giảm giá. Bạn có thể theo dõi ở trang chủ hoặc tab khuyến mãi.',
 };
 
-const WELCOME = 'Xin chào! 🌿 Tôi là trợ lý của Cultivated Ledger. Tôi có thể giúp bạn tìm hiểu về sản phẩm, chính sách giao hàng, đổi trả, và nhiều hơn nữa. Hỏi tôi bất cứ điều gì!';
+const BOT_WELCOME =
+  'Xin chào. Tôi là chatbot hỗ trợ của Cultivated Ledger. Tôi có thể trả lời nhanh về giao hàng, đổi trả, thanh toán và thông tin liên hệ.';
 
 const QUICK_QUESTIONS = [
   'Chính sách giao hàng?',
@@ -26,82 +63,500 @@ const QUICK_QUESTIONS = [
   'Hotline liên hệ?',
 ];
 
-let messageIdCounter = 3;
+let botMessageIdCounter = 2;
+
+function upsertConversation(
+  current: SupportConversation[],
+  incoming: SupportConversation,
+) {
+  const next = current.some(
+    (conversation) => conversation.conversationId === incoming.conversationId,
+  )
+    ? current.map((conversation) =>
+        conversation.conversationId === incoming.conversationId
+          ? incoming
+          : conversation,
+      )
+    : [incoming, ...current];
+
+  return sortSupportConversations(next);
+}
+
+function appendMessage(current: SupportMessage[], incoming: SupportMessage) {
+  if (current.some((message) => message.messageId === incoming.messageId)) {
+    return current;
+  }
+
+  return [...current, incoming].sort(
+    (left, right) =>
+      Date.parse(left.createdAt) - Date.parse(right.createdAt),
+  );
+}
+
+function formatMessageTime(value: string | null) {
+  if (!value) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+}
+
+function getBotResponse(text: string) {
+  const lower = text.toLowerCase();
+
+  for (const [keyword, response] of Object.entries(FAQ_RESPONSES)) {
+    if (lower.includes(keyword)) {
+      return response;
+    }
+  }
+
+  return 'Tôi đã ghi nhận câu hỏi của bạn. Nếu cần nhân viên hỗ trợ trực tiếp, bạn có thể chuyển sang tab "Nhân viên" để chat realtime.';
+}
 
 export default function Chatbox() {
+  const { session } = useClientSession();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 1, from: 'bot', text: WELCOME },
+  const [activeTab, setActiveTab] = useState<BotTab>('bot');
+
+  const [botMessages, setBotMessages] = useState<BotMessage[]>([
+    { id: 1, from: 'bot', text: BOT_WELCOME },
   ]);
-  const [input, setInput] = useState('');
-  const [typing, setTyping] = useState(false);
-  const [unread, setUnread] = useState(0);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [botInput, setBotInput] = useState('');
+  const [botTyping, setBotTyping] = useState(false);
+  const [botUnreadCount, setBotUnreadCount] = useState(0);
+
+  const [conversations, setConversations] = useState<SupportConversation[]>([]);
+  const [conversation, setConversation] = useState<SupportConversation | null>(
+    null,
+  );
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [draft, setDraft] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(false);
+
+  const socketRef = useRef<ReturnType<typeof createSupportChatSocket> | null>(
+    null,
+  );
+  const currentConversationIdRef = useRef<string | null>(null);
+  const openRef = useRef(false);
+  const activeTabRef = useRef<BotTab>('bot');
+  const supportMessagesEndRef = useRef<HTMLDivElement | null>(null);
+  const botMessagesEndRef = useRef<HTMLDivElement | null>(null);
+  const botTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (open) {
-      setUnread(0);
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    openRef.current = open;
+  }, [open]);
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+
+    if (open && activeTab === 'bot') {
+      setBotUnreadCount(0);
     }
-  }, [open, messages]);
+  }, [activeTab, open]);
 
-  const getResponse = (text: string): string => {
-    const lower = text.toLowerCase();
-    for (const [keyword, response] of Object.entries(FAQ_RESPONSES)) {
-      if (lower.includes(keyword)) return response;
+  useEffect(() => {
+    currentConversationIdRef.current = conversation?.conversationId ?? null;
+  }, [conversation?.conversationId]);
+
+  useEffect(() => {
+    if (open && activeTab === 'bot') {
+      botMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-    return 'Cảm ơn bạn đã liên hệ! Câu hỏi của bạn sẽ được chuyển đến nhân viên hỗ trợ. Trong thời gian chờ, bạn có thể gọi hotline 1800 6863 (miễn phí) để được hỗ trợ nhanh nhất.';
-  };
+  }, [activeTab, botMessages, open]);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
-    const userMsg: Message = { id: messageIdCounter++, from: 'user', text: text.trim() };
-    setMessages((m) => [...m, userMsg]);
-    setInput('');
-    setTyping(true);
+  useEffect(() => {
+    if (open && activeTab === 'support') {
+      supportMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [activeTab, messages, open]);
 
-    setTimeout(() => {
-      const botMsg: Message = {
-        id: messageIdCounter++,
+  useEffect(() => {
+    if (!session?.accessToken) {
+      setConversations([]);
+      setConversation(null);
+      setMessages([]);
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+      setSocketConnected(false);
+      return;
+    }
+
+    let cancelled = false;
+    void clientApi
+      .get<SupportConversation[]>('/support-chat/conversations/me')
+      .then((items) => {
+        if (!cancelled) {
+          setConversations(sortSupportConversations(items));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setConversations([]);
+        }
+      });
+
+    const socket = createSupportChatSocket(session.accessToken);
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      setSocketConnected(true);
+
+      if (currentConversationIdRef.current) {
+        socket.emit('conversation:join', {
+          conversationId: currentConversationIdRef.current,
+        });
+      }
+    });
+
+    socket.on('disconnect', () => {
+      setSocketConnected(false);
+    });
+
+    socket.on('support:error', (payload: { message?: string }) => {
+      if (payload?.message) {
+        showToast({
+          tone: 'error',
+          title: 'Chat hỗ trợ gặp lỗi',
+          description: payload.message,
+        });
+      }
+    });
+
+    socket.on('support:conversation', (incoming: SupportConversation) => {
+      setConversations((current) => upsertConversation(current, incoming));
+      setConversation((current) =>
+        current?.conversationId === incoming.conversationId ? incoming : current,
+      );
+    });
+
+    socket.on(
+      'support:message',
+      (payload: { conversationId: string; message: SupportMessage }) => {
+        if (payload.conversationId !== currentConversationIdRef.current) {
+          return;
+        }
+
+        setMessages((current) => appendMessage(current, payload.message));
+
+        if (
+          openRef.current &&
+          activeTabRef.current === 'support' &&
+          socketRef.current?.connected
+        ) {
+          socketRef.current.emit('conversation:read', {
+            conversationId: payload.conversationId,
+          });
+          return;
+        }
+
+        if (
+          openRef.current &&
+          activeTabRef.current === 'support' &&
+          !socketRef.current?.connected
+        ) {
+          void clientApi
+            .patch<SupportConversation>(
+              `/support-chat/conversations/${payload.conversationId}/read`,
+            )
+            .then((nextConversation) => {
+              setConversation(nextConversation);
+              setConversations((current) =>
+                upsertConversation(current, nextConversation),
+              );
+            })
+            .catch(() => {
+              /* ignore disconnected read sync */
+            });
+        }
+      },
+    );
+
+    socket.on(
+      'conversation:joined',
+      (
+        payload:
+          | {
+              conversation: SupportConversation;
+              messages: SupportMessage[];
+            }
+          | {
+              data: {
+                conversation: SupportConversation;
+                messages: SupportMessage[];
+              };
+            },
+      ) => {
+        const resolved = 'data' in payload ? payload.data : payload;
+        if (
+          resolved.conversation.conversationId === currentConversationIdRef.current
+        ) {
+          setConversation(resolved.conversation);
+          setConversations((current) =>
+            upsertConversation(current, resolved.conversation),
+          );
+          setMessages(resolved.messages);
+        }
+      },
+    );
+
+    socket.on(
+      'conversation:read',
+      (
+        payload:
+          | SupportConversation
+          | {
+              data: SupportConversation;
+            },
+      ) => {
+        const resolved = 'data' in payload ? payload.data : payload;
+        setConversation((current) =>
+          current?.conversationId === resolved.conversationId
+            ? resolved
+            : current,
+        );
+        setConversations((current) => upsertConversation(current, resolved));
+      },
+    );
+
+    return () => {
+      cancelled = true;
+      socket.removeAllListeners();
+      socket.disconnect();
+      socketRef.current = null;
+      setSocketConnected(false);
+    };
+  }, [session?.accessToken, showToast]);
+
+  useEffect(() => {
+    if (open && activeTab === 'support' && session) {
+      void ensureConversation();
+    }
+  }, [activeTab, open, session]);
+
+  useEffect(() => {
+    if (
+      !open ||
+      activeTab !== 'support' ||
+      !conversation?.conversationId ||
+      socketConnected
+    ) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void Promise.all([
+        clientApi.patch<SupportConversation>(
+          `/support-chat/conversations/${conversation.conversationId}/read`,
+        ),
+        clientApi.get<SupportMessage[]>(
+          `/support-chat/conversations/${conversation.conversationId}/messages?limit=100`,
+        ),
+      ])
+        .then(([nextConversation, history]) => {
+          setConversation(nextConversation);
+          setConversations((current) =>
+            upsertConversation(current, nextConversation),
+          );
+          setMessages(history);
+        })
+        .catch(() => {
+          /* keep silent while polling fallback is active */
+        });
+    }, 4000);
+
+    return () => window.clearInterval(intervalId);
+  }, [activeTab, conversation?.conversationId, open, socketConnected]);
+
+  useEffect(() => {
+    return () => {
+      if (botTimerRef.current) {
+        window.clearTimeout(botTimerRef.current);
+      }
+    };
+  }, []);
+
+  const supportUnreadCount = useMemo(
+    () =>
+      conversations.reduce(
+        (total, item) => total + (item.customerUnreadCount ?? 0),
+        0,
+      ),
+    [conversations],
+  );
+  const totalUnreadCount = supportUnreadCount + botUnreadCount;
+  const requireLogin = !session;
+
+  async function ensureConversation() {
+    if (!session) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const activeConversation = await clientApi.post<SupportConversation>(
+        '/support-chat/conversations/me/start',
+      );
+
+      setConversation(activeConversation);
+      setConversations((current) =>
+        upsertConversation(current, activeConversation),
+      );
+
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('conversation:join', {
+          conversationId: activeConversation.conversationId,
+        });
+        socketRef.current.emit('conversation:read', {
+          conversationId: activeConversation.conversationId,
+        });
+      }
+
+      const [readConversation, history] = await Promise.all([
+        clientApi.patch<SupportConversation>(
+          `/support-chat/conversations/${activeConversation.conversationId}/read`,
+        ),
+        clientApi.get<SupportMessage[]>(
+          `/support-chat/conversations/${activeConversation.conversationId}/messages?limit=100`,
+        ),
+      ]);
+
+      setConversation(readConversation);
+      setConversations((current) =>
+        upsertConversation(current, readConversation),
+      );
+      setMessages(history);
+    } catch (error) {
+      showToast({
+        tone: 'error',
+        title: 'Không thể mở chat hỗ trợ',
+        description: error instanceof Error ? error.message : '',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleSendBotMessage(rawText: string) {
+    const text = rawText.trim();
+
+    if (!text) {
+      return;
+    }
+
+    const userMessage: BotMessage = {
+      id: botMessageIdCounter++,
+      from: 'user',
+      text,
+    };
+
+    setBotMessages((current) => [...current, userMessage]);
+    setBotInput('');
+    setBotTyping(true);
+
+    if (botTimerRef.current) {
+      window.clearTimeout(botTimerRef.current);
+    }
+
+    botTimerRef.current = window.setTimeout(() => {
+      const reply: BotMessage = {
+        id: botMessageIdCounter++,
         from: 'bot',
-        text: getResponse(text),
+        text: getBotResponse(text),
       };
-      setMessages((m) => [...m, botMsg]);
-      setTyping(false);
-      if (!open) setUnread((u) => u + 1);
-    }, 1000 + Math.random() * 500);
-  };
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    sendMessage(input);
-  };
+      setBotMessages((current) => [...current, reply]);
+      setBotTyping(false);
+
+      if (!openRef.current || activeTabRef.current !== 'bot') {
+        setBotUnreadCount((current) => current + 1);
+      }
+    }, 700);
+  }
+
+  function handleBotSubmit(event: FormEvent) {
+    event.preventDefault();
+    handleSendBotMessage(botInput);
+  }
+
+  async function handleSendSupportMessage(event: FormEvent) {
+    event.preventDefault();
+
+    if (!conversation || !draft.trim()) {
+      return;
+    }
+
+    const content = draft.trim();
+    setSending(true);
+    setDraft('');
+
+    try {
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('message:send', {
+          conversationId: conversation.conversationId,
+          content,
+        });
+      } else {
+        const result = await clientApi.post<{
+          conversation: SupportConversation;
+          message: SupportMessage;
+        }>(`/support-chat/conversations/${conversation.conversationId}/messages`, {
+          content,
+        });
+
+        setConversation(result.conversation);
+        setConversations((current) =>
+          upsertConversation(current, result.conversation),
+        );
+        setMessages((current) => appendMessage(current, result.message));
+      }
+    } catch (error) {
+      setDraft(content);
+      showToast({
+        tone: 'error',
+        title: 'Gửi tin nhắn thất bại',
+        description: error instanceof Error ? error.message : '',
+      });
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <>
-      {/* Floating button */}
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen((current) => !current)}
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[0_0_6px_rgba(0,0,0,0.24),0_8px_12px_rgba(0,0,0,0.14)] transition-all hover:scale-105 active:scale-95"
         style={{ background: '#00754A' }}
         aria-label="Mở hộp chat"
       >
         {open ? <ChevronDown size={22} /> : <MessageCircle size={22} />}
-        {!open && unread > 0 && (
+        {!open && totalUnreadCount > 0 ? (
           <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#c82014] text-[10px] font-black text-white">
-            {unread}
+            {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
           </span>
-        )}
+        ) : null}
       </button>
 
-      {/* Chat panel */}
-      {open && (
+      {open ? (
         <div
-          className="fixed bottom-24 right-6 z-50 flex w-80 flex-col overflow-hidden rounded-2xl shadow-2xl sm:w-96"
-          style={{ height: '480px', maxHeight: 'calc(100vh - 120px)' }}
+          className="fixed bottom-24 right-6 z-50 flex w-80 flex-col overflow-hidden rounded-3xl shadow-2xl sm:w-96"
+          style={{ height: '560px', maxHeight: 'calc(100vh - 120px)' }}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3" style={{ background: '#1E3932' }}>
+          <div
+            className="flex items-center justify-between px-4 py-3"
+            style={{ background: '#1E3932' }}
+          >
             <div className="flex items-center gap-2.5">
               <div
                 className="flex h-8 w-8 items-center justify-center rounded-full"
@@ -110,12 +565,28 @@ export default function Chatbox() {
                 <Leaf size={15} className="text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold text-white">Hỗ trợ Cultivated Ledger</p>
+                <p className="text-sm font-bold text-white">
+                  Hỗ trợ Cultivated Ledger
+                </p>
                 <p className="flex items-center gap-1 text-[10px] text-white/60">
-                  <span className="h-1.5 w-1.5 rounded-full bg-green-400" /> Trực tuyến
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      activeTab === 'bot'
+                        ? 'bg-green-400'
+                        : socketConnected
+                          ? 'bg-green-400'
+                          : 'bg-amber-400'
+                    }`}
+                  />
+                  {activeTab === 'bot'
+                    ? 'Chatbot trả lời nhanh'
+                    : socketConnected
+                      ? 'Nhân viên đang trực'
+                      : 'Đang đồng bộ lại'}
                 </p>
               </div>
             </div>
+
             <button
               onClick={() => setOpen(false)}
               className="flex h-7 w-7 items-center justify-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white"
@@ -124,102 +595,286 @@ export default function Chatbox() {
             </button>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto bg-white px-4 py-4 space-y-3">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}
+          <div className="grid grid-cols-2 border-b border-black/5 bg-white px-3 py-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('bot')}
+              className={`rounded-2xl px-3 py-2 text-sm font-bold transition ${
+                activeTab === 'bot'
+                  ? 'bg-[#d4e9e2] text-[#006241]'
+                  : 'text-gray-500 hover:bg-[#f2f0eb]'
+              }`}
+            >
+              <span className="inline-flex items-center gap-2">
+                Chat bot
+                {botUnreadCount > 0 ? (
+                  <span className="rounded-full bg-[#c82014] px-2 py-0.5 text-[10px] text-white">
+                    {botUnreadCount}
+                  </span>
+                ) : null}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('support')}
+              className={`rounded-2xl px-3 py-2 text-sm font-bold transition ${
+                activeTab === 'support'
+                  ? 'bg-[#d4e9e2] text-[#006241]'
+                  : 'text-gray-500 hover:bg-[#f2f0eb]'
+              }`}
+            >
+              <span className="inline-flex items-center gap-2">
+                Nhân viên
+                {supportUnreadCount > 0 ? (
+                  <span className="rounded-full bg-[#c82014] px-2 py-0.5 text-[10px] text-white">
+                    {supportUnreadCount}
+                  </span>
+                ) : null}
+              </span>
+            </button>
+          </div>
+
+          {activeTab === 'bot' ? (
+            <>
+              <div className="flex-1 overflow-y-auto bg-white px-4 py-4">
+                <div className="space-y-3">
+                  {botMessages.map((message) => {
+                    const isUser = message.from === 'user';
+
+                    return (
+                      <div
+                        key={message.id}
+                        className={`flex ${
+                          isUser ? 'justify-end' : 'justify-start'
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                            isUser
+                              ? 'rounded-br-sm text-white'
+                              : 'rounded-bl-sm text-[#1E3932]'
+                          }`}
+                          style={
+                            isUser
+                              ? { background: '#006241' }
+                              : { background: '#f2f0eb' }
+                          }
+                        >
+                          {message.text}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {botTyping ? (
+                    <div className="flex justify-start">
+                      <div
+                        className="rounded-2xl rounded-bl-sm px-4 py-3"
+                        style={{ background: '#f2f0eb' }}
+                      >
+                        <div className="flex gap-1">
+                          {[0, 1, 2].map((index) => (
+                            <span
+                              key={index}
+                              className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#006241]"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div ref={botMessagesEndRef} />
+                </div>
+              </div>
+
+              <div className="border-t border-black/5 bg-white px-3 py-2">
+                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                  {QUICK_QUESTIONS.map((question) => (
+                    <button
+                      key={question}
+                      type="button"
+                      onClick={() => handleSendBotMessage(question)}
+                      className="shrink-0 rounded-full border border-[#006241]/20 px-3 py-1.5 text-[11px] font-semibold text-[#006241] transition hover:bg-[#006241]/10"
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <form
+                onSubmit={handleBotSubmit}
+                className="flex items-center gap-2 border-t border-black/5 bg-white px-3 py-2.5"
               >
-                {msg.from === 'bot' && (
-                  <div
-                    className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full self-end"
-                    style={{ background: '#d4e9e2' }}
+                <input
+                  value={botInput}
+                  onChange={(event) => setBotInput(event.target.value)}
+                  placeholder="Hỏi chatbot điều bạn cần..."
+                  className="flex-1 rounded-full bg-[#f2f0eb] px-4 py-2 text-sm outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={!botInput.trim()}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ background: '#006241' }}
+                >
+                  <Send size={15} />
+                </button>
+              </form>
+            </>
+          ) : requireLogin ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-white px-6 text-center">
+              <div className="rounded-full bg-[#d4e9e2] p-4 text-[#006241]">
+                <MessageCircle size={26} />
+              </div>
+              <div>
+                <p className="text-lg font-black text-[#1E3932]">
+                  Đăng nhập để chat với nhân viên
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-gray-500">
+                  Tab này lưu lịch sử chat theo tài khoản khách hàng và đồng bộ
+                  phản hồi từ nhân viên theo thời gian thực.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  void navigate('/client/login', {
+                    state: {
+                      from: `${location.pathname}${location.search}`,
+                    },
+                  })
+                }
+                className="inline-flex items-center gap-2 rounded-full bg-[#006241] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#005237]"
+              >
+                <LogIn size={16} />
+                Đi đến đăng nhập
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="border-b border-black/5 bg-white px-4 py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {conversation ? (
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                        SUPPORT_STATUS_STYLES[conversation.status]
+                      }`}
+                    >
+                      {SUPPORT_STATUS_LABELS[conversation.status]}
+                    </span>
+                  ) : null}
+                  <span className="inline-flex rounded-full bg-[#f2f0eb] px-2.5 py-1 text-[11px] font-semibold text-[#1E3932]">
+                    {conversation?.assignedStaff
+                      ? `Nhân viên: ${conversation.assignedStaff.username}`
+                      : 'Chờ nhân viên nhận chat'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void ensureConversation()}
+                    className="ml-auto inline-flex items-center gap-1 rounded-full border border-[#006241]/15 px-2.5 py-1 text-[11px] font-semibold text-[#006241] transition hover:bg-[#006241]/8"
                   >
-                    <Leaf size={13} style={{ color: '#006241' }} />
+                    <RefreshCw size={12} />
+                    Đồng bộ
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto bg-white px-4 py-4">
+                {loading ? (
+                  <div className="flex h-full items-center justify-center">
+                    <LoaderCircle
+                      size={20}
+                      className="animate-spin text-[#006241]"
+                    />
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-center text-sm text-gray-500">
+                    Bắt đầu cuộc trò chuyện với nhân viên chăm sóc khách hàng.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {messages.map((message) => {
+                      const isOwn = message.senderRole === 'customer';
+
+                      return (
+                        <div
+                          key={message.messageId}
+                          className={`flex ${
+                            isOwn ? 'justify-end' : 'justify-start'
+                          }`}
+                        >
+                          <div
+                            className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                              isOwn
+                                ? 'rounded-br-sm text-white'
+                                : 'rounded-bl-sm text-[#1E3932]'
+                            }`}
+                            style={
+                              isOwn
+                                ? { background: '#006241' }
+                                : { background: '#f2f0eb' }
+                            }
+                          >
+                            <p>{message.content}</p>
+                            <p
+                              className={`mt-2 text-[11px] ${
+                                isOwn ? 'text-white/70' : 'text-gray-500'
+                              }`}
+                            >
+                              {message.sender.username} ·{' '}
+                              {formatMessageTime(message.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={supportMessagesEndRef} />
                   </div>
                 )}
-                <div
-                  className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                    msg.from === 'user'
-                      ? 'rounded-br-sm text-white'
-                      : 'rounded-bl-sm text-[#1E3932]'
-                  }`}
-                  style={
-                    msg.from === 'user'
-                      ? { background: '#006241' }
-                      : { background: '#f2f0eb' }
-                  }
-                >
-                  {msg.text}
-                </div>
               </div>
-            ))}
-            {typing && (
-              <div className="flex justify-start">
-                <div className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ background: '#d4e9e2' }}>
-                  <Leaf size={13} style={{ color: '#006241' }} />
-                </div>
-                <div className="rounded-2xl rounded-bl-sm px-4 py-3" style={{ background: '#f2f0eb' }}>
-                  <div className="flex gap-1">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="h-1.5 w-1.5 rounded-full bg-[#006241]"
-                        style={{ animation: `bounce 1s ${i * 0.2}s ease-in-out infinite` }}
-                      />
-                    ))}
-                  </div>
-                </div>
+
+              <div className="border-t border-black/5 bg-white px-3 py-3">
+                {conversation?.status === 'resolved' ? (
+                  <button
+                    type="button"
+                    onClick={() => void ensureConversation()}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[#006241] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#005237]"
+                  >
+                    <RefreshCw size={15} />
+                    Tạo cuộc trò chuyện mới
+                  </button>
+                ) : (
+                  <form
+                    onSubmit={(event) => void handleSendSupportMessage(event)}
+                    className="flex items-center gap-2"
+                  >
+                    <input
+                      value={draft}
+                      onChange={(event) => setDraft(event.target.value)}
+                      placeholder="Nhập tin nhắn của bạn..."
+                      className="flex-1 rounded-full bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={sending || !draft.trim() || !conversation}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                      style={{ background: '#006241' }}
+                    >
+                      {sending ? (
+                        <LoaderCircle size={15} className="animate-spin" />
+                      ) : (
+                        <Send size={15} />
+                      )}
+                    </button>
+                  </form>
+                )}
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Quick questions */}
-          <div className="border-t border-black/5 bg-white px-3 py-2">
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {QUICK_QUESTIONS.map((q) => (
-                <button
-                  key={q}
-                  onClick={() => sendMessage(q)}
-                  className="shrink-0 rounded-full border border-[#006241]/20 px-3 py-1.5 text-[11px] font-semibold text-[#006241] transition hover:bg-[#006241]/10"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Input */}
-          <form
-            onSubmit={handleSubmit}
-            className="flex items-center gap-2 border-t border-black/5 bg-white px-3 py-2.5"
-          >
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Nhập câu hỏi của bạn..."
-              className="flex-1 rounded-full bg-[#f2f0eb] px-4 py-2 text-sm outline-none"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white disabled:opacity-40 transition active:scale-95"
-              style={{ background: '#006241' }}
-            >
-              <Send size={15} />
-            </button>
-          </form>
+            </>
+          )}
         </div>
-      )}
-
-      <style>{`
-        @keyframes bounce {
-          0%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-4px); }
-        }
-      `}</style>
+      ) : null}
     </>
   );
 }

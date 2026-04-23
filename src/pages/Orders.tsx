@@ -139,9 +139,8 @@ function getAllowedNextStatuses(current: OrderStatus): OrderStatus[] {
 }
 
 function getMapEmbedUrl(latitude: number, longitude: number) {
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${
-    longitude - 0.03
-  },${latitude - 0.03},${longitude + 0.03},${latitude + 0.03}&layer=mapnik&marker=${latitude},${longitude}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.03
+    },${latitude - 0.03},${longitude + 0.03},${latitude + 0.03}&layer=mapnik&marker=${latitude},${longitude}`;
 }
 
 function formatTrackingTime(value: string | null) {
@@ -408,10 +407,10 @@ export default function Orders() {
         current.map((order) =>
           order.id === updated.id
             ? {
-                ...order,
-                status: updated.status,
-                updatedAt: updated.updatedAt,
-              }
+              ...order,
+              status: updated.status,
+              updatedAt: updated.updatedAt,
+            }
             : order,
         ),
       );
@@ -545,13 +544,13 @@ export default function Orders() {
   function nudgeManual(latitudeDelta: number, longitudeDelta: number) {
     const baseLatitude = Number(
       manualForm.latitude ||
-        tracking?.manualLocation?.latitude ||
-        tracking?.activeLocation?.latitude,
+      tracking?.manualLocation?.latitude ||
+      tracking?.activeLocation?.latitude,
     );
     const baseLongitude = Number(
       manualForm.longitude ||
-        tracking?.manualLocation?.longitude ||
-        tracking?.activeLocation?.longitude,
+      tracking?.manualLocation?.longitude ||
+      tracking?.activeLocation?.longitude,
     );
 
     if (!Number.isFinite(baseLatitude) || !Number.isFinite(baseLongitude)) {
@@ -569,7 +568,7 @@ export default function Orders() {
     <div className="space-y-6 pb-12">
       <div>
         <h1 className="text-4xl font-black tracking-tight text-primary">
-          {isVietnamese ? 'Quan ly don hang' : 'Order Management'}
+          {isVietnamese ? 'Quản lý đơn hàng' : 'Order Management'}
         </h1>
         <p className="mt-1 text-sm text-on-surface-variant">
           {isVietnamese
@@ -680,11 +679,11 @@ export default function Orders() {
           <table className="min-w-full text-left">
             <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
               <tr>
-                <th className="px-4 py-4">{isVietnamese ? 'Ma don' : 'Order ID'}</th>
-                <th className="px-4 py-4">{isVietnamese ? 'Khach hang' : 'Customer'}</th>
-                <th className="px-4 py-4">{isVietnamese ? 'Lien he' : 'Contact'}</th>
-                <th className="px-4 py-4">{isVietnamese ? 'Tong tien' : 'Total'}</th>
-                <th className="px-4 py-4">{isVietnamese ? 'Thanh toan' : 'Payment'}</th>
+                <th className="px-4 py-4">{isVietnamese ? 'Mã đơn' : 'Order ID'}</th>
+                <th className="px-4 py-4">{isVietnamese ? 'Khách hàng' : 'Customer'}</th>
+                <th className="px-4 py-4">{isVietnamese ? 'Liên hệ' : 'Contact'}</th>
+                <th className="px-4 py-4">{isVietnamese ? 'Tổng tiền' : 'Total'}</th>
+                <th className="px-4 py-4">{isVietnamese ? 'Thanh toán' : 'Payment'}</th>
                 <th className="px-4 py-4">{isVietnamese ? 'Trang thai' : 'Status'}</th>
                 <th className="px-4 py-4">{isVietnamese ? 'Ngay tao' : 'Created at'}</th>
                 <th className="px-4 py-4 text-center">{isVietnamese ? 'Hanh dong' : 'Action'}</th>
@@ -960,9 +959,8 @@ export default function Orders() {
                   </h3>
                   <p className="mt-2 text-sm text-on-surface-variant">
                     {tracking
-                      ? `${TRACKING_MODE_LABELS[tracking.mode]} - ${
-                          TRACKING_SOURCE_LABELS[tracking.activeSource]
-                        }`
+                      ? `${TRACKING_MODE_LABELS[tracking.mode]} - ${TRACKING_SOURCE_LABELS[tracking.activeSource]
+                      }`
                       : isVietnamese
                         ? 'Chua co du lieu tracking'
                         : 'No tracking data yet'}
@@ -975,11 +973,10 @@ export default function Orders() {
                       type="button"
                       onClick={() => void handleUpdateTrackingMode(mode)}
                       disabled={modeSaving}
-                      className={`rounded-full px-4 py-2 text-sm font-bold transition ${
-                        tracking?.mode === mode
-                          ? 'bg-primary text-white'
-                          : 'border border-on-surface/10 bg-white text-on-surface-variant hover:border-primary/30 hover:text-primary'
-                      }`}
+                      className={`rounded-full px-4 py-2 text-sm font-bold transition ${tracking?.mode === mode
+                        ? 'bg-primary text-white'
+                        : 'border border-on-surface/10 bg-white text-on-surface-variant hover:border-primary/30 hover:text-primary'
+                        }`}
                     >
                       {TRACKING_MODE_LABELS[mode]}
                     </button>
@@ -1242,23 +1239,23 @@ export default function Orders() {
 function getStatusLabel(status: OrderStatus, isVietnamese: boolean) {
   const labels: Record<OrderStatus, string> = isVietnamese
     ? {
-        pending: 'Cho xu ly',
-        confirmed: 'Da xac nhan',
-        processing: 'Dang xu ly',
-        shipping: 'Dang giao',
-        delivered: 'Da giao',
-        cancelled: 'Da huy',
-        returned: 'Da hoan',
-      }
+      pending: 'Cho xu ly',
+      confirmed: 'Da xac nhan',
+      processing: 'Dang xu ly',
+      shipping: 'Dang giao',
+      delivered: 'Da giao',
+      cancelled: 'Da huy',
+      returned: 'Da hoan',
+    }
     : {
-        pending: 'Pending',
-        confirmed: 'Confirmed',
-        processing: 'Processing',
-        shipping: 'Shipping',
-        delivered: 'Delivered',
-        cancelled: 'Cancelled',
-        returned: 'Returned',
-      };
+      pending: 'Pending',
+      confirmed: 'Confirmed',
+      processing: 'Processing',
+      shipping: 'Shipping',
+      delivered: 'Delivered',
+      cancelled: 'Cancelled',
+      returned: 'Returned',
+    };
 
   return labels[status];
 }
@@ -1266,17 +1263,17 @@ function getStatusLabel(status: OrderStatus, isVietnamese: boolean) {
 function getPaymentLabel(status: PaymentStatus, isVietnamese: boolean) {
   const labels: Record<PaymentStatus, string> = isVietnamese
     ? {
-        unpaid: 'Chua thanh toan',
-        paid: 'Da thanh toan',
-        failed: 'That bai',
-        refunded: 'Da hoan tien',
-      }
+      unpaid: 'Chua thanh toan',
+      paid: 'Da thanh toan',
+      failed: 'That bai',
+      refunded: 'Da hoan tien',
+    }
     : {
-        unpaid: 'Unpaid',
-        paid: 'Paid',
-        failed: 'Failed',
-        refunded: 'Refunded',
-      };
+      unpaid: 'Unpaid',
+      paid: 'Paid',
+      failed: 'Failed',
+      refunded: 'Refunded',
+    };
 
   return labels[status];
 }
