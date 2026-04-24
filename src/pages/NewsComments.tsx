@@ -45,9 +45,9 @@ type FilterStatus = 'all' | CommentStatus;
 
 function StatusBadge({ status }: { status: CommentStatus }) {
   const cfg: Record<CommentStatus, { label: string; cls: string }> = {
-    visible: { label: 'Hien thi', cls: 'bg-emerald-100 text-emerald-700' },
-    hidden: { label: 'An', cls: 'bg-amber-100 text-amber-700' },
-    deleted: { label: 'Da xoa', cls: 'bg-red-100 text-red-700' },
+    visible: { label: 'Hiển thị', cls: 'bg-emerald-100 text-emerald-700' },
+    hidden: { label: 'Ẩn', cls: 'bg-amber-100 text-amber-700' },
+    deleted: { label: 'Đã xóa', cls: 'bg-red-100 text-red-700' },
   };
   const { label, cls } = cfg[status];
 
@@ -164,7 +164,7 @@ export default function NewsComments() {
           setError(
             err instanceof Error
               ? err.message
-              : 'Khong tai duoc danh sach binh luan bai viet',
+              : 'Không tải được danh sách bình luận bài viết',
           );
         }
       })
@@ -182,30 +182,30 @@ export default function NewsComments() {
   async function handleToggleVisibility(id: string) {
     try {
       await apiClient.patch(`/news/admin/comments/${id}/hide`);
-      showToast({ tone: 'success', title: 'Da cap nhat trang thai binh luan' });
+      showToast({ tone: 'success', title: 'Đã cập nhật trạng thái bình luận' });
       setReloadKey((current) => current + 1);
     } catch (err) {
       showToast({
         tone: 'error',
-        title: 'Cap nhat that bai',
+        title: 'Cập nhật thất bại',
         description: err instanceof Error ? err.message : '',
       });
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Xoa binh luan nay?')) {
+    if (!window.confirm('Xóa bình luận này?')) {
       return;
     }
 
     try {
       await apiClient.delete(`/news/admin/comments/${id}`);
-      showToast({ tone: 'success', title: 'Da xoa binh luan' });
+      showToast({ tone: 'success', title: 'Đã xóa bình luận' });
       setReloadKey((current) => current + 1);
     } catch (err) {
       showToast({
         tone: 'error',
-        title: 'Xoa that bai',
+        title: 'Xóa thất bại',
         description: err instanceof Error ? err.message : '',
       });
     }
@@ -215,10 +215,10 @@ export default function NewsComments() {
     <div className="space-y-6 pb-12">
       <div>
         <h1 className="text-4xl font-black tracking-tight text-primary">
-          Quan ly binh luan bai viet
+          Quản lý bình luận bài viết
         </h1>
         <p className="mt-1 text-sm text-on-surface-variant">
-          Kiem duyet binh luan tu doc gia, an hoac xoa noi dung khong phu hop.
+          Kiểm duyệt bình luận từ độc giả, ẩn hoặc xóa nội dung không phù hợp.
         </p>
       </div>
 
@@ -235,12 +235,12 @@ export default function NewsComments() {
           ))
         ) : (
           <>
-            <StatCard label="Tong binh luan" value={stats.total} />
-            <StatCard label="Hien thi" value={stats.totalVisible} accent="emerald" />
-            <StatCard label="Dang an" value={stats.totalHidden} accent="amber" />
-            <StatCard label="Da xoa" value={stats.totalDeleted} accent="red" />
-            <StatCard label="Tuong tac" value={stats.totalReactions} />
-            <StatCard label="Hom nay" value={stats.commentsToday} />
+            <StatCard label="Tổng bình luận" value={stats.total} />
+            <StatCard label="Hiển thị" value={stats.totalVisible} accent="emerald" />
+            <StatCard label="Đang ẩn" value={stats.totalHidden} accent="amber" />
+            <StatCard label="Đã xóa" value={stats.totalDeleted} accent="red" />
+            <StatCard label="Tương tác" value={stats.totalReactions} />
+            <StatCard label="Hôm nay" value={stats.commentsToday} />
           </>
         )}
       </div>
@@ -255,7 +255,7 @@ export default function NewsComments() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Tim trong noi dung, tac gia, bai viet..."
+              placeholder="Tìm trong nội dung, tác giả, bài viết..."
               className="w-full rounded-2xl border border-on-surface/10 bg-surface py-3 pl-11 pr-4 text-sm outline-none focus:border-primary/40"
             />
           </label>
@@ -265,10 +265,10 @@ export default function NewsComments() {
             onChange={(event) => setFilterStatus(event.target.value as FilterStatus)}
             className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
           >
-            <option value="all">Tat ca</option>
-            <option value="visible">Hien thi</option>
-            <option value="hidden">An</option>
-            <option value="deleted">Da xoa</option>
+            <option value="all">Tất cả</option>
+            <option value="visible">Hiển thị</option>
+            <option value="hidden">Ẩn</option>
+            <option value="deleted">Đã xóa</option>
           </select>
 
           <button
@@ -278,7 +278,7 @@ export default function NewsComments() {
             className="inline-flex items-center gap-2 rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary disabled:opacity-50"
           >
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-            Lam moi
+            Làm mới
           </button>
         </div>
       </section>
@@ -294,13 +294,13 @@ export default function NewsComments() {
           <table className="min-w-full text-left">
             <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
               <tr>
-                <th className="px-4 py-4">Bai viet</th>
-                <th className="px-4 py-4">Tac gia</th>
-                <th className="px-4 py-4">Noi dung</th>
-                <th className="px-4 py-4 text-center">Tuong tac</th>
-                <th className="px-4 py-4">Trang thai</th>
-                <th className="px-4 py-4">Ngay</th>
-                <th className="px-4 py-4 text-center">Hanh dong</th>
+                <th className="px-4 py-4">Bài viết</th>
+                <th className="px-4 py-4">Tác giả</th>
+                <th className="px-4 py-4">Nội dung</th>
+                <th className="px-4 py-4 text-center">Tương tác</th>
+                <th className="px-4 py-4">Trạng thái</th>
+                <th className="px-4 py-4">Ngày</th>
+                <th className="px-4 py-4 text-center">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-on-surface/6 text-sm">
@@ -309,7 +309,7 @@ export default function NewsComments() {
                   <td colSpan={7} className="px-4 py-16 text-center text-on-surface-variant">
                     <span className="inline-flex items-center gap-2">
                       <LoaderCircle size={16} className="animate-spin" />
-                      Dang tai binh luan...
+                      Đang tải bình luận...
                     </span>
                   </td>
                 </tr>
@@ -317,7 +317,7 @@ export default function NewsComments() {
                 <tr>
                   <td colSpan={7} className="px-4 py-16 text-center text-on-surface-variant">
                     <MessageSquare size={28} className="mx-auto mb-3 text-primary/30" />
-                    Khong co binh luan phu hop
+                    Không có bình luận phù hợp
                   </td>
                 </tr>
               ) : (
@@ -350,7 +350,7 @@ export default function NewsComments() {
                         {comment.status === 'visible' ? (
                           <button
                             type="button"
-                            title="An binh luan"
+                            title="Ẩn bình luận"
                             onClick={() => void handleToggleVisibility(comment.id)}
                             className="rounded-xl p-2 text-amber-600 transition hover:bg-amber-50"
                           >
@@ -359,7 +359,7 @@ export default function NewsComments() {
                         ) : comment.status === 'hidden' ? (
                           <button
                             type="button"
-                            title="Hien thi binh luan"
+                            title="Hiển thị bình luận"
                             onClick={() => void handleToggleVisibility(comment.id)}
                             className="rounded-xl p-2 text-emerald-600 transition hover:bg-emerald-50"
                           >
@@ -370,7 +370,7 @@ export default function NewsComments() {
                         {comment.status !== 'deleted' && (
                           <button
                             type="button"
-                            title="Xoa binh luan"
+                            title="Xóa bình luận"
                             onClick={() => void handleDelete(comment.id)}
                             className="rounded-xl p-2 text-red-500 transition hover:bg-red-50"
                           >
