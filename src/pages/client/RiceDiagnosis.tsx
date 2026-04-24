@@ -86,7 +86,7 @@ function ProductRecommendationCard({
           </div>
 
           <span className="rounded-full bg-[#edf3ee] px-2.5 py-1 text-[11px] font-bold text-[#006241]">
-            {product.quantityAvailable > 0 ? `Con ${product.quantityAvailable}` : 'Het hang'}
+            {product.quantityAvailable > 0 ? `Còn ${product.quantityAvailable}` : 'Hết hàng'}
           </span>
         </div>
 
@@ -106,7 +106,7 @@ function ProductRecommendationCard({
             to={`/client/products/${product.productId}`}
             className="flex-1 rounded-full border border-[#006241]/20 px-4 py-2.5 text-center text-sm font-bold text-[#006241] transition hover:bg-[#006241]/8"
           >
-            Xem chi tiet
+            Xem chi tiết
           </Link>
           <button
             type="button"
@@ -119,7 +119,7 @@ function ProductRecommendationCard({
             ) : (
               <>
                 <ShoppingCart size={15} />
-                Them vao gio
+                Thêm vào giỏ
               </>
             )}
           </button>
@@ -238,7 +238,7 @@ export default function RiceDiagnosis() {
     if (nextFile && !nextFile.type.startsWith('image/')) {
       showToast({
         tone: 'error',
-        title: 'Chi ho tro anh JPG, PNG, WEBP hoac dinh dang image hop le',
+        title: 'Chỉ hỗ trợ ảnh JPG, PNG, WEBP hoặc định dạng image hợp lệ',
       });
       event.target.value = '';
       return;
@@ -247,8 +247,8 @@ export default function RiceDiagnosis() {
     if (nextFile && nextFile.size > MAX_UPLOAD_SIZE_BYTES) {
       showToast({
         tone: 'error',
-        title: 'Anh vuot qua gioi han 8MB',
-        description: 'Hay nen anh hoac chup lai anh nho hon truoc khi tai len.',
+        title: 'Ảnh vượt quá giới hạn 8MB',
+        description: 'Hãy nén ảnh hoặc chụp lại ảnh nhỏ hơn trước khi tải lên.',
       });
       event.target.value = '';
       return;
@@ -270,7 +270,7 @@ export default function RiceDiagnosis() {
     if (!file) {
       showToast({
         tone: 'error',
-        title: 'Ban can chon anh la lua truoc khi kiem tra',
+        title: 'Bạn cần chọn ảnh lá lúa trước khi kiểm tra',
       });
       return;
     }
@@ -298,7 +298,7 @@ export default function RiceDiagnosis() {
     } catch (error) {
       showToast({
         tone: 'error',
-        title: 'Khong the hoan thanh chan doan',
+        title: 'Không thể hoàn thành chẩn đoán',
         description: error instanceof Error ? error.message : '',
       });
     } finally {
@@ -322,12 +322,12 @@ export default function RiceDiagnosis() {
       await addItem(productId, 1);
       showToast({
         tone: 'success',
-        title: 'Da them san pham vao gio hang',
+        title: 'Đã thêm sản phẩm vào giỏ hàng',
       });
     } catch (error) {
       showToast({
         tone: 'error',
-        title: 'Them vao gio hang that bai',
+        title: 'Thêm vào giỏ hàng thất bại',
         description: error instanceof Error ? error.message : '',
       });
     } finally {
@@ -346,20 +346,20 @@ export default function RiceDiagnosis() {
             </p>
 
             <h1 className="mt-5 max-w-2xl text-4xl font-black leading-tight sm:text-5xl">
-              Chan doan benh la lua bang AI va chuyen thang sang phac do xu ly.
+              Chẩn đoán bệnh lá lúa bằng AI và chuyển thẳng sang phác đồ xử lý.
             </h1>
 
             <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">
-              Tai anh la lua, de he thong goi model da huan luyen, tra ve ten benh,
-              do tin cay, huong xu ly va nhung san pham dang co trong kho de ban co
-              the mua ngay neu can.
+              Tải ảnh lá lúa, để hệ thống gọi model đã huấn luyện, trả về tên bệnh,
+              độ tin cậy, hướng xử lý và những sản phẩm đang có trong kho để bạn có
+              thể mua ngay nếu cần.
             </p>
 
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               {[
-                'Anh can chup can la, ro vet benh, du anh sang',
-                'Ket qua gom top du doan va nguong tin cay',
-                'Neu do tin cay thap, he thong se uu tien chat voi nhan vien',
+                'Ảnh cần chụp cận lá, rõ vết bệnh, đủ ánh sáng',
+                'Kết quả gồm top dự đoán và ngưỡng tin cậy',
+                'Nếu độ tin cậy thấp, hệ thống sẽ ưu tiên chat với nhân viên',
               ].map((item) => (
                 <div
                   key={item}
@@ -375,10 +375,10 @@ export default function RiceDiagnosis() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-[#006241]/70">
-                  Anh chan doan
+                  Ảnh chẩn đoán
                 </p>
                 <h2 className="mt-2 text-2xl font-black text-[#1E3932]">
-                  Tai anh la lua
+                  Tải ảnh lá lúa
                 </h2>
               </div>
               <button
@@ -387,7 +387,7 @@ export default function RiceDiagnosis() {
                 className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold text-[#1E3932] transition hover:bg-black/5"
               >
                 <X size={13} />
-                Xoa
+                Xóa
               </button>
             </div>
 
@@ -408,10 +408,10 @@ export default function RiceDiagnosis() {
                     <Leaf size={28} />
                   </div>
                   <p className="mt-4 text-base font-black text-[#1E3932]">
-                    Chon anh la lua de kiem tra
+                    Chọn ảnh lá lúa để kiểm tra
                   </p>
                   <p className="mt-2 max-w-xs text-sm leading-6 text-gray-500">
-                    Ho tro JPG, PNG. Anh nen chup mot la la chinh, canh gan, khong bi mo.
+                    Hỗ trợ JPG, PNG. Ảnh nên chụp một lá lúa chính, cạnh gần, không bị mờ.
                   </p>
                 </>
               )}
@@ -431,7 +431,7 @@ export default function RiceDiagnosis() {
                 onClick={() => inputRef.current?.click()}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-[#006241]/20 px-5 py-3 text-sm font-bold text-[#006241] transition hover:bg-[#006241]/8"
               >
-                Chon anh
+                Chọn ảnh
               </button>
               <button
                 type="button"
@@ -444,13 +444,13 @@ export default function RiceDiagnosis() {
                 ) : (
                   <ShieldCheck size={16} />
                 )}
-                Kiem tra ngay
+                Kiểm tra ngay
               </button>
             </div>
 
             {file ? (
               <div className="mt-4 rounded-[1.25rem] bg-[#f5f7f3] px-4 py-3 text-xs font-semibold text-[#1E3932]">
-                Tep da chon: {file.name} · {formatFileSize(file.size)}
+                Tệp đã chọn: {file.name} · {formatFileSize(file.size)}
               </div>
             ) : null}
           </div>
@@ -461,10 +461,10 @@ export default function RiceDiagnosis() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-[#006241]/70">
-                  Ket qua AI
+                  Kết quả AI
                 </p>
                 <h2 className="mt-2 text-3xl font-black text-[#1E3932]">
-                  {result.disease?.diseaseName ?? 'Chua doi chieu duoc voi danh muc benh'}
+                  {result.disease?.diseaseName ?? 'Chưa đối chiếu được với danh mục bệnh'}
                 </h2>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-500">
                   {result.advisory.headline}
@@ -484,17 +484,17 @@ export default function RiceDiagnosis() {
                 </span>
                 {result.inferenceFlags.lowQuality ? (
                   <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800">
-                    Anh can chup lai
+                    Ảnh cần chụp lại
                   </span>
                 ) : null}
                 {result.inferenceFlags.ambiguousPrediction ? (
                   <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-black text-sky-800">
-                    Can doi chieu them
+                    Cần đối chiếu thêm
                   </span>
                 ) : null}
                 {result.inferenceFlags.lowConfidence ? (
                   <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">
-                    Tin hieu yeu
+                    Tín hiệu yếu
                   </span>
                 ) : null}
                 {result.disease ? (
@@ -503,7 +503,7 @@ export default function RiceDiagnosis() {
                       result.disease.severity,
                     )}`}
                   >
-                    Muc do {getRiceSeverityLabel(result.disease.severity)}
+                    Mức độ {getRiceSeverityLabel(result.disease.severity)}
                   </span>
                 ) : null}
               </div>
@@ -513,7 +513,7 @@ export default function RiceDiagnosis() {
               <div className="space-y-6">
                 <div className="rounded-[1.75rem] bg-[#f5f7f3] p-5">
                   <p className="text-xs font-black uppercase tracking-[0.2em] text-[#006241]/70">
-                    Giai thich
+                    Giải thích
                   </p>
                   <p className="mt-3 text-sm leading-7 text-[#1E3932]">
                     {result.advisory.disclaimer}
@@ -543,12 +543,12 @@ export default function RiceDiagnosis() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-black uppercase tracking-[0.18em] text-[#006241]/70">
-                        Tin hieu anh va do tin cay
+                        Tín hiệu ảnh và độ tin cậy
                       </p>
                       <p className="mt-2 text-sm leading-7 text-[#1E3932]">
                         {needsManualReview
-                          ? 'He thong dang uu tien muc an toan. Ban nen chup them anh khac neu la bi mo, qua toi hoac ket qua dang phan van.'
-                          : 'Anh hien tai dat chat luong on dinh de tham khao ket qua AI trong pham vi bai toan 5 lop dang ho tro.'}
+                          ? 'Hệ thống đang ưu tiên mức an toàn. Bạn nên chụp thêm ảnh khác nếu lá bị mờ, quá tối hoặc kết quả đang phân vân.'
+                          : 'Ảnh hiện tại đạt chất lượng ổn định để tham khảo kết quả AI trong phạm vi bài toán 5 lớp đang hỗ trợ.'}
                       </p>
                       <div className="mt-4 flex flex-wrap gap-2">
                         {result.inferenceFlags.qualityIssues.length > 0 ? (
@@ -562,27 +562,27 @@ export default function RiceDiagnosis() {
                           ))
                         ) : (
                           <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-emerald-700">
-                            Anh dat yeu cau co ban
+                            Ảnh đạt yêu cầu cơ bản
                           </span>
                         )}
                       </div>
                       <div className="mt-4 grid gap-3 md:grid-cols-2">
                         <div className="rounded-[1.25rem] bg-white px-4 py-3">
                           <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#006241]/70">
-                            Khoang cach giua top 1 va top 2
+                            Khoảng cách giữa top 1 và top 2
                           </p>
                           <p className="mt-2 text-sm font-black text-[#1E3932]">
                             {result.inferenceFlags.confidenceMargin !== null
                               ? formatPercent(result.inferenceFlags.confidenceMargin)
-                              : 'Khong co du lieu'}
+                              : 'Không có dữ liệu'}
                           </p>
                         </div>
                         <div className="rounded-[1.25rem] bg-white px-4 py-3">
                           <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#006241]/70">
-                            Luu lich su
+                            Lưu lịch sử
                           </p>
                           <p className="mt-2 text-sm font-black text-[#1E3932]">
-                            {result.savedToHistory ? 'Da luu vao lich su' : 'Chua luu'}
+                            {result.savedToHistory ? 'Đã lưu vào lịch sử' : 'Chưa lưu'}
                           </p>
                         </div>
                       </div>
@@ -594,22 +594,22 @@ export default function RiceDiagnosis() {
                   <div className="grid gap-4 md:grid-cols-2">
                     {[
                       {
-                        title: 'Tom tat',
-                        body: result.disease.summary || 'Dang cap nhat noi dung tham khao.',
+                        title: 'Tóm tắt',
+                        body: result.disease.summary || 'Đang cập nhật nội dung tham khảo.',
                       },
                       {
-                        title: 'Trieu chung',
-                        body: result.disease.symptoms || 'Dang cap nhat noi dung tham khao.',
+                        title: 'Triệu chứng',
+                        body: result.disease.symptoms || 'Đang cập nhật nội dung tham khảo.',
                       },
                       {
-                        title: 'Nguyen nhan',
-                        body: result.disease.causes || 'Dang cap nhat noi dung tham khao.',
+                        title: 'Nguyên nhân',
+                        body: result.disease.causes || 'Đang cập nhật nội dung tham khảo.',
                       },
                       {
-                        title: 'Huong xu ly',
+                        title: 'Hướng xử lý',
                         body:
                           result.disease.treatmentGuidance ||
-                          'Can doi chieu them voi nhan vien ky thuat truoc khi xu ly dien rong.',
+                          'Cần đối chiếu thêm với nhân viên kỹ thuật trước khi xử lý diện rộng.',
                       },
                     ].map((card) => (
                       <div
@@ -630,7 +630,7 @@ export default function RiceDiagnosis() {
                 {result.disease?.recommendedIngredients.length ? (
                   <div className="rounded-[1.75rem] border border-black/6 bg-white p-5">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#006241]/70">
-                      Hoat chat hoac nhom xu ly tham khao
+                      Hoạt chất hoặc nhóm xử lý tham khảo
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       {result.disease.recommendedIngredients.map((item) => (
@@ -650,7 +650,7 @@ export default function RiceDiagnosis() {
                 <div className="rounded-[1.75rem] border border-black/6 bg-white p-5">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#006241]/70">
-                      Top du doan
+                      Top dự đoán
                     </p>
                     <span className="text-xs font-semibold text-gray-400">
                       {result.model.version ?? 'Model'}
@@ -682,12 +682,12 @@ export default function RiceDiagnosis() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.18em] text-[#006241]/70">
-                        Can nhan vien xem them?
+                        Cần nhân viên xem thêm?
                       </p>
                       <p className="mt-2 text-sm leading-6 text-gray-500">
                         {needsManualReview
-                          ? 'Nen dung khi anh kho, la bi che khuat, confidence yeu hoac AI dang phan van giua nhieu nhan benh.'
-                          : 'Van co the mo chat de duoc tu van cach xu ly, phong ngua va chon san pham phu hop.'}
+                          ? 'Nên dùng khi ảnh khó, lá bị che khuất, confidence yếu hoặc AI đang phân vân giữa nhiều nhãn bệnh.'
+                          : 'Vẫn có thể mở chat để được tư vấn cách xử lý, phòng ngừa và chọn sản phẩm phù hợp.'}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -697,7 +697,7 @@ export default function RiceDiagnosis() {
                         className="inline-flex items-center gap-2 rounded-full border border-[#006241]/20 px-4 py-2.5 text-sm font-bold text-[#006241] transition hover:bg-[#006241]/8"
                       >
                         <Camera size={15} />
-                        Chon anh khac
+                        Chọn ảnh khác
                       </button>
                       <button
                         type="button"
@@ -705,7 +705,7 @@ export default function RiceDiagnosis() {
                         className="inline-flex items-center gap-2 rounded-full bg-[#1E3932] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#11251f]"
                       >
                         <MessageCircle size={15} />
-                        Mo chat ho tro
+                        Mở chat hỗ trợ
                       </button>
                     </div>
                   </div>
@@ -717,10 +717,10 @@ export default function RiceDiagnosis() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-[#006241]/70">
-                    San pham goi y
+                    Sản phẩm gợi ý
                   </p>
                   <h3 className="mt-2 text-2xl font-black text-[#1E3932]">
-                    Thuoc va vat tu dang san co
+                    Thuốc và vật tư đang sẵn có
                   </h3>
                 </div>
                 {result.recommendedProducts.length > 0 ? (
@@ -728,7 +728,7 @@ export default function RiceDiagnosis() {
                     to="/client/products"
                     className="inline-flex items-center gap-2 text-sm font-bold text-[#006241] hover:underline"
                   >
-                    Xem them san pham
+                    Xem thêm sản phẩm
                     <ArrowRight size={15} />
                   </Link>
                 ) : null}
@@ -736,8 +736,8 @@ export default function RiceDiagnosis() {
 
               {result.recommendedProducts.length === 0 ? (
                 <div className="mt-4 rounded-[1.75rem] border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-800">
-                  Hien chua co san pham duoc map truc tiep cho ket qua nay. He thong se uu tien
-                  huong dan tham khao va chat voi nhan vien thay vi ep mua thuoc.
+                  Hiện chưa có sản phẩm được map trực tiếp cho kết quả này. Hệ thống sẽ ưu tiên
+                  hướng dẫn tham khảo và chat với nhân viên thay vì ép mua thuốc.
                 </div>
               ) : (
                 <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -761,10 +761,10 @@ export default function RiceDiagnosis() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-[#006241]/70">
-                  Thu vien benh
+                  Thư viện bệnh
                 </p>
                 <h2 className="mt-2 text-3xl font-black text-[#1E3932]">
-                  Danh muc benh lua he thong dang ho tro
+                  Danh mục bệnh lúa hệ thống đang hỗ trợ
                 </h2>
               </div>
               {loadingCatalog ? <LoaderCircle size={18} className="animate-spin text-[#006241]" /> : null}
@@ -789,7 +789,7 @@ export default function RiceDiagnosis() {
                             {disease.diseaseName}
                           </p>
                           <p className="mt-2 text-sm leading-6 text-gray-500">
-                            {disease.summary || 'Dang cap nhat mo ta cho benh nay.'}
+                            {disease.summary || 'Đang cập nhật mô tả cho bệnh này.'}
                           </p>
                         </div>
                         <span
@@ -809,10 +809,10 @@ export default function RiceDiagnosis() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-[#006241]/70">
-                  Lich su cua ban
+                  Lịch sử của bạn
                 </p>
                 <h2 className="mt-2 text-3xl font-black text-[#1E3932]">
-                  Phien chan doan gan day
+                  Phiên chẩn đoán gần đây
                 </h2>
               </div>
               {session ? (
@@ -831,7 +831,7 @@ export default function RiceDiagnosis() {
                     className="inline-flex items-center gap-2 rounded-full border border-black/10 px-3 py-2 text-xs font-bold text-[#1E3932] transition hover:bg-black/5"
                   >
                     <RefreshCw size={13} />
-                    Lam moi
+                    Làm mới
                   </button>
                 )
               ) : null}
@@ -839,12 +839,12 @@ export default function RiceDiagnosis() {
 
             {!session ? (
               <div className="mt-6 rounded-[1.75rem] border border-[#006241]/15 bg-[#edf3ee] p-5 text-sm leading-7 text-[#1E3932]">
-                Dang nhap de luu lich su chan doan, theo doi cac ket qua da kiem tra va quay lai mua
-                thuoc nhanh hon.
+                Đăng nhập để lưu lịch sử chẩn đoán, theo dõi các kết quả đã kiểm tra và quay lại mua
+                thuốc nhanh hơn.
               </div>
             ) : history.length === 0 ? (
               <div className="mt-6 rounded-[1.75rem] border border-black/8 bg-[#f5f7f3] p-5 text-sm leading-7 text-gray-500">
-                Chua co lich su chan doan nao. Hay tai anh va thuc hien lan kiem tra dau tien.
+                Chưa có lịch sử chẩn đoán nào. Hãy tải ảnh và thực hiện lần kiểm tra đầu tiên.
               </div>
             ) : (
               <div className="mt-6 space-y-3">
@@ -856,7 +856,7 @@ export default function RiceDiagnosis() {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="font-black text-[#1E3932]">
-                          {item.disease?.diseaseName ?? item.predictedLabel ?? 'Khong ro'}
+                          {item.disease?.diseaseName ?? item.predictedLabel ?? 'Không rõ'}
                         </p>
                         <p className="mt-1 text-sm text-gray-500">
                           {new Date(item.createdAt).toLocaleString('vi-VN')}
