@@ -73,31 +73,31 @@ const PAYMENT_METHODS: Array<{
 }> = [
   {
     key: 'cod',
-    label: 'COD (Thanh toan khi nhan hang)',
-    description: 'Khach hang thanh toan truc tiep khi nhan hang.',
+    label: 'COD (Thanh toán khi nhận hàng)',
+    description: 'Khách hàng thanh toán trực tiếp khi nhận hàng.',
     color: '#6b7280',
     icon: '💵',
   },
   {
     key: 'bank_transfer',
-    label: 'Chuyen khoan ngan hang',
-    description: 'Chuyen khoan qua tai khoan ngan hang cua cua hang.',
+    label: 'Chuyển khoản ngân hàng',
+    description: 'Chuyển khoản qua tài khoản ngân hàng của cửa hàng.',
     color: '#0065AC',
     icon: '🏦',
     fields: [
       {
         key: 'bankName',
-        label: 'Ten ngan hang',
+        label: 'Tên ngân hàng',
         placeholder: 'VD: Vietcombank',
       },
       {
         key: 'accountNumber',
-        label: 'So tai khoan',
+        label: 'Số tài khoản',
         placeholder: '0123456789',
       },
       {
         key: 'accountHolder',
-        label: 'Chu tai khoan',
+        label: 'Chủ tài khoản',
         placeholder: 'CONG TY ABC',
       },
     ],
@@ -105,7 +105,7 @@ const PAYMENT_METHODS: Array<{
   {
     key: 'momo',
     label: 'MoMo',
-    description: 'Thanh toan qua vi dien tu MoMo.',
+    description: 'Thanh toán qua ví điện tử MoMo.',
     color: '#AE2070',
     icon: '💗',
     fields: [
@@ -130,7 +130,7 @@ const PAYMENT_METHODS: Array<{
   {
     key: 'vnpay',
     label: 'VNPay',
-    description: 'Thanh toan qua cong thanh toan VNPay.',
+    description: 'Thanh toán qua cổng thanh toán VNPay.',
     color: '#005BAA',
     icon: '🔵',
     fields: [
@@ -150,7 +150,7 @@ const PAYMENT_METHODS: Array<{
   {
     key: 'zalopay',
     label: 'ZaloPay',
-    description: 'Thanh toan qua vi ZaloPay.',
+    description: 'Thanh toán qua ví ZaloPay.',
     color: '#0068FF',
     icon: '⚡',
     fields: [
@@ -177,7 +177,7 @@ const PAYMENT_METHODS: Array<{
 
 const PROVIDER_LABELS: Record<string, { label: string; color: string }> = {
   cod: { label: 'COD', color: '#6b7280' },
-  bank_transfer: { label: 'Chuyen khoan', color: '#0065AC' },
+  bank_transfer: { label: 'Chuyển khoản', color: '#0065AC' },
   momo: { label: 'MoMo', color: '#AE2070' },
   vnpay: { label: 'VNPay', color: '#005BAA' },
   zalopay: { label: 'ZaloPay', color: '#0068FF' },
@@ -185,9 +185,9 @@ const PROVIDER_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 const STATUS_CFG: Record<TxStatus, { label: string; cls: string }> = {
-  pending: { label: 'Cho xu ly', cls: 'bg-amber-100 text-amber-700' },
-  success: { label: 'Thanh cong', cls: 'bg-emerald-100 text-emerald-700' },
-  failed: { label: 'That bai', cls: 'bg-red-100 text-red-700' },
+  pending: { label: 'Chờ xử lý', cls: 'bg-amber-100 text-amber-700' },
+  success: { label: 'Thành công', cls: 'bg-emerald-100 text-emerald-700' },
+  failed: { label: 'Thất bại', cls: 'bg-red-100 text-red-700' },
 };
 
 function formatVND(amount: string | number) {
@@ -301,7 +301,7 @@ export default function Payments() {
         if (!cancelled) {
           showToast({
             tone: 'error',
-            title: 'Khong tai duoc cau hinh thanh toan',
+            title: 'Không tải được cấu hình thanh toán',
             description: error instanceof Error ? error.message : '',
           });
         }
@@ -382,7 +382,7 @@ export default function Payments() {
         if (!cancelled) {
           showToast({
             tone: 'error',
-            title: 'Khong tai duoc giao dich',
+            title: 'Không tải được giao dịch',
             description: error instanceof Error ? error.message : '',
           });
         }
@@ -480,7 +480,7 @@ export default function Payments() {
     } catch (error) {
       showToast({
         tone: 'error',
-        title: 'Khong luu duoc cau hinh thanh toan',
+        title: 'Không lưu được cấu hình thanh toán',
         description: error instanceof Error ? error.message : '',
       });
     } finally {
@@ -489,11 +489,11 @@ export default function Payments() {
   };
 
   const handleSaveMethod = async (key: PaymentMethodKey) => {
-    await persistPaymentSettings('Da luu cau hinh thanh toan', key);
+    await persistPaymentSettings('Đã lưu cấu hình thanh toán', key);
   };
 
   const handleSaveAll = async () => {
-    await persistPaymentSettings('Da luu tat ca cau hinh thanh toan');
+    await persistPaymentSettings('Đã lưu tất cả cấu hình thanh toán');
   };
 
   const handleSaveSmtp = async () => {
@@ -503,11 +503,11 @@ export default function Payments() {
         smtp,
       });
       setSmtp(mergeSmtpConfig(saved));
-      showToast({ tone: 'success', title: 'Da luu cau hinh SMTP' });
+      showToast({ tone: 'success', title: 'Đã lưu cấu hình SMTP' });
     } catch (error) {
       showToast({
         tone: 'error',
-        title: 'Khong luu duoc cau hinh SMTP',
+        title: 'Không lưu được cấu hình SMTP',
         description: error instanceof Error ? error.message : '',
       });
     } finally {
@@ -520,11 +520,11 @@ export default function Payments() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-4xl font-black tracking-tight text-primary">
-            {isVi ? 'Quan ly thanh toan' : 'Payment Management'}
+            {isVi ? 'Quản lý thanh toán' : 'Payment Management'}
           </h1>
           <p className="mt-1 text-sm text-on-surface-variant">
             {isVi
-              ? 'Cau hinh cong thanh toan, SMTP va theo doi giao dich.'
+              ? 'Cấu hình cổng thanh toán, SMTP và theo dõi giao dịch.'
               : 'Configure payment gateways, SMTP and track transactions.'}
           </p>
         </div>
@@ -535,7 +535,7 @@ export default function Payments() {
             disabled={configLoading || paymentSaving}
             className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
           >
-            <Save size={15} /> Luu tat ca
+            <Save size={15} /> Lưu tất cả
           </button>
         )}
       </div>
@@ -544,7 +544,7 @@ export default function Payments() {
         {([
           {
             id: 'config',
-            label: isVi ? 'Phuong thuc thanh toan' : 'Payment methods',
+            label: isVi ? 'Phương thức thanh toán' : 'Payment methods',
             icon: Settings,
           },
           {
@@ -554,7 +554,7 @@ export default function Payments() {
           },
           {
             id: 'transactions',
-            label: isVi ? 'Lich su giao dich' : 'Transactions',
+            label: isVi ? 'Lịch sử giao dịch' : 'Transactions',
             icon: BarChart3,
           },
         ] as const).map(({ id, label, icon: Icon }) => (
@@ -608,10 +608,10 @@ export default function Payments() {
                         <p className="text-xs text-on-surface-variant">
                           {cfg.isActive
                             ? isVi
-                              ? 'Dang hoat dong'
+                              ? 'Đang hoạt động'
                               : 'Active'
                             : isVi
-                              ? 'Dang tat'
+                              ? 'Đang tắt'
                               : 'Inactive'}
                         </p>
                       </div>
@@ -619,7 +619,7 @@ export default function Payments() {
                         type="button"
                         onClick={() => handleToggle(method.key)}
                         className="shrink-0 transition"
-                        title={cfg.isActive ? 'Tat' : 'Bat'}
+                        title={cfg.isActive ? 'Tắt' : 'Bật'}
                       >
                         {cfg.isActive ? (
                           <ToggleRight
@@ -638,7 +638,7 @@ export default function Payments() {
                     <div className="grid gap-4 p-6 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant/60">
-                          Mo ta hien thi cho khach
+                          Mô tả hiển thị cho khách
                         </label>
                         <textarea
                           value={cfg.description}
@@ -651,11 +651,11 @@ export default function Payments() {
                       </div>
 
                       <div className="rounded-2xl bg-surface p-4 text-sm text-on-surface-variant">
-                        <p className="font-bold text-on-surface">Trang thai</p>
+                        <p className="font-bold text-on-surface">Trạng thái</p>
                         <p className="mt-1">
                           {cfg.isActive
-                            ? 'Method nay se hien thi cho khach va duoc backend cho phep su dung.'
-                            : 'Method nay se bi an o client va backend tu choi neu client goi truc tiep.'}
+                            ? 'Phương thức này sẽ hiển thị cho khách và được backend cho phép sử dụng.'
+                            : 'Phương thức này sẽ bị ẩn ở client và backend từ chối nếu client gọi trực tiếp.'}
                         </p>
                       </div>
 
@@ -694,11 +694,11 @@ export default function Payments() {
                               size={14}
                               className="text-emerald-500"
                             />{' '}
-                            Da luu
+                            Đã lưu
                           </>
                         ) : (
                           <>
-                            <Save size={14} /> Luu
+                            <Save size={14} /> Lưu
                           </>
                         )}
                       </button>
@@ -721,10 +721,10 @@ export default function Payments() {
             <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
               <div className="border-b border-on-surface/8 px-6 py-5">
                 <h2 className="text-lg font-black text-on-surface">
-                  Cau hinh SMTP
+                  Cấu hình SMTP
                 </h2>
                 <p className="mt-1 text-sm text-on-surface-variant">
-                  Newsletter va email notification se dung chung cau hinh nay.
+                  Newsletter và email notification sẽ dùng chung cấu hình này.
                 </p>
               </div>
 
@@ -828,14 +828,14 @@ export default function Payments() {
                       }
                       className="h-4 w-4 rounded border-on-surface/20"
                     />
-                    Bat secure mode (thuong dung cho port 465)
+                    Bật secure mode (thường dùng cho port 465)
                   </label>
                 </div>
               </div>
 
               <div className="flex items-center justify-between border-t border-on-surface/8 px-6 py-4">
                 <p className="text-xs text-on-surface-variant">
-                  Neu bo trong, backend se tiep tuc fallback sang bien moi truong
+                  Nếu bỏ trống, backend sẽ tiếp tục fallback sang biến môi trường
                   `.env`.
                 </p>
                 <button
@@ -849,7 +849,7 @@ export default function Payments() {
                   ) : (
                     <Save size={14} />
                   )}
-                  Luu SMTP
+                  Lưu SMTP
                 </button>
               </div>
             </section>
@@ -861,19 +861,19 @@ export default function Payments() {
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
-              { label: 'Tong GD', value: meta.total, color: 'text-primary' },
+              { label: 'Tổng GD', value: meta.total, color: 'text-primary' },
               {
-                label: 'Thanh cong',
+                label: 'Thành công',
                 value: totalSuccess,
                 color: 'text-emerald-600',
               },
               {
-                label: 'That bai',
+                label: 'Thất bại',
                 value: totalFailed,
                 color: 'text-red-500',
               },
               {
-                label: 'Doanh thu (trang nay)',
+                label: 'Doanh thu',
                 value: formatVND(totalRevenue),
                 color: 'text-primary',
               },
@@ -902,7 +902,7 @@ export default function Payments() {
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Tim ma GD, don hang, nguoi dung..."
+                  placeholder="Tìm mã GD, đơn hàng, người dùng..."
                   className="w-full rounded-2xl border border-on-surface/10 bg-surface py-3 pl-11 pr-4 text-sm outline-none focus:border-primary/40"
                 />
               </label>
@@ -912,7 +912,7 @@ export default function Payments() {
                 onChange={(event) => setFilterProvider(event.target.value)}
                 className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
               >
-                <option value="">Tat ca phuong thuc</option>
+                <option value="">Tất cả phương thức</option>
                 {Object.entries(PROVIDER_LABELS).map(([key, value]) => (
                   <option key={key} value={key}>
                     {value.label}
@@ -925,10 +925,10 @@ export default function Payments() {
                 onChange={(event) => setFilterStatus(event.target.value)}
                 className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
               >
-                <option value="">Tat ca trang thai</option>
-                <option value="pending">Cho xu ly</option>
-                <option value="success">Thanh cong</option>
-                <option value="failed">That bai</option>
+                <option value="">Tất cả trạng thái</option>
+                <option value="pending">Chờ xử lý</option>
+                <option value="success">Thành công</option>
+                <option value="failed">Thất bại</option>
               </select>
 
               <button
@@ -941,7 +941,7 @@ export default function Payments() {
                   size={15}
                   className={loading ? 'animate-spin' : ''}
                 />
-                Lam moi
+                Làm mới
               </button>
             </div>
           </section>
@@ -951,14 +951,14 @@ export default function Payments() {
               <table className="min-w-full text-left">
                 <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
                   <tr>
-                    <th className="px-4 py-4">Ma giao dich</th>
-                    <th className="px-4 py-4">Don hang</th>
-                    <th className="px-4 py-4">Nguoi dung</th>
-                    <th className="px-4 py-4">Phuong thuc</th>
-                    <th className="px-4 py-4">So tien</th>
-                    <th className="px-4 py-4 text-center">Trang thai</th>
-                    <th className="px-4 py-4">Ngay</th>
-                    <th className="px-4 py-4">Ma GW</th>
+                    <th className="px-4 py-4">Mã giao dịch</th>
+                    <th className="px-4 py-4">Đơn hàng</th>
+                    <th className="px-4 py-4">Người dùng</th>
+                    <th className="px-4 py-4">Phương thức</th>
+                    <th className="px-4 py-4">Số tiền</th>
+                    <th className="px-4 py-4 text-center">Trạng thái</th>
+                    <th className="px-4 py-4">Ngày</th>
+                    <th className="px-4 py-4">Mã GW</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-on-surface/6 text-sm">
@@ -970,7 +970,7 @@ export default function Payments() {
                       >
                         <span className="inline-flex items-center gap-2">
                           <LoaderCircle size={16} className="animate-spin" />{' '}
-                          Dang tai...
+                          Đang tải...
                         </span>
                       </td>
                     </tr>
@@ -984,7 +984,7 @@ export default function Payments() {
                           size={28}
                           className="mx-auto mb-3 text-primary/30"
                         />
-                        Khong co giao dich
+                        Không có giao dịch
                       </td>
                     </tr>
                   ) : (
@@ -1066,7 +1066,7 @@ export default function Payments() {
             {meta.totalPages > 1 && (
               <div className="flex items-center justify-between border-t border-on-surface/8 px-5 py-4">
                 <p className="text-xs text-on-surface-variant">
-                  Trang {meta.page}/{meta.totalPages} · {meta.total} giao dich
+                  Trang {meta.page}/{meta.totalPages} · {meta.total} giao dịch
                 </p>
                 <div className="flex gap-2">
                   <button
