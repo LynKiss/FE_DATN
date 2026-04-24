@@ -1,5 +1,8 @@
 import {
+  AlertTriangle,
   ArrowRight,
+  Camera,
+  CheckCircle2,
   Leaf,
   LoaderCircle,
   MessageCircle,
@@ -23,6 +26,8 @@ import { useToast } from '../../hooks/useToast';
 import { clientApi } from '../../lib/client-api';
 import {
   formatConfidence,
+  formatPercent,
+  getQualityIssueLabel,
   formatPrice,
   getRecommendationLabel,
   getRecommendationTone,
@@ -124,6 +129,16 @@ function ProductRecommendationCard({
   );
 }
 
+const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
+
+function formatFileSize(size: number) {
+  if (size < 1024 * 1024) {
+    return `${Math.round(size / 1024)} KB`;
+  }
+
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function RiceDiagnosis() {
   const { session } = useClientSession();
   const { addItem } = useCart();
@@ -140,6 +155,12 @@ export default function RiceDiagnosis() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<RiceDiagnosisResult | null>(null);
   const [addingProductId, setAddingProductId] = useState<string | null>(null);
+  const needsManualReview = Boolean(
+    result &&
+      (result.recommendationLevel === 'low' ||
+        result.inferenceFlags.lowQuality ||
+        result.inferenceFlags.ambiguousPrediction),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -213,7 +234,28 @@ export default function RiceDiagnosis() {
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const nextFile = event.target.files?.[0] ?? null;
+
+    if (nextFile && !nextFile.type.startsWith('image/')) {
+      showToast({
+        tone: 'error',
+        title: 'Chi ho tro anh JPG, PNG, WEBP hoac dinh dang image hop le',
+      });
+      event.target.value = '';
+      return;
+    }
+
+    if (nextFile && nextFile.size > MAX_UPLOAD_SIZE_BYTES) {
+      showToast({
+        tone: 'error',
+        title: 'Anh vuot qua gioi han 8MB',
+        description: 'Hay nen anh hoac chup lai anh nho hon truoc khi tai len.',
+      });
+      event.target.value = '';
+      return;
+    }
+
     setFile(nextFile);
+    setResult(null);
   }
 
   function handleClearImage() {
@@ -405,6 +447,12 @@ export default function RiceDiagnosis() {
                 Kiem tra ngay
               </button>
             </div>
+
+            {file ? (
+              <div className="mt-4 rounded-[1.25rem] bg-[#f5f7f3] px-4 py-3 text-xs font-semibold text-[#1E3932]">
+                Tep da chon: {file.name} · {formatFileSize(file.size)}
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -434,6 +482,21 @@ export default function RiceDiagnosis() {
                 <span className="rounded-full border border-black/10 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">
                   Confidence {formatConfidence(result.confidence)}
                 </span>
+                {result.inferenceFlags.lowQuality ? (
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800">
+                    Anh can chup lai
+                  </span>
+                ) : null}
+                {result.inferenceFlags.ambiguousPrediction ? (
+                  <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-black text-sky-800">
+                    Can doi chieu them
+                  </span>
+                ) : null}
+                {result.inferenceFlags.lowConfidence ? (
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">
+                    Tin hieu yeu
+                  </span>
+                ) : null}
                 {result.disease ? (
                   <span
                     className={`rounded-full border px-3 py-2 text-xs font-black ${getRiceSeverityTone(
@@ -455,6 +518,76 @@ export default function RiceDiagnosis() {
                   <p className="mt-3 text-sm leading-7 text-[#1E3932]">
                     {result.advisory.disclaimer}
                   </p>
+                </div>
+
+                <div
+                  className={`rounded-[1.75rem] border p-5 ${
+                    needsManualReview
+                      ? 'border-amber-200 bg-amber-50'
+                      : 'border-emerald-200 bg-emerald-50'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                        needsManualReview
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-emerald-100 text-emerald-700'
+                      }`}
+                    >
+                      {needsManualReview ? (
+                        <AlertTriangle size={18} />
+                      ) : (
+                        <CheckCircle2 size={18} />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#006241]/70">
+                        Tin hieu anh va do tin cay
+                      </p>
+                      <p className="mt-2 text-sm leading-7 text-[#1E3932]">
+                        {needsManualReview
+                          ? 'He thong dang uu tien muc an toan. Ban nen chup them anh khac neu la bi mo, qua toi hoac ket qua dang phan van.'
+                          : 'Anh hien tai dat chat luong on dinh de tham khao ket qua AI trong pham vi bai toan 5 lop dang ho tro.'}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {result.inferenceFlags.qualityIssues.length > 0 ? (
+                          result.inferenceFlags.qualityIssues.map((issue) => (
+                            <span
+                              key={issue}
+                              className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-amber-800"
+                            >
+                              {getQualityIssueLabel(issue)}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-emerald-700">
+                            Anh dat yeu cau co ban
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        <div className="rounded-[1.25rem] bg-white px-4 py-3">
+                          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#006241]/70">
+                            Khoang cach giua top 1 va top 2
+                          </p>
+                          <p className="mt-2 text-sm font-black text-[#1E3932]">
+                            {result.inferenceFlags.confidenceMargin !== null
+                              ? formatPercent(result.inferenceFlags.confidenceMargin)
+                              : 'Khong co du lieu'}
+                          </p>
+                        </div>
+                        <div className="rounded-[1.25rem] bg-white px-4 py-3">
+                          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#006241]/70">
+                            Luu lich su
+                          </p>
+                          <p className="mt-2 text-sm font-black text-[#1E3932]">
+                            {result.savedToHistory ? 'Da luu vao lich su' : 'Chua luu'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {result.disease ? (
@@ -552,17 +685,29 @@ export default function RiceDiagnosis() {
                         Can nhan vien xem them?
                       </p>
                       <p className="mt-2 text-sm leading-6 text-gray-500">
-                        Dung khi anh kho, la bi che khuat hoac confidence chua du cao.
+                        {needsManualReview
+                          ? 'Nen dung khi anh kho, la bi che khuat, confidence yeu hoac AI dang phan van giua nhieu nhan benh.'
+                          : 'Van co the mo chat de duoc tu van cach xu ly, phong ngua va chon san pham phu hop.'}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => openSupportChatWidget()}
-                      className="inline-flex items-center gap-2 rounded-full bg-[#1E3932] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#11251f]"
-                    >
-                      <MessageCircle size={15} />
-                      Mo chat ho tro
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => inputRef.current?.click()}
+                        className="inline-flex items-center gap-2 rounded-full border border-[#006241]/20 px-4 py-2.5 text-sm font-bold text-[#006241] transition hover:bg-[#006241]/8"
+                      >
+                        <Camera size={15} />
+                        Chon anh khac
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openSupportChatWidget()}
+                        className="inline-flex items-center gap-2 rounded-full bg-[#1E3932] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#11251f]"
+                      >
+                        <MessageCircle size={15} />
+                        Mo chat ho tro
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

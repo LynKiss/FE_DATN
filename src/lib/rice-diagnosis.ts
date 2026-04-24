@@ -52,6 +52,14 @@ export type RiceDiagnosisProduct = {
   ratingCount: number;
 };
 
+export type RiceDiagnosisInferenceFlags = {
+  lowConfidence: boolean;
+  ambiguousPrediction: boolean;
+  lowQuality: boolean;
+  confidenceMargin: number | null;
+  qualityIssues: string[];
+};
+
 export type RiceDiagnosisResult = {
   diagnosisId: string;
   savedToHistory: boolean;
@@ -61,9 +69,11 @@ export type RiceDiagnosisResult = {
     version: string | null;
     task: string | null;
   };
+  inferenceFlags: RiceDiagnosisInferenceFlags;
   disease: RiceDisease | null;
   topPredictions: Array<{
     label: string;
+    canonicalLabel: string;
     normalizedKey: string;
     confidence: number;
     diseaseId: string | null;
@@ -124,6 +134,10 @@ export function formatPrice(value: number) {
   }).format(value);
 }
 
+export function formatPercent(value: number) {
+  return `${Math.round(value * 100)}%`;
+}
+
 export function getRiceSeverityLabel(severity: RiceDiseaseSeverity) {
   switch (severity) {
     case 'low':
@@ -177,6 +191,25 @@ export function getRecommendationLabel(level: RiceDiagnosisRecommendationLevel) 
       return 'Do tin cay cao';
     default:
       return level;
+  }
+}
+
+export function getQualityIssueLabel(issue: string) {
+  switch (issue) {
+    case 'image_too_small':
+      return 'Anh qua nho';
+    case 'too_dark':
+      return 'Anh qua toi';
+    case 'too_bright':
+      return 'Anh qua sang';
+    case 'low_contrast':
+      return 'Do tuong phan thap';
+    case 'blurry':
+      return 'Anh bi mo';
+    case 'empty_image':
+      return 'Anh khong hop le';
+    default:
+      return issue.replace(/[_-]+/g, ' ');
   }
 }
 
