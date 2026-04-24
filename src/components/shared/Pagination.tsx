@@ -60,13 +60,13 @@ export default function Pagination({
     <div className="mt-6 flex flex-col gap-4 rounded-[1.5rem] border border-on-surface-variant/8 bg-surface px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="text-sm font-medium text-on-surface-variant">
         {isVietnamese
-          ? `Hiá»ƒn thá»‹ ${from}-${to} trÃªn ${total} báº£n ghi`
+          ? `Hiển thị ${from}-${to} trên ${total} bản ghi`
           : `Showing ${from}-${to} of ${total} records`}
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <label className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
-          <span>{isVietnamese ? 'Má»—i trang' : 'Per page'}</span>
+          <span>{isVietnamese ? 'Mỗi trang' : 'Per page'}</span>
           <select
             value={limit}
             onChange={(event) => onLimitChange(Number(event.target.value))}
@@ -87,7 +87,7 @@ export default function Pagination({
             disabled={page <= 1}
             className="rounded-xl border border-on-surface/10 bg-white px-4 py-2 text-sm font-bold text-on-surface transition hover:border-primary/20 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isVietnamese ? 'TrÆ°á»›c' : 'Prev'}
+            {isVietnamese ? 'Trước' : 'Prev'}
           </button>
 
           <div className="flex items-center gap-1">
@@ -104,11 +104,10 @@ export default function Pagination({
                   key={item}
                   type="button"
                   onClick={() => onPageChange(item)}
-                  className={`min-w-10 rounded-xl px-3 py-2 text-sm font-bold transition ${
-                    item === page
-                      ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                      : 'border border-on-surface/10 bg-white text-on-surface hover:border-primary/20 hover:text-primary'
-                  }`}
+                  className={`min-w-10 rounded-xl px-3 py-2 text-sm font-bold transition ${item === page
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                    : 'border border-on-surface/10 bg-white text-on-surface hover:border-primary/20 hover:text-primary'
+                    }`}
                 >
                   {item}
                 </button>

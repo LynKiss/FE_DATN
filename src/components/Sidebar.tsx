@@ -171,7 +171,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
     },
     {
       id: 'rice-diagnosis',
-      label: isVietnamese ? 'AI benh lua' : 'Rice AI diagnosis',
+      label: isVietnamese ? 'AI bệnh lúa' : 'Rice AI diagnosis',
       icon: Leaf,
       path: '/admin/rice-diagnosis',
     },
@@ -238,17 +238,14 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
         type="button"
         aria-label={isVietnamese ? 'Đóng thanh điều hướng' : 'Close navigation'}
         onClick={onClose}
-        className={`fixed inset-0 z-40 bg-slate-950/50 transition-opacity lg:hidden ${
-          open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-        }`}
+        className={`fixed inset-0 z-40 bg-slate-950/50 transition-opacity lg:hidden ${open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+          }`}
       />
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-dvh flex-col overflow-hidden bg-sidebar-bg shadow-2xl transition-all duration-300 ${
-          collapsed ? 'lg:w-16' : 'lg:w-64'
-        } w-72 max-w-[85vw] p-3 lg:translate-x-0 ${
-          open ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed left-0 top-0 z-50 flex h-dvh flex-col overflow-hidden bg-sidebar-bg shadow-2xl transition-all duration-300 ${collapsed ? 'lg:w-16' : 'lg:w-64'
+          } w-72 max-w-[85vw] p-3 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         {/* Header */}
         <div className={`mb-4 flex items-start gap-3 px-2 lg:mb-3 ${collapsed ? 'lg:flex-col lg:items-center' : 'justify-between'}`}>
@@ -309,11 +306,10 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
                       to={item.children[0]?.path ?? '/admin/products'}
                       onClick={onClose}
                       title={item.label}
-                      className={`hidden lg:flex h-10 w-10 mx-auto items-center justify-center rounded-xl transition-all duration-200 ${
-                        isGroupActive
-                          ? 'bg-accent text-primary'
-                          : 'text-white/60 hover:bg-white/5 hover:text-white'
-                      }`}
+                      className={`hidden lg:flex h-10 w-10 mx-auto items-center justify-center rounded-xl transition-all duration-200 ${isGroupActive
+                        ? 'bg-accent text-primary'
+                        : 'text-white/60 hover:bg-white/5 hover:text-white'
+                        }`}
                     >
                       <item.icon size={18} />
                     </NavLink>
@@ -323,11 +319,10 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
                 return (
                   <div key={item.id} className="rounded-[1.5rem]">
                     <div
-                      className={`flex items-center rounded-full text-sm font-medium transition-all duration-200 ${
-                        isGroupActive || isOpen
-                          ? 'bg-white/8 text-white'
-                          : 'text-white/60 hover:bg-white/5 hover:text-white'
-                      }`}
+                      className={`flex items-center rounded-full text-sm font-medium transition-all duration-200 ${isGroupActive || isOpen
+                        ? 'bg-white/8 text-white'
+                        : 'text-white/60 hover:bg-white/5 hover:text-white'
+                        }`}
                     >
                       <NavLink
                         to={item.children[0]?.path ?? '/admin/products'}
@@ -362,10 +357,9 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
                             to={child.path}
                             onClick={onClose}
                             className={({ isActive }) =>
-                              `flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-xs transition ${
-                                isActive
-                                  ? 'bg-accent font-bold text-primary shadow-sm shadow-accent/20'
-                                  : 'text-white/60 hover:bg-white/5 hover:text-white'
+                              `flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-xs transition ${isActive
+                                ? 'bg-accent font-bold text-primary shadow-sm shadow-accent/20'
+                                : 'text-white/60 hover:bg-white/5 hover:text-white'
                               }`
                             }
                           >
@@ -387,10 +381,9 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
                     onClick={onClose}
                     title={item.label}
                     className={({ isActive }) =>
-                      `hidden lg:flex h-10 w-10 mx-auto items-center justify-center rounded-xl transition-all duration-200 ${
-                        isActive
-                          ? 'bg-accent text-primary'
-                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                      `hidden lg:flex h-10 w-10 mx-auto items-center justify-center rounded-xl transition-all duration-200 ${isActive
+                        ? 'bg-accent text-primary'
+                        : 'text-white/60 hover:bg-white/5 hover:text-white'
                       }`
                     }
                   >
@@ -405,10 +398,9 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
                   to={item.path ?? '/admin'}
                   onClick={onClose}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-full px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                      isActive
-                        ? 'bg-accent font-bold text-primary shadow-lg shadow-accent/20'
-                        : 'text-white/60 hover:bg-white/5 hover:text-white active:scale-95'
+                    `flex items-center gap-3 rounded-full px-3 py-2.5 text-sm font-medium transition-all duration-200 ${isActive
+                      ? 'bg-accent font-bold text-primary shadow-lg shadow-accent/20'
+                      : 'text-white/60 hover:bg-white/5 hover:text-white active:scale-95'
                     }`
                   }
                 >
