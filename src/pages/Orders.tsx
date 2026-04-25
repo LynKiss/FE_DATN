@@ -29,6 +29,7 @@ type OrderStatus =
   | 'processing'
   | 'shipping'
   | 'delivered'
+  | 'partial_delivered'
   | 'cancelled'
   | 'returned';
 
@@ -108,6 +109,7 @@ const STATUS_OPTIONS: OrderStatus[] = [
   'processing',
   'shipping',
   'delivered',
+  'partial_delivered',
   'cancelled',
   'returned',
 ];
@@ -117,7 +119,8 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['processing', 'cancelled'],
   processing: ['shipping', 'cancelled'],
-  shipping: ['delivered', 'returned'],
+  shipping: ['delivered', 'partial_delivered', 'returned'],
+  partial_delivered: ['returned'],
   delivered: ['returned'],
   cancelled: [],
   returned: [],
@@ -1249,6 +1252,7 @@ function getStatusLabel(status: OrderStatus, isVietnamese: boolean) {
       processing: 'Dang xu ly',
       shipping: 'Dang giao',
       delivered: 'Da giao',
+      partial_delivered: 'Giao mot phan',
       cancelled: 'Da huy',
       returned: 'Da hoan',
     }
@@ -1259,6 +1263,7 @@ function getStatusLabel(status: OrderStatus, isVietnamese: boolean) {
       processing: 'Processing',
       shipping: 'Shipping',
       delivered: 'Delivered',
+      partial_delivered: 'Partial delivered',
       cancelled: 'Cancelled',
       returned: 'Returned',
     };
@@ -1292,6 +1297,7 @@ function getStatusTone(status: OrderStatus): BadgeTone {
     processing: 'slate',
     shipping: 'primary',
     delivered: 'emerald',
+    partial_delivered: 'amber',
     cancelled: 'red',
     returned: 'zinc',
   };

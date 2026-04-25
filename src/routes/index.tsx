@@ -39,6 +39,7 @@ const PricingPage = lazy(() => import('../features/admin/pricing/page'));
 const WarehousesPage = lazy(() => import('../features/admin/warehouses/page'));
 const InventoryLedgerPage = lazy(() => import('../features/admin/inventory-ledger/page'));
 const InventoryValuationPage = lazy(() => import('../features/admin/inventory-valuation/page'));
+const ReturnsAdminPage = lazy(() => import('../features/admin/returns/page'));
 const ProfitabilityPage = lazy(() => import('../features/admin/profitability/page'));
 const AgingDebtPage = lazy(() => import('../features/admin/aging-debt/page'));
 const CreditLimitsPage = lazy(() => import('../features/admin/credit-limits/page'));
@@ -123,6 +124,7 @@ export const router = createBrowserRouter([
               { path: 'warehouses', element: withSuspense(<WarehousesPage />) },
               { path: 'inventory-ledger', element: withSuspense(<InventoryLedgerPage />) },
               { path: 'inventory-valuation', element: withSuspense(<InventoryValuationPage />) },
+              { path: 'returns', element: withSuspense(<ReturnsAdminPage />) },
               { path: 'profitability', element: withSuspense(<ProfitabilityPage />) },
               { path: 'aging-debt', element: withSuspense(<AgingDebtPage />) },
               { path: 'credit-limits', element: withSuspense(<CreditLimitsPage />) },

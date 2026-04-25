@@ -4,6 +4,7 @@ import {
   Calculator,
   ChevronDown,
   Coins,
+  PackageX,
   ClipboardCheck,
   ClipboardList,
   CreditCard,
@@ -130,6 +131,12 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'Đơn hàng' : 'Orders',
       icon: ShoppingCart,
       path: '/admin/orders',
+    },
+    {
+      id: 'returns',
+      label: isVietnamese ? 'Trả hàng' : 'Returns',
+      icon: PackageX,
+      path: '/admin/returns',
     },
     {
       id: 'discounts',
