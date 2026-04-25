@@ -502,6 +502,7 @@ export default function ProductDiscounts() {
               <input
                 type="number"
                 min="0"
+                max={form.discountType === 'percent' ? 100 : undefined}
                 value={form.discountValue}
                 onChange={(e) => setForm((p) => ({ ...p, discountValue: e.target.value }))}
                 className="input-base"

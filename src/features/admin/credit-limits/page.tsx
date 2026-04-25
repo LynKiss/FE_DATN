@@ -16,7 +16,7 @@ interface CreditLimitItem {
 }
 
 interface User {
-  userId: string;
+  _id: string;
   username: string;
   email: string;
   fullName: string | null;
@@ -197,7 +197,7 @@ export default function CreditLimitsPage() {
                 >
                   <option value="">-- Chọn khách hàng --</option>
                   {users.map((u) => (
-                    <option key={u.userId} value={u.userId}>
+                    <option key={u._id} value={u._id}>
                       {u.fullName ?? u.username} ({u.email})
                     </option>
                   ))}

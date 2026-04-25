@@ -996,7 +996,33 @@ function GrTab({
                   <input type="date" value={receiptDate} onChange={(e) => { setReceiptDate(e.target.value); triggerPreview(); }} className={inputCls} />
                 </FieldWrap>
                 <FieldWrap label="PO liên kết (tùy chọn)">
-                  <select value={poId} onChange={(e) => setPoId(e.target.value)} className={selectCls}>
+                  <select
+                    value={poId}
+                    onChange={(e) => {
+                      const selectedPoId = e.target.value;
+                      setPoId(selectedPoId);
+                      if (selectedPoId) {
+                        void apiClient
+                          .get<Po & { items: PoItem[] }>(`/procurement/purchase-orders/${selectedPoId}`)
+                          .then((po) => {
+                            if (po.items?.length) {
+                              setLines(
+                                po.items.map((item) => ({
+                                  ...emptyGrItem(),
+                                  productId: item.productId,
+                                  unit: item.unit,
+                                  unitPerBase: item.unitPerBase,
+                                  qtyOrdered: item.qtyOrdered,
+                                  unitPrice: Number(item.unitPrice),
+                                })),
+                              );
+                              triggerPreview();
+                            }
+                          });
+                      }
+                    }}
+                    className={selectCls}
+                  >
                     <option value="">— Không liên kết PO —</option>
                     {availablePos
                       .filter((p) => !supplierId || p.supplierId === supplierId)
@@ -1138,6 +1164,7 @@ function SrTab({
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detail, setDetail] = useState<(Sr & { items: any[] }) | null>(null);
   const [saving, setSaving] = useState(false);
+  const [availableGrs, setAvailableGrs] = useState<Gr[]>([]);
 
   // Form
   const [supplierId, setSupplierId] = useState('');
@@ -1240,7 +1267,10 @@ function SrTab({
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />Làm mới
           </button>
           <button type="button" onClick={() => {
-            setSupplierId(''); setGrId(''); setReturnDate(today()); setNotes(''); setLines([emptySrItem()]); setModalOpen(true);
+            setSupplierId(''); setGrId(''); setReturnDate(today()); setNotes(''); setLines([emptySrItem()]);
+            void apiClient.get<{ items: Gr[] }>('/procurement/goods-receipts?limit=200&status=confirmed')
+              .then((d) => setAvailableGrs(d.items ?? []));
+            setModalOpen(true);
           }}
             className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-white shadow-lg shadow-primary/20 transition hover:-translate-y-0.5">
             <Plus size={15} />Tạo SR
@@ -1367,8 +1397,17 @@ function SrTab({
                 <FieldWrap label="Ngày trả *">
                   <input type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className={inputCls} />
                 </FieldWrap>
-                <FieldWrap label="Mã GR liên kết (tùy chọn)">
-                  <input value={grId} onChange={(e) => setGrId(e.target.value)} placeholder="GR-UUID..." className={inputCls} />
+                <FieldWrap label="GR liên kết (tùy chọn)">
+                  <select value={grId} onChange={(e) => setGrId(e.target.value)} className={selectCls}>
+                    <option value="">— Không liên kết GR —</option>
+                    {availableGrs
+                      .filter((g) => !supplierId || g.supplierId === supplierId)
+                      .map((g) => (
+                        <option key={g.grId} value={g.grId}>
+                          {g.grCode} ({new Date(g.receiptDate).toLocaleDateString('vi-VN')})
+                        </option>
+                      ))}
+                  </select>
                 </FieldWrap>
               </div>
 
