@@ -12,7 +12,6 @@ const DashboardPage = lazy(() => import('../features/admin/dashboard/page'));
 const ProductsPage = lazy(() => import('../features/admin/products/page'));
 const ProductCreatePage = lazy(() => import('../features/admin/products-create/page'));
 const ProductImportPage = lazy(() => import('../features/admin/products-import/page'));
-const ProductInventoryTransactionsPage = lazy(() => import('../features/admin/products-inventory/page'));
 const ProductDiscountsPage = lazy(() => import('../features/admin/products-discounts/page'));
 const ProductInventoryDamagePage = lazy(() => import('../features/admin/products-damage/page'));
 const ProductInventoryLowStockPage = lazy(() => import('../features/admin/products-lowstock/page'));
@@ -34,6 +33,15 @@ const NewsletterPage = lazy(() => import('../features/admin/newsletter/page'));
 const NewsCommentsPage = lazy(() => import('../features/admin/news-comments/page'));
 const SupportChatsPage = lazy(() => import('../features/admin/support-chats/page'));
 const RiceDiagnosisAdminPage = lazy(() => import('../features/admin/rice-diagnosis/page'));
+const SuppliersPage = lazy(() => import('../features/admin/suppliers/page'));
+const ProcurementPage = lazy(() => import('../features/admin/procurement/page'));
+const PricingPage = lazy(() => import('../features/admin/pricing/page'));
+const WarehousesPage = lazy(() => import('../features/admin/warehouses/page'));
+const InventoryLedgerPage = lazy(() => import('../features/admin/inventory-ledger/page'));
+const ProfitabilityPage = lazy(() => import('../features/admin/profitability/page'));
+const AgingDebtPage = lazy(() => import('../features/admin/aging-debt/page'));
+const CreditLimitsPage = lazy(() => import('../features/admin/credit-limits/page'));
+const AuditLogsPage = lazy(() => import('../features/admin/audit-logs/page'));
 
 // Client pages
 const ClientHomePage = lazy(() => import('../features/client/home/page'));
@@ -87,10 +95,9 @@ export const router = createBrowserRouter([
               { path: 'products', element: withSuspense(<ProductsPage />) },
               { path: 'products/new', element: withSuspense(<ProductCreatePage />) },
               { path: 'products/import', element: withSuspense(<ProductImportPage />) },
-              { path: 'products/inventory-transactions', element: withSuspense(<ProductInventoryTransactionsPage />) },
               { path: 'products/inventory-damage', element: withSuspense(<ProductInventoryDamagePage />) },
               { path: 'products/inventory-lowstock', element: withSuspense(<ProductInventoryLowStockPage />) },
-              { path: 'products/discounts', element: withSuspense(<ProductDiscountsPage />) },
+              { path: 'discounts', element: withSuspense(<ProductDiscountsPage />) },
               { path: 'categories', element: withSuspense(<CategoriesPage />) },
               { path: 'subcategories', element: withSuspense(<SubcategoriesPage />) },
               { path: 'origins', element: withSuspense(<OriginsPage />) },
@@ -109,6 +116,15 @@ export const router = createBrowserRouter([
               { path: 'interface', element: withSuspense(<InterfacePage />) },
               { path: 'security', element: withSuspense(<SecurityPage />) },
               { path: 'settings', element: withSuspense(<SettingsPage />) },
+              { path: 'suppliers', element: withSuspense(<SuppliersPage />) },
+              { path: 'procurement', element: withSuspense(<ProcurementPage />) },
+              { path: 'pricing', element: withSuspense(<PricingPage />) },
+              { path: 'warehouses', element: withSuspense(<WarehousesPage />) },
+              { path: 'inventory-ledger', element: withSuspense(<InventoryLedgerPage />) },
+              { path: 'profitability', element: withSuspense(<ProfitabilityPage />) },
+              { path: 'aging-debt', element: withSuspense(<AgingDebtPage />) },
+              { path: 'credit-limits', element: withSuspense(<CreditLimitsPage />) },
+              { path: 'audit-logs', element: withSuspense(<AuditLogsPage />) },
             ],
           },
         ],

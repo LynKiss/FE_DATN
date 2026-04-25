@@ -1,6 +1,10 @@
 import {
   BarChart3,
+  BookOpen,
+  Calculator,
   ChevronDown,
+  ClipboardCheck,
+  ClipboardList,
   CreditCard,
   FolderTree,
   Globe,
@@ -21,7 +25,10 @@ import {
   ShieldCheck,
   ShoppingCart,
   Star,
+  TrendingUp,
+  Truck,
   Users,
+  Warehouse,
   X,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
@@ -78,13 +85,8 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
         },
         {
           id: 'products-import',
-          label: isVietnamese ? 'Nhập kho' : 'Import inventory',
+          label: isVietnamese ? 'Nhập kho thủ công' : 'Manual stock import',
           path: '/admin/products/import',
-        },
-        {
-          id: 'products-stock',
-          label: isVietnamese ? 'Giao dịch kho' : 'Inventory transactions',
-          path: '/admin/products/inventory-transactions',
         },
         {
           id: 'products-damage',
@@ -95,11 +97,6 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
           id: 'products-lowstock',
           label: isVietnamese ? 'Tổng quan tồn kho' : 'Inventory overview',
           path: '/admin/products/inventory-lowstock',
-        },
-        {
-          id: 'products-discounts',
-          label: isVietnamese ? 'Chương trình giảm giá' : 'Discount programs',
-          path: '/admin/products/discounts',
         },
       ],
     },
@@ -132,6 +129,12 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'Đơn hàng' : 'Orders',
       icon: ShoppingCart,
       path: '/admin/orders',
+    },
+    {
+      id: 'discounts',
+      label: isVietnamese ? 'Chương trình giảm giá' : 'Discount programs',
+      icon: Calculator,
+      path: '/admin/discounts',
     },
     {
       id: 'customers',
@@ -174,6 +177,60 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'AI bệnh lúa' : 'Rice AI diagnosis',
       icon: Leaf,
       path: '/admin/rice-diagnosis',
+    },
+    {
+      id: 'suppliers',
+      label: isVietnamese ? 'Nhà cung cấp' : 'Suppliers',
+      icon: Truck,
+      path: '/admin/suppliers',
+    },
+    {
+      id: 'procurement',
+      label: isVietnamese ? 'Mua hàng' : 'Procurement',
+      icon: ClipboardList,
+      path: '/admin/procurement',
+    },
+    {
+      id: 'pricing',
+      label: isVietnamese ? 'Định giá bán' : 'Pricing',
+      icon: Calculator,
+      path: '/admin/pricing',
+    },
+    {
+      id: 'warehouses',
+      label: isVietnamese ? 'Kho hàng' : 'Warehouses',
+      icon: Warehouse,
+      path: '/admin/warehouses',
+    },
+    {
+      id: 'inventory-ledger',
+      label: isVietnamese ? 'Sổ kho chi tiết' : 'Inventory Ledger',
+      icon: BookOpen,
+      path: '/admin/inventory-ledger',
+    },
+    {
+      id: 'profitability',
+      label: isVietnamese ? 'Lợi nhuận thật' : 'Profitability',
+      icon: TrendingUp,
+      path: '/admin/profitability',
+    },
+    {
+      id: 'aging-debt',
+      label: isVietnamese ? 'Tuổi nợ NCC' : 'Aging Debt',
+      icon: CreditCard,
+      path: '/admin/aging-debt',
+    },
+    {
+      id: 'credit-limits',
+      label: isVietnamese ? 'Hạn mức công nợ' : 'Credit Limits',
+      icon: ClipboardList,
+      path: '/admin/credit-limits',
+    },
+    {
+      id: 'audit-logs',
+      label: isVietnamese ? 'Nhật ký thao tác' : 'Audit Logs',
+      icon: ClipboardCheck,
+      path: '/admin/audit-logs',
     },
     {
       id: 'newsletter',
