@@ -3,6 +3,7 @@ import {
   BookOpen,
   Calculator,
   ChevronDown,
+  Coins,
   ClipboardCheck,
   ClipboardList,
   CreditCard,
@@ -207,6 +208,12 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'Sổ kho chi tiết' : 'Inventory Ledger',
       icon: BookOpen,
       path: '/admin/inventory-ledger',
+    },
+    {
+      id: 'inventory-valuation',
+      label: isVietnamese ? 'Giá trị tồn kho' : 'Inventory Valuation',
+      icon: Coins,
+      path: '/admin/inventory-valuation',
     },
     {
       id: 'profitability',

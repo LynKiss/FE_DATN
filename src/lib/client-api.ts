@@ -114,8 +114,12 @@ export async function logoutClient() {
 
 export const clientApi = {
   get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
+  post: <T>(path: string, body?: unknown, headers?: Record<string, string>) =>
+    request<T>(path, {
+      method: 'POST',
+      body: body ? JSON.stringify(body) : undefined,
+      headers,
+    }),
   postForm: <T>(path: string, body: FormData) =>
     request<T>(path, {
       method: 'POST',

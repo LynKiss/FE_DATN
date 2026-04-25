@@ -140,7 +140,13 @@ export default function Payment() {
     orderId: string;
     totalPayment: string;
     paymentMethod: PaymentMethodKey;
+    isBackorder?: boolean;
   } | null>(null);
+  // Idempotency key — sinh 1 lần khi component mount, gửi cùng request /orders.
+  // Nếu user double-click hoặc retry sau timeout, BE sẽ trả về order cũ thay vì tạo mới.
+  const idempotencyKeyRef = useRef<string>(
+    `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`,
+  );
   const [simulateOpen, setSimulateOpen] = useState(false);
   const [simOrderId, setSimOrderId] = useState<string | null>(null);
   const [simRef, setSimRef] = useState<string | null>(null);
@@ -268,13 +274,17 @@ export default function Payment() {
 
     setPlacing(true);
     try {
-      const order = await clientApi.post<CreateOrderResponse>('/orders', {
-        shippingAddressId: state.shippingAddressId,
-        deliveryId: state.deliveryId,
-        paymentMethod: method,
-        note: state.note || undefined,
-        discountCode: state.discountCode || undefined,
-      });
+      const order = await clientApi.post<CreateOrderResponse>(
+        '/orders',
+        {
+          shippingAddressId: state.shippingAddressId,
+          deliveryId: state.deliveryId,
+          paymentMethod: method,
+          note: state.note || undefined,
+          discountCode: state.discountCode || undefined,
+        },
+        { 'X-Idempotency-Key': idempotencyKeyRef.current },
+      );
 
       await refreshGlobalCart();
 

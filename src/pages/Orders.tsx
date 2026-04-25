@@ -24,6 +24,7 @@ import {
 
 type OrderStatus =
   | 'pending'
+  | 'backordered'
   | 'confirmed'
   | 'processing'
   | 'shipping'
@@ -101,6 +102,7 @@ type LiveTrackingForm = {
 };
 
 const STATUS_OPTIONS: OrderStatus[] = [
+  'backordered',
   'pending',
   'confirmed',
   'processing',
@@ -111,6 +113,7 @@ const STATUS_OPTIONS: OrderStatus[] = [
 ];
 
 const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  backordered: ['pending', 'cancelled'],
   pending: ['confirmed', 'cancelled'],
   confirmed: ['processing', 'cancelled'],
   processing: ['shipping', 'cancelled'],
@@ -648,8 +651,9 @@ export default function Orders() {
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         {[
+          { status: 'backordered', label: isVietnamese ? 'Cho hang' : 'Backordered' },
           { status: 'pending', label: isVietnamese ? 'Cho xu ly' : 'Pending' },
           { status: 'confirmed', label: isVietnamese ? 'Da xac nhan' : 'Confirmed' },
           { status: 'processing', label: isVietnamese ? 'Dang xu ly' : 'Processing' },
@@ -1239,6 +1243,7 @@ export default function Orders() {
 function getStatusLabel(status: OrderStatus, isVietnamese: boolean) {
   const labels: Record<OrderStatus, string> = isVietnamese
     ? {
+      backordered: 'Cho hang',
       pending: 'Cho xu ly',
       confirmed: 'Da xac nhan',
       processing: 'Dang xu ly',
@@ -1248,6 +1253,7 @@ function getStatusLabel(status: OrderStatus, isVietnamese: boolean) {
       returned: 'Da hoan',
     }
     : {
+      backordered: 'Backordered',
       pending: 'Pending',
       confirmed: 'Confirmed',
       processing: 'Processing',
@@ -1280,6 +1286,7 @@ function getPaymentLabel(status: PaymentStatus, isVietnamese: boolean) {
 
 function getStatusTone(status: OrderStatus): BadgeTone {
   const tones: Record<OrderStatus, BadgeTone> = {
+    backordered: 'red',
     pending: 'amber',
     confirmed: 'sky',
     processing: 'slate',

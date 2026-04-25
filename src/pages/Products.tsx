@@ -37,6 +37,8 @@ type Product = {
   productPrice: string;
   productPriceSale: string | null;
   quantityAvailable: number;
+  quantityReserved?: number;
+  avgCost?: string | number | null;
   unit: string | null;
   description?: string | null;
   isShow: boolean | number;
@@ -614,7 +616,14 @@ export default function Products() {
                     <td className="px-4 py-4 text-on-surface-variant">
                       {product.productPriceSale ? currency.format(Number(product.productPriceSale)) : '-'}
                     </td>
-                    <td className="px-4 py-4 text-on-surface">{product.quantityAvailable}</td>
+                    <td className="px-4 py-4 text-on-surface">
+                      <div className="font-semibold">{product.quantityAvailable}</div>
+                      {product.quantityReserved && product.quantityReserved > 0 ? (
+                        <div className="text-[10px] font-medium text-amber-600">
+                          {isVi ? 'Đang giữ' : 'Reserved'}: {product.quantityReserved}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-4 text-on-surface-variant">{categoryPathMap.get(product.categoryId) ?? product.categoryId}</td>
                     <td className="px-4 py-4 text-on-surface-variant">
                       {origins.find((origin) => origin.originId === product.originId)?.originName ?? '-'}
