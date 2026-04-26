@@ -1,6 +1,32 @@
 import { useEffect, useState, useCallback } from 'react';
-import { TrendingUp, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { TrendingUp, ChevronLeft, ChevronRight, RefreshCw, Download } from 'lucide-react';
 import { apiClient } from '../../../lib/api';
+
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_BASE_URL?.replace(/\/+$/, '') ?? 'http://localhost:8000/api/v1';
+
+function downloadCsv(path: string, filename: string) {
+  const token = (() => {
+    try {
+      const raw = localStorage.getItem('admin_session');
+      if (!raw) return '';
+      return JSON.parse(raw)?.accessToken ?? '';
+    } catch { return ''; }
+  })();
+  fetch(`${API_BASE_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'include',
+  })
+    .then((r) => r.blob())
+    .then((b) => {
+      const url = URL.createObjectURL(b);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    })
+    .catch(() => alert('Không tải được file'));
+}
 
 interface ProductProfit {
   productId: string;
@@ -101,6 +127,17 @@ export default function ProfitabilityPage() {
           </div>
           <button onClick={() => void load(page)} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary/90">
             <RefreshCw className="h-3.5 w-3.5" /> Làm mới
+          </button>
+          <button
+            onClick={() => {
+              const params = new URLSearchParams({ groupBy });
+              if (filterFrom) params.set('from', filterFrom);
+              if (filterTo) params.set('to', filterTo + 'T23:59:59');
+              downloadCsv(`/reports/profitability/export?${params.toString()}`, `profitability-${new Date().toISOString().slice(0,10)}.csv`);
+            }}
+            className="flex items-center gap-1.5 rounded-lg border border-primary/40 bg-white px-3 py-1.5 text-sm text-primary hover:bg-primary/5"
+          >
+            <Download className="h-3.5 w-3.5" /> Xuất Excel
           </button>
         </div>
       </div>

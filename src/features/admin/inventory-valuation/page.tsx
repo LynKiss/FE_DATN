@@ -1,6 +1,38 @@
 import { useEffect, useState } from 'react';
-import { Coins, RefreshCw, Search, Package } from 'lucide-react';
+import { Coins, RefreshCw, Search, Package, Download } from 'lucide-react';
 import { apiClient } from '../../../lib/api';
+
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_BASE_URL?.replace(/\/+$/, '') ?? 'http://localhost:8000/api/v1';
+
+function downloadFromUrl(path: string, filename: string) {
+  const token = (() => {
+    try {
+      const raw = localStorage.getItem('admin_session');
+      if (!raw) return '';
+      const parsed = JSON.parse(raw);
+      return parsed?.accessToken ?? '';
+    } catch {
+      return '';
+    }
+  })();
+  fetch(`${API_BASE_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'include',
+  })
+    .then((res) => res.blob())
+    .then((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    })
+    .catch(() => alert('Không tải được file. Vui lòng thử lại.'));
+}
 
 interface ValuationItem {
   productId: string;
@@ -74,12 +106,25 @@ export default function InventoryValuationPage() {
             Giá Trị Tồn Kho
           </h1>
         </div>
-        <button
-          onClick={() => void load()}
-          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary/90"
-        >
-          <RefreshCw className="h-3.5 w-3.5" /> Làm mới
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() =>
+              downloadFromUrl(
+                '/reports/inventory-valuation/export',
+                `inventory-valuation-${new Date().toISOString().slice(0, 10)}.csv`,
+              )
+            }
+            className="flex items-center gap-1.5 rounded-lg border border-primary/40 bg-white px-3 py-1.5 text-sm text-primary transition hover:bg-primary/5"
+          >
+            <Download className="h-3.5 w-3.5" /> Xuất Excel
+          </button>
+          <button
+            onClick={() => void load()}
+            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary/90"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> Làm mới
+          </button>
+        </div>
       </div>
 
       {data && (

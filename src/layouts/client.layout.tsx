@@ -159,15 +159,15 @@ export default function ClientLayout() {
   const cartCount = cart?.totalItems ?? 0;
   const displayName = session?.user.fullName || session?.user.username || '';
   const socialLinks = getSocialLinks();
+  const isVi = language === 'vi';
   const aiDiagnosisLink = {
     to: '/client/rice-diagnosis',
-    label: 'AI Chan Doan Benh Lua',
+    label: isVi ? 'AI Chẩn Đoán Bệnh Lúa' : 'Rice AI Diagnosis',
   };
-
   const navLinks = [
-    { to: '/client', label: 'Trang chủ', end: true },
-    { to: '/client/products', label: 'Sản phẩm' },
-    { to: '/client/news', label: 'Tin tức' },
+    { to: '/client', label: isVi ? 'Trang chủ' : 'Home', end: true },
+    { to: '/client/products', label: isVi ? 'Sản phẩm' : 'Products' },
+    { to: '/client/news', label: isVi ? 'Tin tức' : 'News' },
   ];
 
   return (
@@ -236,12 +236,6 @@ export default function ClientLayout() {
                 {link.label}
               </NavLink>
             ))}
-            <NavLink
-              to="/client/products?category=khuyen-mai"
-              className="rounded-full px-4 py-2 text-sm font-semibold text-[#c82014] transition-all hover:bg-[#c82014]/10"
-            >
-              🔥 Khuyến mãi
-            </NavLink>
             <NavLink
               to={aiDiagnosisLink.to}
               className={({ isActive }) =>

@@ -792,6 +792,14 @@ export default function Orders() {
         footer={
           selectedOrder ? (
             <div className="flex flex-wrap items-center justify-end gap-3">
+              <a
+                href={`/admin/invoices/${selectedOrder.id}/print`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-primary/40 bg-white px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-primary/5"
+              >
+                🖨 {isVietnamese ? 'In hóa đơn' : 'Print invoice'}
+              </a>
               {getAllowedNextStatuses(selectedOrder.status).length === 0 ? (
                 <span className="rounded-2xl border border-on-surface/10 bg-surface/60 px-4 py-2.5 text-sm italic text-on-surface-variant/60">
                   {isVietnamese ? 'Đơn hàng đã kết thúc' : 'Order is finalized'}

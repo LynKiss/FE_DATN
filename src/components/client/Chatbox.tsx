@@ -39,18 +39,36 @@ type BotMessage = {
 const FAQ_RESPONSES: Record<string, string> = {
   'giao hàng':
     'Chúng tôi giao hàng toàn quốc trong 2-4 ngày làm việc. Miễn phí vận chuyển cho đơn từ 500.000đ.',
+  'vận chuyển':
+    'Phí vận chuyển từ 25.000đ tùy khu vực. Đơn từ 500.000đ được miễn phí ship toàn quốc.',
   'đổi trả':
-    'Bạn có thể đổi trả sản phẩm trong vòng 7 ngày kể từ ngày nhận hàng nếu sản phẩm bị lỗi hoặc không đúng mô tả.',
+    'Bạn có thể đổi trả sản phẩm trong vòng 7 ngày kể từ ngày nhận hàng nếu sản phẩm bị lỗi hoặc không đúng mô tả. Cần giữ nguyên bao bì + hóa đơn.',
+  'hoàn tiền':
+    'Hoàn tiền được xử lý trong 3-5 ngày làm việc sau khi đơn được duyệt trả hàng. Tiền sẽ về phương thức thanh toán ban đầu.',
   'thanh toán':
-    'Chúng tôi hỗ trợ thanh toán khi nhận hàng, chuyển khoản ngân hàng và ví MoMo.',
+    'Chúng tôi hỗ trợ: COD (trả khi nhận), chuyển khoản ngân hàng, ví MoMo, VNPay, ZaloPay.',
   'phân bón':
-    'Chúng tôi có đủ phân bón hữu cơ, phân NPK và phân vi sinh. Bạn có thể xem thêm trong mục sản phẩm.',
+    'Chúng tôi có đủ phân bón hữu cơ, phân NPK và phân vi sinh. Bạn có thể lọc theo "Phân bón" trong trang Sản phẩm.',
   'thuốc':
     'Chúng tôi bán thuốc bảo vệ thực vật chính hãng và có đầy đủ giấy phép lưu hành.',
+  'hạt giống':
+    'Có đủ hạt giống lúa, rau màu, cây ăn quả. Tỷ lệ nảy mầm trên 90%, có giấy chứng nhận từ viện giống.',
+  'dụng cụ':
+    'Có đầy đủ dụng cụ nông nghiệp: cuốc, xẻng, máy cày, bình phun, hệ thống tưới...',
   'liên hệ':
-    'Hotline: 1800 6863. Email: support@cultivatedledger.vn. Giờ làm việc: 7:00 - 21:00 mỗi ngày.',
+    'Hotline: 1800 6863 (miễn phí). Email: support@cultivatedledger.vn. Giờ làm việc: 7:00 - 21:00 mỗi ngày.',
+  'hotline':
+    'Gọi ngay 1800 6863 (miễn phí). Hỗ trợ 7-21h hàng ngày.',
   'khuyến mãi':
-    'Cửa hàng thường xuyên có chương trình giảm giá. Bạn có thể theo dõi ở trang chủ hoặc tab khuyến mãi.',
+    'Cửa hàng thường xuyên có giảm giá. Xem ở trang chủ hoặc lọc "Đang giảm giá" trong trang Sản phẩm.',
+  'tài khoản':
+    'Bạn có thể đăng ký miễn phí ở góc trên phải. Tài khoản giúp lưu địa chỉ, theo dõi đơn hàng và tích điểm.',
+  'đăng ký':
+    'Bấm "Đăng ký" ở góc phải. Cần email + số điện thoại. Hoặc bạn có thể mua hàng theo dạng khách vãng lai (không cần đăng ký).',
+  'kho':
+    'Hệ thống kho trải khắp 3 miền. Đơn từ HCM, HN, ĐN giao trong 1-2 ngày, các tỉnh khác 2-4 ngày.',
+  'bảo hành':
+    'Sản phẩm có bảo hành theo nhà sản xuất. Vui lòng giữ hóa đơn để được hỗ trợ tốt nhất.',
 };
 
 const BOT_WELCOME =
@@ -58,8 +76,10 @@ const BOT_WELCOME =
 
 const QUICK_QUESTIONS = [
   'Chính sách giao hàng?',
+  'Tra cứu đơn hàng',
   'Đổi trả như thế nào?',
   'Các hình thức thanh toán?',
+  'Tìm sản phẩm',
   'Hotline liên hệ?',
 ];
 
@@ -104,16 +124,96 @@ function formatMessageTime(value: string | null) {
   }).format(new Date(value));
 }
 
-function getBotResponse(text: string) {
-  const lower = text.toLowerCase();
+async function getBotResponse(text: string): Promise<string> {
+  const lower = text.toLowerCase().trim();
 
+  // 1. Order tracking — pattern "tra cứu đơn", "đơn hàng X", "ORD-...", UUID
+  const uuidMatch = text.match(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+  );
+  if (
+    uuidMatch ||
+    lower.includes('tra cứu đơn') ||
+    lower.includes('đơn hàng của tôi') ||
+    lower.includes('mã đơn')
+  ) {
+    if (uuidMatch) {
+      try {
+        const order = await clientApi.get<any>(`/orders/${uuidMatch[0]}`);
+        const STATUS_VI: Record<string, string> = {
+          pending: '⏳ Chờ xử lý',
+          backordered: '📦 Chờ hàng',
+          confirmed: '✅ Đã xác nhận',
+          processing: '🔄 Đang xử lý',
+          shipping: '🚚 Đang giao',
+          delivered: '🎉 Đã giao',
+          partial_delivered: '📦 Giao một phần',
+          cancelled: '❌ Đã hủy',
+          returned: '↩️ Đã hoàn',
+        };
+        return [
+          `Đơn hàng ${order.id?.slice(0, 8) ?? '...'}`,
+          `Trạng thái: ${STATUS_VI[order.status] ?? order.status}`,
+          `Tổng tiền: ${Number(order.totalPayment).toLocaleString('vi-VN')}₫`,
+          `Số lượng: ${order.totalQuantity} sản phẩm`,
+          `Người nhận: ${order.fullName} - ${order.phone}`,
+        ].join('\n');
+      } catch {
+        return 'Không tìm thấy đơn hàng với mã này. Vui lòng kiểm tra lại hoặc đăng nhập để xem danh sách đơn của bạn.';
+      }
+    }
+    return '📋 Bạn có thể:\n• Đăng nhập rồi vào "Đơn hàng của tôi"\n• Gửi tôi mã đơn (UUID) để tra cứu nhanh\n• Hoặc gọi 1800 6863 để được hỗ trợ.';
+  }
+
+  // 2. Product search
+  if (lower.includes('tìm sản phẩm') || lower.includes('tìm kiếm') || lower.startsWith('tìm ')) {
+    const query = text.replace(/tìm (sản phẩm|kiếm)?/gi, '').trim();
+    if (query.length < 2) {
+      return 'Bạn muốn tìm sản phẩm gì? Hãy nhập tên sản phẩm bạn cần (VD: "tìm phân NPK").';
+    }
+    try {
+      const data = await clientApi.get<{ items: any[] }>(
+        `/products?search=${encodeURIComponent(query)}&limit=5&includeHidden=false`,
+      );
+      const items = data.items ?? [];
+      if (items.length === 0) {
+        return `Không tìm thấy sản phẩm nào khớp với "${query}". Bạn có thể vào trang Sản phẩm để xem danh mục đầy đủ.`;
+      }
+      const list = items
+        .slice(0, 5)
+        .map(
+          (p, i) =>
+            `${i + 1}. ${p.productName} — ${Number(p.effectivePrice ?? p.basePrice).toLocaleString('vi-VN')}₫`,
+        )
+        .join('\n');
+      return `🔍 Tìm thấy ${items.length} sản phẩm:\n${list}\n\nXem chi tiết tại trang Sản phẩm.`;
+    } catch {
+      return 'Không tải được kết quả tìm kiếm. Vui lòng thử lại sau.';
+    }
+  }
+
+  // 3. FAQ keyword match
   for (const [keyword, response] of Object.entries(FAQ_RESPONSES)) {
     if (lower.includes(keyword)) {
       return response;
     }
   }
 
-  return 'Tôi đã ghi nhận câu hỏi của bạn. Nếu cần nhân viên hỗ trợ trực tiếp, bạn có thể chuyển sang tab "Nhân viên" để chat realtime.';
+  // 4. Greetings
+  if (/^(xin chào|hello|hi|chào|hey)/.test(lower)) {
+    return 'Chào bạn! Tôi có thể giúp gì? Bạn có thể hỏi về giao hàng, đổi trả, thanh toán, hoặc gửi mã đơn để tra cứu.';
+  }
+
+  // 5. Default fallback
+  return [
+    'Tôi chưa hiểu câu hỏi của bạn 😊',
+    '',
+    'Tôi có thể giúp:',
+    '• Trả lời FAQ (giao hàng, đổi trả, thanh toán, ...)',
+    '• Tra cứu đơn hàng (gửi tôi mã đơn UUID)',
+    '• Tìm sản phẩm ("tìm phân NPK")',
+    '• Chuyển sang tab "Nhân viên" để chat trực tiếp với CSKH',
+  ].join('\n');
 }
 
 export default function Chatbox() {
@@ -488,18 +588,20 @@ export default function Chatbox() {
     }
 
     botTimerRef.current = window.setTimeout(() => {
-      const reply: BotMessage = {
-        id: botMessageIdCounter++,
-        from: 'bot',
-        text: getBotResponse(text),
-      };
+      void (async () => {
+        const responseText = await getBotResponse(text);
+        const reply: BotMessage = {
+          id: botMessageIdCounter++,
+          from: 'bot',
+          text: responseText,
+        };
+        setBotMessages((current) => [...current, reply]);
+        setBotTyping(false);
 
-      setBotMessages((current) => [...current, reply]);
-      setBotTyping(false);
-
-      if (!openRef.current || activeTabRef.current !== 'bot') {
-        setBotUnreadCount((current) => current + 1);
-      }
+        if (!openRef.current || activeTabRef.current !== 'bot') {
+          setBotUnreadCount((current) => current + 1);
+        }
+      })();
     }, 700);
   }
 
