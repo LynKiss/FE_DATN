@@ -364,6 +364,36 @@ export default function Interface() {
   const [mode, setMode] = useState<'light' | 'dark'>('light');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
 
+  // Advanced custom theme
+  const loadAdvancedTheme = () => {
+    try {
+      const raw = localStorage.getItem('client_theme_advanced');
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return {
+      primaryColor: '#006241',
+      accentColor: '#D4A537',
+      bgColor: '#F5F1E8',
+      borderRadius: 16,
+      brandName: 'Nông Nghiệp Việt',
+      logoUrl: '',
+      footerText: '© 2025 Nông Nghiệp Việt. Mọi quyền được bảo lưu.',
+      hotline: '1800 6863',
+      sticky: true,
+    };
+  };
+  const [advanced, setAdvanced] = useState<{
+    primaryColor: string;
+    accentColor: string;
+    bgColor: string;
+    borderRadius: number;
+    brandName: string;
+    logoUrl: string;
+    footerText: string;
+    hotline: string;
+    sticky: boolean;
+  }>(loadAdvancedTheme());
+
   // Block state
   const [blocks, setBlocks] = useState<Block[]>(INITIAL_BLOCKS);
 
@@ -467,13 +497,24 @@ export default function Interface() {
   const handleSaveTheme = () => {
     const themeConfig = { themeId: activeTheme, fontId: activeTypo, mode, density };
     try { localStorage.setItem('client_theme_config', JSON.stringify(themeConfig)); } catch {}
-    // Apply CSS variables from selected theme
+    try { localStorage.setItem('client_theme_advanced', JSON.stringify(advanced)); } catch {}
+
+    // Ưu tiên advanced custom override theme preset
+    const useAdvanced =
+      advanced.primaryColor &&
+      advanced.primaryColor !== (THEME_OPTIONS.find((t) => t.id === activeTheme)?.primary ?? '');
+
     const theme = THEME_OPTIONS.find((t) => t.id === activeTheme);
-    if (theme) {
+    if (theme && !useAdvanced) {
       document.documentElement.style.setProperty('--client-primary', theme.primary);
       document.documentElement.style.setProperty('--client-accent', theme.accent);
       document.documentElement.style.setProperty('--client-bg', theme.bg);
+    } else {
+      document.documentElement.style.setProperty('--client-primary', advanced.primaryColor);
+      document.documentElement.style.setProperty('--client-accent', advanced.accentColor);
+      document.documentElement.style.setProperty('--client-bg', advanced.bgColor);
     }
+    document.documentElement.style.setProperty('--client-radius', `${advanced.borderRadius}px`);
     showToast({ tone: 'success', title: 'Đã lưu cài đặt giao diện', description: 'Thay đổi được áp dụng cho cửa hàng client.' });
   };
 
@@ -740,6 +781,208 @@ export default function Interface() {
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ── ADVANCED CUSTOMIZATION ────────────────────────────────────── */}
+          <section>
+            <div className="mb-6 flex items-center gap-3">
+              <Sliders className="text-accent" size={24} />
+              <h2 className="text-xl font-black text-primary">Tùy chỉnh nâng cao</h2>
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700">
+                Pro
+              </span>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-2">
+              {/* Color customization */}
+              <div className="rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5 space-y-4">
+                <p className="font-bold text-on-surface flex items-center gap-2">
+                  <Palette size={18} className="text-primary" />
+                  Màu sắc tùy chỉnh
+                </p>
+
+                {[
+                  { key: 'primaryColor', label: 'Màu chính (Primary)', help: 'Màu nút bấm, link, accent chính' },
+                  { key: 'accentColor', label: 'Màu phụ (Accent)', help: 'Highlight, badge, icon' },
+                  { key: 'bgColor', label: 'Màu nền (Background)', help: 'Nền của trang client' },
+                ].map((c) => (
+                  <div key={c.key}>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                      {c.label}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={(advanced as any)[c.key]}
+                        onChange={(e) => setAdvanced((a) => ({ ...a, [c.key]: e.target.value }))}
+                        className="h-10 w-14 cursor-pointer rounded-xl border border-on-surface-variant/20 bg-transparent p-1"
+                      />
+                      <input
+                        type="text"
+                        value={(advanced as any)[c.key]}
+                        onChange={(e) => setAdvanced((a) => ({ ...a, [c.key]: e.target.value }))}
+                        className="flex-1 rounded-xl border border-on-surface-variant/20 bg-on-surface-variant/5 px-3 py-2 text-sm font-mono outline-none focus:border-primary/40"
+                        placeholder="#000000"
+                      />
+                    </div>
+                    <p className="mt-1 text-[11px] text-on-surface-variant/50">{c.help}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Layout & Brand */}
+              <div className="rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5 space-y-4">
+                <p className="font-bold text-on-surface flex items-center gap-2">
+                  <Settings2 size={18} className="text-primary" />
+                  Layout & Thương hiệu
+                </p>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                    Bo góc (Border radius): {advanced.borderRadius}px
+                  </label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={32}
+                    value={advanced.borderRadius}
+                    onChange={(e) =>
+                      setAdvanced((a) => ({ ...a, borderRadius: Number(e.target.value) }))
+                    }
+                    className="w-full accent-primary"
+                  />
+                  <div className="mt-1 flex justify-between text-[10px] text-on-surface-variant/50">
+                    <span>Vuông</span>
+                    <span>Mềm mại</span>
+                    <span>Rất tròn</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                    Tên thương hiệu
+                  </label>
+                  <input
+                    type="text"
+                    value={advanced.brandName}
+                    onChange={(e) => setAdvanced((a) => ({ ...a, brandName: e.target.value }))}
+                    className="w-full rounded-xl border border-on-surface-variant/20 bg-on-surface-variant/5 px-3 py-2 text-sm outline-none focus:border-primary/40"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                    URL Logo (https)
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/logo.png"
+                    value={advanced.logoUrl}
+                    onChange={(e) => setAdvanced((a) => ({ ...a, logoUrl: e.target.value }))}
+                    className="w-full rounded-xl border border-on-surface-variant/20 bg-on-surface-variant/5 px-3 py-2 text-sm outline-none focus:border-primary/40"
+                  />
+                  {advanced.logoUrl && (
+                    <div className="mt-2 flex h-14 items-center justify-center rounded-xl border border-on-surface-variant/10 bg-surface p-2">
+                      <img
+                        src={advanced.logoUrl}
+                        alt="Logo preview"
+                        className="max-h-full"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                    Hotline
+                  </label>
+                  <input
+                    type="text"
+                    value={advanced.hotline}
+                    onChange={(e) => setAdvanced((a) => ({ ...a, hotline: e.target.value }))}
+                    className="w-full rounded-xl border border-on-surface-variant/20 bg-on-surface-variant/5 px-3 py-2 text-sm outline-none focus:border-primary/40"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                    Văn bản footer
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={advanced.footerText}
+                    onChange={(e) => setAdvanced((a) => ({ ...a, footerText: e.target.value }))}
+                    className="w-full rounded-xl border border-on-surface-variant/20 bg-on-surface-variant/5 px-3 py-2 text-sm outline-none focus:border-primary/40 resize-none"
+                  />
+                </div>
+
+                <label className="flex cursor-pointer items-center justify-between rounded-xl bg-surface px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-on-surface">Header dính (sticky)</p>
+                    <p className="text-[11px] text-on-surface-variant/60">Header luôn hiện khi cuộn trang</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={advanced.sticky}
+                    onChange={(e) => setAdvanced((a) => ({ ...a, sticky: e.target.checked }))}
+                    className="h-5 w-5 rounded accent-primary"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Live preview */}
+            <div className="mt-6 rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5">
+              <p className="mb-4 font-bold text-on-surface flex items-center gap-2">
+                <Eye size={18} className="text-primary" />
+                Xem trước thay đổi
+              </p>
+              <div
+                className="overflow-hidden rounded-xl p-6 transition-all"
+                style={{
+                  background: advanced.bgColor,
+                  borderRadius: `${advanced.borderRadius}px`,
+                }}
+              >
+                <div className="flex items-center justify-between rounded-2xl bg-white/80 px-5 py-3 backdrop-blur">
+                  <div className="flex items-center gap-2">
+                    {advanced.logoUrl ? (
+                      <img src={advanced.logoUrl} alt="" className="h-8" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')} />
+                    ) : null}
+                    <p className="text-base font-black" style={{ color: advanced.primaryColor }}>
+                      {advanced.brandName}
+                    </p>
+                  </div>
+                  <p className="text-xs font-semibold" style={{ color: advanced.accentColor }}>
+                    📞 {advanced.hotline}
+                  </p>
+                </div>
+                <div className="mt-4 flex items-center gap-3">
+                  <button
+                    style={{
+                      background: advanced.primaryColor,
+                      borderRadius: `${advanced.borderRadius}px`,
+                    }}
+                    className="px-5 py-2.5 text-sm font-bold text-white shadow"
+                  >
+                    Mua ngay
+                  </button>
+                  <button
+                    style={{
+                      background: advanced.accentColor,
+                      borderRadius: `${advanced.borderRadius}px`,
+                    }}
+                    className="px-5 py-2.5 text-sm font-bold text-white shadow"
+                  >
+                    Khám phá
+                  </button>
+                </div>
+                <p className="mt-4 text-xs text-on-surface-variant/60">{advanced.footerText}</p>
               </div>
             </div>
           </section>

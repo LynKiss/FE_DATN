@@ -50,10 +50,16 @@ type NavItem = {
   label: string;
   path?: string;
   icon: typeof LayoutDashboard;
+  /**
+   * Permission key cần để hiển thị item. Nếu có nhiều key, user cần ÍT NHẤT 1.
+   * Bỏ trống = ai cũng thấy.
+   */
+  permissions?: string[];
   children?: Array<{
     id: string;
     label: string;
     path: string;
+    permissions?: string[];
   }>;
 };
 
@@ -69,36 +75,43 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'Tổng quan' : 'Dashboard',
       icon: LayoutDashboard,
       path: '/admin',
+      permissions: ['view_dashboard', 'manage_reports', 'view_reports'],
     },
     {
       id: 'products',
       label: isVietnamese ? 'Sản phẩm' : 'Products',
       icon: Package,
+      permissions: ['manage_products', 'view_products'],
       children: [
         {
           id: 'products-all',
           label: isVietnamese ? 'Tất cả sản phẩm' : 'All products',
           path: '/admin/products',
+          permissions: ['manage_products', 'view_products'],
         },
         {
           id: 'products-new',
           label: isVietnamese ? 'Thêm sản phẩm' : 'Add product',
           path: '/admin/products/new',
+          permissions: ['manage_products'],
         },
         {
           id: 'products-import',
           label: isVietnamese ? 'Nhập kho thủ công' : 'Manual stock import',
           path: '/admin/products/import',
+          permissions: ['manage_inventory'],
         },
         {
           id: 'products-damage',
           label: isVietnamese ? 'Hàng hỏng / trả hàng' : 'Damage & returns',
           path: '/admin/products/inventory-damage',
+          permissions: ['manage_inventory'],
         },
         {
           id: 'products-lowstock',
           label: isVietnamese ? 'Tổng quan tồn kho' : 'Inventory overview',
           path: '/admin/products/inventory-lowstock',
+          permissions: ['manage_inventory', 'view_inventory'],
         },
       ],
     },
@@ -107,182 +120,241 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'Danh mục' : 'Categories',
       icon: FolderTree,
       path: '/admin/categories',
+      permissions: ['manage_categories', 'view_categories', 'manage_products'],
     },
     {
       id: 'subcategories',
       label: isVietnamese ? 'Danh mục phụ' : 'Subcategories',
       icon: Layers,
       path: '/admin/subcategories',
+      permissions: ['manage_categories', 'view_categories', 'manage_products'],
     },
     {
       id: 'origins',
       label: isVietnamese ? 'Xuất xứ' : 'Origins',
       icon: Globe,
       path: '/admin/origins',
+      permissions: ['manage_products', 'view_products'],
     },
     {
       id: 'tags',
       label: isVietnamese ? 'Nhãn sản phẩm' : 'Tags',
       icon: Hash,
       path: '/admin/tags',
+      permissions: ['manage_products', 'view_products'],
     },
     {
       id: 'orders',
       label: isVietnamese ? 'Đơn hàng' : 'Orders',
       icon: ShoppingCart,
       path: '/admin/orders',
+      permissions: ['manage_orders', 'view_orders'],
     },
     {
       id: 'returns',
       label: isVietnamese ? 'Trả hàng' : 'Returns',
       icon: PackageX,
       path: '/admin/returns',
+      permissions: ['manage_returns', 'view_returns', 'manage_orders'],
     },
     {
       id: 'discounts',
       label: isVietnamese ? 'Chương trình giảm giá' : 'Discount programs',
       icon: Calculator,
       path: '/admin/discounts',
+      permissions: ['manage_discounts', 'view_discounts'],
     },
     {
       id: 'customers',
       label: isVietnamese ? 'Tài khoản' : 'Customers',
       icon: Users,
       path: '/admin/customers',
+      permissions: ['manage_customers', 'view_customers', 'manage_users', 'view_users'],
     },
     {
       id: 'news',
       label: isVietnamese ? 'Bài viết' : 'Articles',
       icon: Newspaper,
       path: '/admin/news',
+      permissions: ['manage_news', 'view_news'],
     },
     {
       id: 'news-comments',
       label: isVietnamese ? 'Bình luận' : 'Comments',
       icon: MessageSquare,
       path: '/admin/news-comments',
+      permissions: ['manage_news', 'view_news'],
     },
     {
       id: 'reviews',
       label: isVietnamese ? 'Đánh giá sản phẩm' : 'Product reviews',
       icon: Star,
       path: '/admin/reviews',
+      permissions: ['manage_reviews'],
     },
     {
       id: 'payments',
       label: isVietnamese ? 'Thanh toán' : 'Payments',
       icon: CreditCard,
       path: '/admin/payments',
+      permissions: ['manage_orders', 'view_orders'],
     },
     {
       id: 'support-chats',
       label: isVietnamese ? 'Chat hỗ trợ' : 'Support chat',
       icon: MessageCircleMore,
       path: '/admin/support-chats',
+      permissions: ['manage_support'],
     },
     {
       id: 'rice-diagnosis',
       label: isVietnamese ? 'AI bệnh lúa' : 'Rice AI diagnosis',
       icon: Leaf,
       path: '/admin/rice-diagnosis',
+      permissions: ['manage_ai_diagnosis'],
     },
     {
       id: 'suppliers',
       label: isVietnamese ? 'Nhà cung cấp' : 'Suppliers',
       icon: Truck,
       path: '/admin/suppliers',
+      permissions: ['manage_suppliers', 'view_suppliers', 'manage_products'],
     },
     {
       id: 'procurement',
       label: isVietnamese ? 'Mua hàng' : 'Procurement',
       icon: ClipboardList,
       path: '/admin/procurement',
+      permissions: ['manage_procurement', 'view_procurement', 'manage_products'],
     },
     {
       id: 'pricing',
       label: isVietnamese ? 'Định giá bán' : 'Pricing',
       icon: Calculator,
       path: '/admin/pricing',
+      permissions: ['manage_products'],
     },
     {
       id: 'warehouses',
       label: isVietnamese ? 'Kho hàng' : 'Warehouses',
       icon: Warehouse,
       path: '/admin/warehouses',
+      permissions: ['manage_inventory', 'view_inventory'],
     },
     {
       id: 'inventory-ledger',
       label: isVietnamese ? 'Sổ kho chi tiết' : 'Inventory Ledger',
       icon: BookOpen,
       path: '/admin/inventory-ledger',
+      permissions: ['manage_inventory', 'view_inventory'],
     },
     {
       id: 'inventory-valuation',
       label: isVietnamese ? 'Giá trị tồn kho' : 'Inventory Valuation',
       icon: Coins,
       path: '/admin/inventory-valuation',
+      permissions: ['manage_reports', 'view_reports'],
     },
     {
       id: 'profitability',
       label: isVietnamese ? 'Lợi nhuận thật' : 'Profitability',
       icon: TrendingUp,
       path: '/admin/profitability',
+      permissions: ['manage_reports', 'view_reports'],
     },
     {
       id: 'aging-debt',
       label: isVietnamese ? 'Tuổi nợ NCC' : 'Aging Debt',
       icon: CreditCard,
       path: '/admin/aging-debt',
+      permissions: ['manage_reports', 'view_reports'],
     },
     {
       id: 'credit-limits',
       label: isVietnamese ? 'Hạn mức công nợ' : 'Credit Limits',
       icon: ClipboardList,
       path: '/admin/credit-limits',
+      permissions: ['manage_customers', 'manage_users'],
     },
     {
       id: 'audit-logs',
       label: isVietnamese ? 'Nhật ký thao tác' : 'Audit Logs',
       icon: ClipboardCheck,
       path: '/admin/audit-logs',
+      permissions: ['manage_audit_logs', 'view_audit_logs', 'manage_permissions'],
     },
     {
       id: 'newsletter',
       label: isVietnamese ? 'Newsletter' : 'Newsletter',
       icon: Mail,
       path: '/admin/newsletter',
+      permissions: ['manage_news'],
     },
     {
       id: 'reports',
       label: isVietnamese ? 'Báo cáo' : 'Reports',
       icon: BarChart3,
       path: '/admin/reports',
+      permissions: ['manage_reports', 'view_reports'],
     },
     {
       id: 'permissions',
       label: isVietnamese ? 'Phân quyền' : 'Permissions',
       icon: KeyRound,
       path: '/admin/permissions',
+      permissions: ['manage_permissions'],
     },
     {
       id: 'interface',
       label: isVietnamese ? 'Giao diện' : 'Interface',
       icon: MonitorSmartphone,
       path: '/admin/interface',
+      permissions: ['manage_interface'],
     },
     {
       id: 'security',
       label: isVietnamese ? 'Bảo mật' : 'Security',
       icon: ShieldCheck,
       path: '/admin/security',
+      permissions: ['manage_settings', 'manage_permissions'],
     },
     {
       id: 'settings',
       label: isVietnamese ? 'Cấu hình' : 'Settings',
       icon: Settings,
       path: '/admin/settings',
+      permissions: ['manage_settings', 'view_settings'],
     },
   ];
+
+  // Filter sidebar items theo permissions của user.
+  // ADMIN có 'manage_permissions' → hiện tất cả.
+  // STAFF / VIEWER chỉ thấy các mục có ÍT NHẤT 1 permission khớp.
+  const userPermSet = new Set(
+    (session?.user.permissions ?? []).map((p) => p.key),
+  );
+  const isAdmin = userPermSet.has('manage_permissions');
+
+  const itemHasAccess = (perms?: string[]): boolean => {
+    if (!perms || perms.length === 0) return true; // public item
+    if (isAdmin) return true; // admin always has access
+    return perms.some((key) => userPermSet.has(key));
+  };
+
+  const filteredNavItems = navItems
+    .map((item) => {
+      if (item.children) {
+        const visibleChildren = item.children.filter((c) =>
+          itemHasAccess(c.permissions),
+        );
+        if (visibleChildren.length === 0 && !itemHasAccess(item.permissions)) {
+          return null;
+        }
+        return { ...item, children: visibleChildren };
+      }
+      return itemHasAccess(item.permissions) ? item : null;
+    })
+    .filter((item): item is NavItem => item !== null);
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     products: location.pathname.startsWith('/admin/products'),
@@ -363,7 +435,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
 
         <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto">
           <nav className="flex flex-col gap-0.5">
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               if (item.children) {
                 const isGroupActive = item.children.some(
                   (child) => location.pathname === child.path,

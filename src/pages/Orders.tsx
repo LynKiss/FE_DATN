@@ -347,7 +347,7 @@ export default function Orders() {
         if (!cancelled && !silent) {
           showToast({
             tone: 'error',
-            title: isVietnamese ? 'Khong tai duoc tracking' : 'Unable to load tracking',
+            title: isVietnamese ? 'Không tải được tracking' : 'Unable to load tracking',
             description: trackingError instanceof Error ? trackingError.message : '',
           });
         }
@@ -385,7 +385,7 @@ export default function Orders() {
     } catch (detailError) {
       showToast({
         tone: 'error',
-        title: isVietnamese ? 'Khong tai duoc chi tiet don hang' : 'Unable to load order detail',
+        title: isVietnamese ? 'Không tải được chi tiết đơn hàng' : 'Unable to load order detail',
         description: detailError instanceof Error ? detailError.message : '',
       });
       setDetailOpen(false);
@@ -423,12 +423,12 @@ export default function Orders() {
 
       showToast({
         tone: 'success',
-        title: isVietnamese ? 'Da cap nhat trang thai don hang' : 'Order status updated',
+        title: isVietnamese ? 'Đã cập nhật trạng thái đơn hàng' : 'Order status updated',
       });
     } catch (updateError) {
       showToast({
         tone: 'error',
-        title: isVietnamese ? 'Cap nhat trang thai that bai' : 'Status update failed',
+        title: isVietnamese ? 'Cập nhật trạng thái thất bại' : 'Status update failed',
         description: updateError instanceof Error ? updateError.message : '',
       });
     } finally {
@@ -450,12 +450,12 @@ export default function Orders() {
       setTracking(updated);
       showToast({
         tone: 'success',
-        title: isVietnamese ? 'Da doi che do tracking' : 'Tracking mode updated',
+        title: isVietnamese ? 'Đã đổi chế độ tracking' : 'Tracking mode updated',
       });
     } catch (trackingError) {
       showToast({
         tone: 'error',
-        title: isVietnamese ? 'Cap nhat mode that bai' : 'Unable to update mode',
+        title: isVietnamese ? 'Cập nhật mode thất bại' : 'Unable to update mode',
         description: trackingError instanceof Error ? trackingError.message : '',
       });
     } finally {
@@ -481,12 +481,12 @@ export default function Orders() {
       setTracking(updated);
       showToast({
         tone: 'success',
-        title: isVietnamese ? 'Da cap nhat diem demo' : 'Manual tracking updated',
+        title: isVietnamese ? 'Đã cập nhật điểm demo' : 'Manual tracking updated',
       });
     } catch (trackingError) {
       showToast({
         tone: 'error',
-        title: isVietnamese ? 'Cap nhat diem demo that bai' : 'Unable to update manual tracking',
+        title: isVietnamese ? 'Cập nhật điểm demo thất bại' : 'Unable to update manual tracking',
         description: trackingError instanceof Error ? trackingError.message : '',
       });
     } finally {
@@ -514,12 +514,12 @@ export default function Orders() {
       setTracking(updated);
       showToast({
         tone: 'success',
-        title: isVietnamese ? 'Da cap nhat GPS live' : 'Live GPS updated',
+        title: isVietnamese ? 'Đã cập nhật GPS live' : 'Live GPS updated',
       });
     } catch (trackingError) {
       showToast({
         tone: 'error',
-        title: isVietnamese ? 'Cap nhat GPS that bai' : 'Unable to update GPS',
+        title: isVietnamese ? 'Cập nhật GPS thất bại' : 'Unable to update GPS',
         description: trackingError instanceof Error ? trackingError.message : '',
       });
     } finally {
@@ -607,7 +607,7 @@ export default function Orders() {
             onChange={(event) => setStatus(event.target.value as 'all' | OrderStatus)}
             className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
           >
-            <option value="all">{isVietnamese ? 'Tat ca trang thai' : 'All statuses'}</option>
+            <option value="all">{isVietnamese ? 'Tất cả trạng thái' : 'All statuses'}</option>
             {STATUS_OPTIONS.map((item) => (
               <option key={item} value={item}>
                 {getStatusLabel(item, isVietnamese)}
@@ -638,11 +638,11 @@ export default function Orders() {
               className="inline-flex items-center gap-2 rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary disabled:opacity-50"
             >
               <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-              {isVietnamese ? 'Lam moi' : 'Refresh'}
+              {isVietnamese ? 'Làm mới' : 'Refresh'}
             </button>
             {lastUpdated && (
               <p className="text-[10px] text-on-surface-variant/50">
-                {isVietnamese ? 'Lan cap nhat cuoi: ' : 'Last updated: '}
+                {isVietnamese ? 'Cập nhật lúc: ' : 'Last updated: '}
                 {lastUpdated.toLocaleTimeString('vi-VN', {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -654,23 +654,32 @@ export default function Orders() {
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         {[
-          { status: 'backordered', label: isVietnamese ? 'Cho hang' : 'Backordered' },
-          { status: 'pending', label: isVietnamese ? 'Cho xu ly' : 'Pending' },
-          { status: 'confirmed', label: isVietnamese ? 'Da xac nhan' : 'Confirmed' },
-          { status: 'processing', label: isVietnamese ? 'Dang xu ly' : 'Processing' },
-          { status: 'shipping', label: isVietnamese ? 'Dang giao' : 'Shipping' },
-        ].map(({ status: nextStatusLabel, label }) => {
+          { status: 'backordered', label: isVietnamese ? 'Chờ hàng' : 'Backordered', color: 'text-rose-600', bg: 'bg-rose-50' },
+          { status: 'pending', label: isVietnamese ? 'Chờ xử lý' : 'Pending', color: 'text-amber-600', bg: 'bg-amber-50' },
+          { status: 'confirmed', label: isVietnamese ? 'Đã xác nhận' : 'Confirmed', color: 'text-sky-600', bg: 'bg-sky-50' },
+          { status: 'processing', label: isVietnamese ? 'Đang xử lý' : 'Processing', color: 'text-violet-600', bg: 'bg-violet-50' },
+          { status: 'shipping', label: isVietnamese ? 'Đang giao' : 'Shipping', color: 'text-blue-600', bg: 'bg-blue-50' },
+          { status: 'delivered', label: isVietnamese ? 'Đã giao' : 'Delivered', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+        ].map(({ status: nextStatusLabel, label, color, bg }) => {
           const count = orders.filter((order) => order.status === nextStatusLabel).length;
           return (
-            <div
+            <button
               key={nextStatusLabel}
-              className="rounded-2xl border border-on-surface/8 bg-white p-4 text-center shadow-sm"
+              type="button"
+              onClick={() => setStatus(nextStatusLabel as OrderStatus)}
+              className={`group rounded-2xl border p-4 text-left shadow-sm transition hover:scale-[1.02] hover:shadow-md ${
+                status === nextStatusLabel
+                  ? 'border-primary bg-primary/5'
+                  : `border-on-surface/8 ${bg}`
+              }`}
             >
-              <p className="text-2xl font-black text-primary">{count}</p>
-              <p className="mt-1 text-xs text-on-surface-variant">{label}</p>
-            </div>
+              <p className={`text-3xl font-black ${color}`}>{count}</p>
+              <p className="mt-1 text-xs font-semibold text-on-surface-variant">
+                {label}
+              </p>
+            </button>
           );
         })}
       </div>
@@ -691,9 +700,9 @@ export default function Orders() {
                 <th className="px-4 py-4">{isVietnamese ? 'Liên hệ' : 'Contact'}</th>
                 <th className="px-4 py-4">{isVietnamese ? 'Tổng tiền' : 'Total'}</th>
                 <th className="px-4 py-4">{isVietnamese ? 'Thanh toán' : 'Payment'}</th>
-                <th className="px-4 py-4">{isVietnamese ? 'Trang thai' : 'Status'}</th>
-                <th className="px-4 py-4">{isVietnamese ? 'Ngay tao' : 'Created at'}</th>
-                <th className="px-4 py-4 text-center">{isVietnamese ? 'Hanh dong' : 'Action'}</th>
+                <th className="px-4 py-4">{isVietnamese ? 'Trạng thái' : 'Status'}</th>
+                <th className="px-4 py-4">{isVietnamese ? 'Ngày tạo' : 'Created at'}</th>
+                <th className="px-4 py-4 text-center">{isVietnamese ? 'Hành động' : 'Action'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-on-surface/6 text-sm">
@@ -702,7 +711,7 @@ export default function Orders() {
                   <td colSpan={8} className="px-4 py-16 text-center text-on-surface-variant">
                     <span className="inline-flex items-center gap-2">
                       <LoaderCircle size={16} className="animate-spin" />
-                      {isVietnamese ? 'Dang tai don hang...' : 'Loading orders...'}
+                      {isVietnamese ? 'Đang tải đơn hàng...' : 'Loading orders...'}
                     </span>
                   </td>
                 </tr>
@@ -710,7 +719,7 @@ export default function Orders() {
                 <tr>
                   <td colSpan={8} className="px-4 py-16 text-center text-on-surface-variant">
                     <ShoppingCart size={28} className="mx-auto mb-3 text-primary/50" />
-                    {isVietnamese ? 'Khong co don hang phu hop' : 'No matching orders'}
+                    {isVietnamese ? 'Không có đơn hàng phù hợp' : 'No matching orders'}
                   </td>
                 </tr>
               ) : (
@@ -773,7 +782,7 @@ export default function Orders() {
 
       <Modal
         open={detailOpen}
-        title={isVietnamese ? 'Chi tiet don hang' : 'Order detail'}
+        title={isVietnamese ? 'Chi tiết đơn hàng' : 'Order detail'}
         onClose={() => {
           setDetailOpen(false);
           setSelectedOrder(null);
@@ -785,7 +794,7 @@ export default function Orders() {
             <div className="flex flex-wrap items-center justify-end gap-3">
               {getAllowedNextStatuses(selectedOrder.status).length === 0 ? (
                 <span className="rounded-2xl border border-on-surface/10 bg-surface/60 px-4 py-2.5 text-sm italic text-on-surface-variant/60">
-                  {isVietnamese ? 'Don hang da ket thuc' : 'Order is finalized'}
+                  {isVietnamese ? 'Đơn hàng đã kết thúc' : 'Order is finalized'}
                 </span>
               ) : (
                 <select
@@ -805,7 +814,7 @@ export default function Orders() {
                   <input
                     value={statusNote}
                     onChange={(event) => setStatusNote(event.target.value)}
-                    placeholder={isVietnamese ? 'Ghi chu cap nhat' : 'Status note'}
+                    placeholder={isVietnamese ? 'Ghi chú cập nhật' : 'Status note'}
                     className="w-full rounded-2xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none sm:w-64"
                   />
                   <button
@@ -837,29 +846,29 @@ export default function Orders() {
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <DetailCard label={isVietnamese ? 'Ma don' : 'Order ID'} value={selectedOrder.id} />
+                  <DetailCard label={isVietnamese ? 'Mã đơn' : 'Order ID'} value={selectedOrder.id} />
                   <DetailCard
-                    label={isVietnamese ? 'Phuong thuc thanh toan' : 'Payment method'}
+                    label={isVietnamese ? 'Phương thức thanh toán' : 'Payment method'}
                     value={selectedOrder.paymentMethod || '-'}
                   />
                   <DetailCard
-                    label={isVietnamese ? 'Khach hang' : 'Customer'}
+                    label={isVietnamese ? 'Khách hàng' : 'Customer'}
                     value={selectedOrder.fullName}
                   />
-                  <DetailCard label={isVietnamese ? 'So dien thoai' : 'Phone'} value={selectedOrder.phone} />
+                  <DetailCard label={isVietnamese ? 'Số điện thoại' : 'Phone'} value={selectedOrder.phone} />
                   <DetailCard
-                    label={isVietnamese ? 'Dia chi' : 'Address'}
+                    label={isVietnamese ? 'Địa chỉ' : 'Address'}
                     value={selectedOrder.address}
                   />
                   <DetailCard
-                    label={isVietnamese ? 'Ngay tao' : 'Created at'}
+                    label={isVietnamese ? 'Ngày tạo' : 'Created at'}
                     value={dateFormatter.format(new Date(selectedOrder.createdAt))}
                   />
                 </div>
 
                 <div className="rounded-[1.5rem] border border-on-surface/8 bg-surface/50 p-4">
                   <h3 className="text-sm font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
-                    {isVietnamese ? 'San pham trong don' : 'Order items'}
+                    {isVietnamese ? 'Sản phẩm trong đơn' : 'Order items'}
                   </h3>
                   <div className="mt-4 space-y-3">
                     {selectedOrder.items.map((item) => (
@@ -888,23 +897,23 @@ export default function Orders() {
               <div className="space-y-6">
                 <div className="rounded-[1.5rem] border border-on-surface/8 bg-surface/50 p-4">
                   <h3 className="text-sm font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
-                    {isVietnamese ? 'Tong hop thanh toan' : 'Payment summary'}
+                    {isVietnamese ? 'Tổng hợp thanh toán' : 'Payment summary'}
                   </h3>
                   <div className="mt-4 space-y-3 text-sm">
                     <SummaryRow
-                      label={isVietnamese ? 'Tam tinh' : 'Subtotal'}
+                      label={isVietnamese ? 'Tạm tính' : 'Subtotal'}
                       value={currency.format(Number(selectedOrder.subtotalAmount))}
                     />
                     <SummaryRow
-                      label={isVietnamese ? 'Giam gia' : 'Discount'}
+                      label={isVietnamese ? 'Giảm giá' : 'Discount'}
                       value={currency.format(Number(selectedOrder.discountAmount))}
                     />
                     <SummaryRow
-                      label={isVietnamese ? 'Phi giao hang' : 'Delivery'}
+                      label={isVietnamese ? 'Phí giao hàng' : 'Delivery'}
                       value={currency.format(Number(selectedOrder.deliveryCost))}
                     />
                     <SummaryRow
-                      label={isVietnamese ? 'Tong thanh toan' : 'Total payment'}
+                      label={isVietnamese ? 'Tổng thanh toán' : 'Total payment'}
                       value={currency.format(Number(selectedOrder.totalPayment))}
                       strong
                     />
@@ -921,12 +930,12 @@ export default function Orders() {
 
                 <div className="rounded-[1.5rem] border border-on-surface/8 bg-surface/50 p-4">
                   <h3 className="text-sm font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
-                    {isVietnamese ? 'Lich su trang thai' : 'Status history'}
+                    {isVietnamese ? 'Lịch sử trạng thái' : 'Status history'}
                   </h3>
                   <div className="mt-4 space-y-3">
                     {selectedOrder.history.length === 0 ? (
                       <p className="text-sm text-on-surface-variant">
-                        {isVietnamese ? 'Chua co lich su cap nhat' : 'No status history yet'}
+                        {isVietnamese ? 'Chưa có lịch sử cập nhật' : 'No status history yet'}
                       </p>
                     ) : (
                       selectedOrder.history.map((item) => (
@@ -962,7 +971,7 @@ export default function Orders() {
                 <div>
                   <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
                     <Navigation size={14} />
-                    {isVietnamese ? 'Tracking giao hang hybrid' : 'Hybrid delivery tracking'}
+                    {isVietnamese ? 'Tracking giao hàng hybrid' : 'Hybrid delivery tracking'}
                   </h3>
                   <p className="mt-2 text-sm text-on-surface-variant">
                     {tracking
@@ -1002,7 +1011,7 @@ export default function Orders() {
                       <div className="overflow-hidden rounded-2xl border border-on-surface/8 bg-white">
                         <div className="flex items-center justify-between px-4 py-3">
                           <p className="text-xs font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
-                            {isVietnamese ? 'Vi tri dang dung de hien thi' : 'Active location'}
+                            {isVietnamese ? 'Vị trí đang dùng để hiển thị' : 'Active location'}
                           </p>
                           <span className="rounded-full bg-surface px-3 py-1 text-xs font-bold text-on-surface-variant">
                             {tracking ? TRACKING_SOURCE_LABELS[tracking.activeSource] : 'No signal'}
@@ -1038,7 +1047,7 @@ export default function Orders() {
                             value={activeMapPoint ? String(activeMapPoint.longitude) : '-'}
                           />
                           <InfoPill
-                            label={isVietnamese ? 'Cap nhat' : 'Updated'}
+                            label={isVietnamese ? 'Cập nhật' : 'Updated'}
                             value={activeMapPoint ? formatTrackingTime(activeMapPoint.updatedAt) : '-'}
                           />
                           <InfoPill
@@ -1054,21 +1063,21 @@ export default function Orders() {
                           onClick={() => seedManualFrom('active')}
                           className="rounded-2xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
                         >
-                          {isVietnamese ? 'Lay vi tri dang hien thi' : 'Use active point'}
+                          {isVietnamese ? 'Lấy vị trí đang hiển thị' : 'Use active point'}
                         </button>
                         <button
                           type="button"
                           onClick={() => seedManualFrom('gps')}
                           className="rounded-2xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
                         >
-                          {isVietnamese ? 'Lay tu GPS' : 'Use GPS point'}
+                          {isVietnamese ? 'Lấy từ GPS' : 'Use GPS point'}
                         </button>
                         <button
                           type="button"
                           onClick={() => seedManualFrom('manual')}
                           className="rounded-2xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
                         >
-                          {isVietnamese ? 'Lay tu demo hien tai' : 'Use manual point'}
+                          {isVietnamese ? 'Lấy từ demo hiện tại' : 'Use manual point'}
                         </button>
                       </div>
 
@@ -1094,7 +1103,7 @@ export default function Orders() {
                     <div className="space-y-4">
                       <div className="rounded-2xl border border-on-surface/8 bg-white p-4">
                         <p className="text-xs font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
-                          {isVietnamese ? 'Nguon demo / manual' : 'Manual / demo source'}
+                          {isVietnamese ? 'Nguồn demo / manual' : 'Manual / demo source'}
                         </p>
                         <div className="mt-3 grid gap-3">
                           <input
@@ -1127,7 +1136,7 @@ export default function Orders() {
                                 note: event.target.value,
                               }))
                             }
-                            placeholder={isVietnamese ? 'Ghi chu demo' : 'Manual note'}
+                            placeholder={isVietnamese ? 'Ghi chú demo' : 'Manual note'}
                             className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                           />
                           <button
@@ -1145,14 +1154,14 @@ export default function Orders() {
                             ) : (
                               <Save size={14} />
                             )}
-                            {isVietnamese ? 'Cap nhat demo' : 'Update manual'}
+                            {isVietnamese ? 'Cập nhật demo' : 'Update manual'}
                           </button>
                         </div>
                       </div>
 
                       <div className="rounded-2xl border border-on-surface/8 bg-white p-4">
                         <p className="text-xs font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
-                          {isVietnamese ? 'Nguon GPS / live' : 'Live GPS source'}
+                          {isVietnamese ? 'Nguồn GPS / live' : 'Live GPS source'}
                         </p>
                         <div className="mt-3 grid gap-3">
                           <input
@@ -1186,7 +1195,7 @@ export default function Orders() {
                                   heading: event.target.value,
                                 }))
                               }
-                              placeholder={isVietnamese ? 'Huong di' : 'Heading'}
+                              placeholder={isVietnamese ? 'Hướng đi' : 'Heading'}
                               className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                             />
                             <input
@@ -1197,7 +1206,7 @@ export default function Orders() {
                                   speedKph: event.target.value,
                                 }))
                               }
-                              placeholder={isVietnamese ? 'Toc do kph' : 'Speed kph'}
+                              placeholder={isVietnamese ? 'Tốc độ kph' : 'Speed kph'}
                               className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                             />
                           </div>
@@ -1209,7 +1218,7 @@ export default function Orders() {
                                 provider: event.target.value,
                               }))
                             }
-                            placeholder={isVietnamese ? 'Nguon GPS / device' : 'GPS provider / device'}
+                            placeholder={isVietnamese ? 'Nguồn GPS / thiết bị' : 'GPS provider / device'}
                             className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                           />
                           <button
@@ -1227,7 +1236,7 @@ export default function Orders() {
                             ) : (
                               <Navigation size={14} />
                             )}
-                            {isVietnamese ? 'Cap nhat GPS live' : 'Update live GPS'}
+                            {isVietnamese ? 'Cập nhật GPS live' : 'Update live GPS'}
                           </button>
                         </div>
                       </div>
@@ -1246,15 +1255,15 @@ export default function Orders() {
 function getStatusLabel(status: OrderStatus, isVietnamese: boolean) {
   const labels: Record<OrderStatus, string> = isVietnamese
     ? {
-      backordered: 'Cho hang',
-      pending: 'Cho xu ly',
-      confirmed: 'Da xac nhan',
-      processing: 'Dang xu ly',
-      shipping: 'Dang giao',
-      delivered: 'Da giao',
-      partial_delivered: 'Giao mot phan',
-      cancelled: 'Da huy',
-      returned: 'Da hoan',
+      backordered: 'Chờ hàng',
+      pending: 'Chờ xử lý',
+      confirmed: 'Đã xác nhận',
+      processing: 'Đang xử lý',
+      shipping: 'Đang giao',
+      delivered: 'Đã giao',
+      partial_delivered: 'Giao một phần',
+      cancelled: 'Đã hủy',
+      returned: 'Đã hoàn',
     }
     : {
       backordered: 'Backordered',
@@ -1274,10 +1283,10 @@ function getStatusLabel(status: OrderStatus, isVietnamese: boolean) {
 function getPaymentLabel(status: PaymentStatus, isVietnamese: boolean) {
   const labels: Record<PaymentStatus, string> = isVietnamese
     ? {
-      unpaid: 'Chua thanh toan',
-      paid: 'Da thanh toan',
-      failed: 'That bai',
-      refunded: 'Da hoan tien',
+      unpaid: 'Chưa thanh toán',
+      paid: 'Đã thanh toán',
+      failed: 'Thất bại',
+      refunded: 'Đã hoàn tiền',
     }
     : {
       unpaid: 'Unpaid',

@@ -11,6 +11,17 @@ import {
   Heart,
   ShoppingCart,
   Star,
+  LayoutGrid,
+  List,
+  Truck,
+  ShieldCheck,
+  RotateCcw,
+  Tag as TagIcon,
+  Globe,
+  Flame,
+  Eye,
+  Sparkles,
+  Award,
 } from 'lucide-react';
 import { clientApi } from '../../lib/client-api';
 import { useCart } from '../../hooks/useCart';
@@ -28,8 +39,10 @@ type Product = {
   ratingAverage: string;
   ratingCount: number;
   unit: string | null;
+  isFeatured?: boolean;
+  createdAt?: string;
   category?: { categoryId: string; categoryName: string };
-  origin?: { originName: string };
+  origin?: { originId?: string; originName: string };
   appliedDiscount?: { id: string; type: string; value: number; name?: string } | null;
 };
 
@@ -59,13 +72,30 @@ function calcDiscountPct(base: number, effective: number): number {
 
 const SORT_OPTIONS = [
   { value: '', label: 'Mặc định' },
-  { value: 'price_asc', label: 'Giá tăng dần' },
-  { value: 'price_desc', label: 'Giá giảm dần' },
+  { value: 'price_asc', label: 'Giá: Thấp → Cao' },
+  { value: 'price_desc', label: 'Giá: Cao → Thấp' },
   { value: 'newest', label: 'Mới nhất' },
   { value: 'rating', label: 'Đánh giá cao nhất' },
+  { value: 'popular', label: 'Bán chạy' },
 ];
 
 const PAGE_SIZE = 12;
+
+const TRUST_BADGES = [
+  { icon: Truck, title: 'Miễn phí vận chuyển', desc: 'Đơn từ 500.000đ' },
+  { icon: ShieldCheck, title: 'Hàng chính hãng 100%', desc: 'Có giấy chứng nhận' },
+  { icon: RotateCcw, title: 'Đổi trả 7 ngày', desc: 'Nếu lỗi nhà sản xuất' },
+];
+
+function isNewProduct(createdAt?: string) {
+  if (!createdAt) return false;
+  const days = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
+  return days <= 14;
+}
+
+function isBestSeller(p: Product) {
+  return Number(p.ratingAverage ?? 0) >= 4.5 && p.ratingCount >= 10;
+}
 
 function RatingStars({ avg, count }: { avg: number; count: number }) {
   if (count === 0) return null;
@@ -97,6 +127,11 @@ export default function Products() {
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [origins, setOrigins] = useState<Origin[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    const saved = localStorage.getItem('products_view_mode');
+    return saved === 'list' ? 'list' : 'grid';
+  });
+  const [quickViewId, setQuickViewId] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -114,6 +149,8 @@ export default function Products() {
   const sort = searchParams.get('sort') ?? '';
   const priceMin = searchParams.get('priceMin') ?? '';
   const priceMax = searchParams.get('priceMax') ?? '';
+  const ratingMin = searchParams.get('ratingMin') ?? '';
+  const onSaleOnly = searchParams.get('onSale') === '1';
   const page = parseInt(searchParams.get('page') ?? '1', 10);
 
   const [localSearch, setLocalSearch] = useState(search);
@@ -122,7 +159,13 @@ export default function Products() {
 
   useEffect(() => {
     void clientApi.get<Category[]>('/categories').then((d) => setCategories(Array.isArray(d) ? d : [])).catch(() => {});
+    void clientApi.get<Tag[]>('/tags').then((d) => setTags(Array.isArray(d) ? d : [])).catch(() => {});
+    void clientApi.get<Origin[]>('/origins').then((d) => setOrigins(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('products_view_mode', viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     if (categoryId) {
@@ -160,10 +203,24 @@ export default function Products() {
       if (sort === 'price_asc') { params.set('sortBy', 'product_price'); params.set('sortOrder', 'ASC'); }
       else if (sort === 'price_desc') { params.set('sortBy', 'product_price'); params.set('sortOrder', 'DESC'); }
       else if (sort === 'newest') { params.set('sortBy', 'created_at'); params.set('sortOrder', 'DESC'); }
-      else if (sort === 'rating') { params.set('sortBy', 'rating_average'); params.set('sortOrder', 'DESC'); }
+      else if (sort === 'rating' || sort === 'popular') {
+        params.set('sortBy', 'rating_average');
+        params.set('sortOrder', 'DESC');
+      }
 
       const data = await clientApi.get<ProductsResponse>(`/products?${params.toString()}`);
-      setProducts(data.items ?? []);
+      let items = data.items ?? [];
+      // Client-side filter: rating min + onSale (vì BE chưa support 2 filter này)
+      if (ratingMin) {
+        const minR = Number(ratingMin);
+        items = items.filter((p) => Number(p.ratingAverage ?? 0) >= minR);
+      }
+      if (onSaleOnly) {
+        items = items.filter(
+          (p) => Number(p.effectivePrice) < Number(p.basePrice) - 0.01,
+        );
+      }
+      setProducts(items);
       setTotal(data.meta?.total ?? 0);
       setTotalPages(data.meta?.totalPages ?? 1);
     } catch {
@@ -171,7 +228,7 @@ export default function Products() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, categoryId, subcategoryId, tagId, originId, priceMin, priceMax, sort]);
+  }, [page, search, categoryId, subcategoryId, tagId, originId, priceMin, priceMax, sort, ratingMin, onSaleOnly]);
 
   useEffect(() => { void fetchProducts(); }, [fetchProducts]);
 
@@ -224,10 +281,17 @@ export default function Products() {
   const selectedCategoryName = categories.find((c) => c.categoryId === categoryId)?.categoryName;
   const selectedSubcategoryName = subcategories.find((s) => s.subcategoryId === subcategoryId)?.subcategoryName;
 
+  const selectedTagName = tags.find((t) => t.tagId === tagId)?.tagName;
+  const selectedOriginName = origins.find((o) => o.originId === originId)?.originName;
+
   const activeFilters = [
     search && { key: 'search', label: `"${search}"`, clear: () => { setLocalSearch(''); updateParam('search', ''); } },
     categoryId && { key: 'cat', label: selectedCategoryName ?? 'Danh mục', clear: () => { updateMultiple({ categoryId: '', subcategoryId: '' }); setSubcategories([]); } },
     subcategoryId && { key: 'sub', label: selectedSubcategoryName ?? 'Phân loại', clear: () => updateParam('subcategoryId', '') },
+    tagId && { key: 'tag', label: `# ${selectedTagName ?? 'Tag'}`, clear: () => updateParam('tagId', '') },
+    originId && { key: 'origin', label: `📍 ${selectedOriginName ?? 'Xuất xứ'}`, clear: () => updateParam('originId', '') },
+    ratingMin && { key: 'rating', label: `${ratingMin}★ trở lên`, clear: () => updateParam('ratingMin', '') },
+    onSaleOnly && { key: 'sale', label: '🔥 Đang giảm giá', clear: () => updateParam('onSale', '') },
     (priceMin || priceMax) && {
       key: 'price',
       label: priceMin && priceMax ? `${formatPrice(Number(priceMin))} – ${formatPrice(Number(priceMax))}` : priceMin ? `Từ ${formatPrice(Number(priceMin))}` : `Đến ${formatPrice(Number(priceMax))}`,
@@ -275,13 +339,63 @@ export default function Products() {
   return (
     <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
+        {/* Trust badges banner */}
+        <div className="mb-6 grid grid-cols-3 gap-3 rounded-2xl border border-[#006241]/10 bg-white p-3 sm:gap-4 sm:p-4">
+          {TRUST_BADGES.map((b) => (
+            <div key={b.title} className="flex items-center gap-2 sm:gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#006241]/8 sm:h-11 sm:w-11">
+                <b.icon size={18} style={{ color: '#006241' }} />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-black text-[#1E3932] sm:text-sm">
+                  {b.title}
+                </p>
+                <p className="truncate text-[10px] text-gray-500 sm:text-xs">{b.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Page header */}
-        <div className="mb-4">
-          <p className="text-xs font-bold uppercase tracking-[0.25em]" style={{ color: '#006241' }}>Sản phẩm</p>
-          <h1 className="mt-1 text-3xl font-black" style={{ color: '#1E3932' }}>
-            {selectedSubcategoryName ?? selectedCategoryName ?? (search ? `Kết quả: "${search}"` : 'Tất cả sản phẩm')}
-          </h1>
-          {!loading && <p className="mt-1 text-sm text-gray-500"><strong>{total}</strong> sản phẩm</p>}
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.25em]" style={{ color: '#006241' }}>Sản phẩm</p>
+            <h1 className="mt-1 text-3xl font-black" style={{ color: '#1E3932' }}>
+              {selectedSubcategoryName ?? selectedCategoryName ?? (search ? `Kết quả: "${search}"` : 'Tất cả sản phẩm')}
+            </h1>
+            {!loading && <p className="mt-1 text-sm text-gray-500"><strong>{total}</strong> sản phẩm</p>}
+          </div>
+
+          {/* Quick filter chips */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => updateParam('onSale', onSaleOnly ? '' : '1')}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                onSaleOnly
+                  ? 'bg-red-500 text-white shadow'
+                  : 'bg-white border border-red-200 text-red-500 hover:bg-red-50'
+              }`}
+            >
+              <Flame size={13} />
+              Đang giảm giá
+            </button>
+            {[5, 4].map((r) => (
+              <button
+                key={r}
+                onClick={() =>
+                  updateParam('ratingMin', ratingMin === String(r) ? '' : String(r))
+                }
+                className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                  ratingMin === String(r)
+                    ? 'bg-amber-500 text-white shadow'
+                    : 'bg-white border border-amber-200 text-amber-600 hover:bg-amber-50'
+                }`}
+              >
+                <Star size={12} fill="currentColor" />
+                {r}★ trở lên
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Mobile search bar */}
@@ -402,6 +516,62 @@ export default function Products() {
                   </button>
                 </div>
               </div>
+
+              {/* Origins */}
+              {origins.length > 0 && (
+                <div>
+                  <p className="mb-3 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-gray-400">
+                    <Globe size={11} />
+                    Xuất xứ
+                  </p>
+                  <div className="space-y-1 max-h-40 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-300">
+                    {origins.map((o) => (
+                      <button
+                        key={o.originId}
+                        onClick={() => {
+                          updateParam('originId', originId === o.originId ? '' : o.originId);
+                          setFiltersOpen(false);
+                        }}
+                        className={`w-full rounded-xl px-3 py-1.5 text-left text-xs transition ${
+                          originId === o.originId
+                            ? 'bg-[#006241]/10 font-bold text-[#006241]'
+                            : 'text-gray-500 hover:bg-[#006241]/5 hover:text-[#1E3932]'
+                        }`}
+                      >
+                        {o.originName}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tags */}
+              {tags.length > 0 && (
+                <div>
+                  <p className="mb-3 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-gray-400">
+                    <TagIcon size={11} />
+                    Nhãn
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map((t) => (
+                      <button
+                        key={t.tagId}
+                        onClick={() => {
+                          updateParam('tagId', tagId === t.tagId ? '' : t.tagId);
+                          setFiltersOpen(false);
+                        }}
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
+                          tagId === t.tagId
+                            ? 'bg-[#006241] text-white'
+                            : 'bg-[#006241]/8 text-[#006241] hover:bg-[#006241]/15'
+                        }`}
+                      >
+                        #{t.tagName}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </aside>
 
@@ -414,6 +584,31 @@ export default function Products() {
                 <Filter size={15} /> Bộ lọc {activeFilters.length > 0 && <span className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black text-white" style={{ background: '#006241' }}>{activeFilters.length}</span>}
               </button>
               <div className="ml-auto flex items-center gap-2">
+                {/* View mode toggle */}
+                <div className="hidden rounded-full border border-black/10 bg-white p-1 sm:flex">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    title="Lưới"
+                    className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
+                      viewMode === 'grid'
+                        ? 'bg-[#006241] text-white'
+                        : 'text-gray-400 hover:text-[#006241]'
+                    }`}
+                  >
+                    <LayoutGrid size={14} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    title="Danh sách"
+                    className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
+                      viewMode === 'list'
+                        ? 'bg-[#006241] text-white'
+                        : 'text-gray-400 hover:text-[#006241]'
+                    }`}
+                  >
+                    <List size={14} />
+                  </button>
+                </div>
                 <SlidersHorizontal size={15} className="hidden text-gray-400 sm:block" />
                 <select value={sort} onChange={(e) => updateParam('sort', e.target.value)}
                   className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-semibold text-[#1E3932] outline-none transition hover:border-[#006241]">
@@ -432,7 +627,11 @@ export default function Products() {
             {/* Scrollable grid area */}
             <div className="overflow-y-auto max-h-[calc(100vh-280px)] [&::-webkit-scrollbar]:hidden">
             {loading ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+              <div className={
+                viewMode === 'list'
+                  ? 'flex flex-col gap-3'
+                  : 'grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4'
+              }>
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="overflow-hidden rounded-2xl border border-[#006241]/10 bg-white shadow-sm">
                     <div className="h-44 animate-pulse bg-gray-100" />
@@ -458,7 +657,11 @@ export default function Products() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+              <div className={
+                viewMode === 'list'
+                  ? 'flex flex-col gap-3'
+                  : 'grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4'
+              }>
                 {products.map((product) => {
                   const base = Number(product.basePrice);
                   const effective = Number(product.effectivePrice);
@@ -469,124 +672,199 @@ export default function Products() {
                   const rating = Number(product.ratingAverage ?? 0);
                   const lowStock = !outOfStock && product.quantityAvailable <= 10;
 
+                  const isList = viewMode === 'list';
+
                   return (
-                    <div key={product.productId}
-                      className="group flex flex-col overflow-hidden rounded-2xl border border-[#006241]/12 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#006241]/30 hover:shadow-lg">
+                    <div
+                      key={product.productId}
+                      className={`group overflow-hidden rounded-2xl border border-[#006241]/12 bg-white shadow-sm transition-all duration-300 hover:border-[#006241]/30 hover:shadow-lg ${
+                        isList
+                          ? 'flex flex-row hover:shadow-md'
+                          : 'flex flex-col hover:-translate-y-1'
+                      }`}
+                    >
                       {/* Image area */}
-                      <div className="relative overflow-hidden bg-gray-50" style={{ aspectRatio: '4/3' }}>
-                        <Link to={`/client/products/${product.productId}`}>
-                          {product.primaryImageUrl ? (
+                      <div
+                        className={`relative shrink-0 overflow-hidden bg-gray-50 ${
+                          isList ? 'w-32 self-stretch sm:w-40 md:w-48' : 'w-full'
+                        }`}
+                        style={!isList ? { aspectRatio: '1/1' } : undefined}
+                      >
+                        <Link
+                          to={`/client/products/${product.productId}`}
+                          className="absolute inset-0 block"
+                        >
+                          {/* Always render placeholder underneath; image hides itself on error */}
+                          <div
+                            className="absolute inset-0 flex items-center justify-center"
+                            style={{ background: '#f2f0eb' }}
+                            aria-hidden="true"
+                          >
+                            <Leaf size={32} className="opacity-20" style={{ color: '#006241' }} />
+                          </div>
+                          {product.primaryImageUrl && (
                             <img
                               src={product.primaryImageUrl}
                               alt={product.productName}
-                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              className="relative h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                              }}
                             />
-                          ) : (
-                            <div className="flex h-full items-center justify-center" style={{ background: '#f2f0eb' }}>
-                              <Leaf size={36} className="opacity-20" style={{ color: '#006241' }} />
-                            </div>
                           )}
                         </Link>
 
-                        {/* Gradient overlay at bottom */}
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/20 to-transparent" />
-
-                        {/* Discount badge */}
-                        {hasDiscount && discountPct > 0 && (
-                          <div className="absolute left-3 top-3">
-                            <span className="rounded-full bg-red-500 px-2.5 py-1 text-[11px] font-black text-white shadow-md">
+                        {/* Badges (top-left stack) */}
+                        <div className={`absolute left-2 top-2 flex flex-col gap-1 ${isList ? '' : 'sm:left-3 sm:top-3 sm:gap-1.5'}`}>
+                          {hasDiscount && discountPct > 0 && (
+                            <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white shadow-md sm:px-2.5 sm:py-1 sm:text-[11px]">
                               -{discountPct}%
                             </span>
-                          </div>
-                        )}
+                          )}
+                          {!isList && isNewProduct(product.createdAt) && (
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-500 px-2 py-0.5 text-[10px] font-black text-white shadow-md">
+                              <Sparkles size={9} /> Mới
+                            </span>
+                          )}
+                          {!isList && isBestSeller(product) && (
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-black text-white shadow-md">
+                              <Award size={9} /> Bán chạy
+                            </span>
+                          )}
+                        </div>
 
-                        {/* Wishlist */}
-                        <button
-                          onClick={() => void handleToggleWishlist(product.productId)}
-                          disabled={togglingWishlistId === product.productId}
-                          className={`absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full shadow-md transition-all ${
-                            isWishlisted
-                              ? 'bg-red-50 text-red-500'
-                              : 'bg-white/95 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-400'
-                          }`}
-                        >
-                          <Heart size={14} fill={isWishlisted ? 'currentColor' : 'none'} />
-                        </button>
+                        {/* Wishlist always visible */}
+                        {!isList && (
+                          <button
+                            onClick={() => void handleToggleWishlist(product.productId)}
+                            disabled={togglingWishlistId === product.productId}
+                            title={isWishlisted ? 'Bỏ yêu thích' : 'Yêu thích'}
+                            className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full shadow-md transition-all ${
+                              isWishlisted
+                                ? 'bg-red-50 text-red-500'
+                                : 'bg-white/95 text-gray-400 hover:text-red-400'
+                            }`}
+                          >
+                            <Heart size={14} fill={isWishlisted ? 'currentColor' : 'none'} />
+                          </button>
+                        )}
 
                         {/* Out of stock overlay */}
                         {outOfStock && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
-                            <span className="rounded-full bg-white px-4 py-1.5 text-xs font-black text-gray-800 shadow-lg">Hết hàng</span>
+                            <span className="rounded-full bg-white px-3 py-1 text-[10px] font-black text-gray-800 shadow-lg sm:px-4 sm:py-1.5 sm:text-xs">
+                              Hết hàng
+                            </span>
                           </div>
                         )}
                       </div>
 
                       {/* Info */}
-                      <div className="flex flex-1 flex-col p-4">
+                      <div className={`flex flex-1 flex-col ${isList ? 'p-3 sm:p-4' : 'p-3'}`}>
                         <div className="flex-1">
                           {product.category && (
-                            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: '#006241' }}>
+                            <p className="mb-0.5 text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: '#006241' }}>
                               {product.category.categoryName}
                             </p>
                           )}
 
                           <Link
                             to={`/client/products/${product.productId}`}
-                            className="block text-sm font-bold leading-snug text-[#1E3932] transition hover:text-[#006241] line-clamp-2"
+                            className={`block font-bold leading-snug text-[#1E3932] transition hover:text-[#006241] line-clamp-2 ${
+                              isList ? 'text-sm sm:text-base' : 'text-sm'
+                            }`}
                           >
                             {product.productName}
                           </Link>
 
-                          {rating > 0 && (
-                            <div className="mt-1.5 flex items-center gap-1">
-                              <div className="flex">
-                                {[1, 2, 3, 4, 5].map((s) => (
-                                  <Star key={s} size={10}
-                                    fill={s <= Math.round(rating) ? '#f59e0b' : 'none'}
-                                    className={s <= Math.round(rating) ? 'text-amber-400' : 'text-gray-200'}
-                                  />
-                                ))}
+                          <div className={`mt-1 flex flex-wrap items-center gap-2 ${isList ? '' : ''}`}>
+                            {rating > 0 ? (
+                              <div className="flex items-center gap-1">
+                                <div className="flex">
+                                  {[1, 2, 3, 4, 5].map((s) => (
+                                    <Star
+                                      key={s}
+                                      size={10}
+                                      fill={s <= Math.round(rating) ? '#f59e0b' : 'none'}
+                                      className={s <= Math.round(rating) ? 'text-amber-400' : 'text-gray-200'}
+                                    />
+                                  ))}
+                                </div>
+                                {product.ratingCount > 0 && (
+                                  <span className="text-[10px] text-gray-400">({product.ratingCount})</span>
+                                )}
                               </div>
-                              {product.ratingCount > 0 && (
-                                <span className="text-[10px] text-gray-400">({product.ratingCount})</span>
+                            ) : null}
+                            {product.origin && (
+                              <span className="text-[10px] text-gray-400">📍 {product.origin.originName}</span>
+                            )}
+                          </div>
+
+                          {/* List-mode badges row */}
+                          {isList && (
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {isNewProduct(product.createdAt) && (
+                                <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+                                  <Sparkles size={9} /> Mới
+                                </span>
+                              )}
+                              {isBestSeller(product) && (
+                                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600">
+                                  <Award size={9} /> Bán chạy
+                                </span>
+                              )}
+                              {product.isFeatured && (
+                                <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-600">
+                                  ⭐ Nổi bật
+                                </span>
                               )}
                             </div>
-                          )}
-
-                          {product.origin && (
-                            <p className="mt-1 text-[10px] text-gray-400">📍 {product.origin.originName}</p>
                           )}
                         </div>
 
                         {/* Price + actions */}
-                        <div className="mt-3 border-t border-black/5 pt-3">
-                          <div className="mb-3">
+                        <div className={`mt-2 ${isList ? 'border-t border-black/5 pt-2 sm:mt-3 sm:pt-3' : 'border-t border-black/5 pt-2'}`}>
+                          <div className="mb-2">
                             <div className="flex flex-wrap items-baseline gap-1.5">
-                              <span className="text-base font-black tracking-tight" style={{ color: '#006241' }}>
-                                {formatPrice(effective)}
+                              <span
+                                className={`font-black tracking-tight ${isList ? 'text-base sm:text-lg' : 'text-base'}`}
+                                style={{ color: '#006241' }}
+                              >
+                                {effective > 0 ? formatPrice(effective) : 'Liên hệ'}
                               </span>
                               {hasDiscount && (
                                 <span className="text-xs text-gray-400 line-through">{formatPrice(base)}</span>
                               )}
+                              {product.unit && (
+                                <span className="text-[10px] text-gray-400">/ {product.unit}</span>
+                              )}
                             </div>
-                            {product.unit && (
-                              <p className="text-[10px] text-gray-400">/ {product.unit}</p>
-                            )}
                             {lowStock && (
                               <p className="mt-0.5 text-[10px] font-semibold text-orange-500">
-                                Còn {product.quantityAvailable} sản phẩm
+                                Chỉ còn {product.quantityAvailable} sản phẩm
                               </p>
                             )}
                           </div>
 
                           <div className="flex gap-2">
-                            <Link
-                              to={`/client/products/${product.productId}`}
-                              className="flex items-center justify-center rounded-xl border-2 px-3 py-2 text-xs font-bold transition hover:bg-[#006241] hover:text-white"
-                              style={{ borderColor: '#006241', color: '#006241' }}
-                            >
-                              Xem
-                            </Link>
+                            {isList ? (
+                              <button
+                                onClick={() => setQuickViewId(product.productId)}
+                                className="flex items-center justify-center rounded-xl border-2 px-3 py-2 text-xs font-bold transition hover:bg-[#006241] hover:text-white"
+                                style={{ borderColor: '#006241', color: '#006241' }}
+                                title="Xem nhanh"
+                              >
+                                <Eye size={14} />
+                              </button>
+                            ) : (
+                              <Link
+                                to={`/client/products/${product.productId}`}
+                                className="flex items-center justify-center rounded-xl border-2 px-3 py-2 text-xs font-bold transition hover:bg-[#006241] hover:text-white"
+                                style={{ borderColor: '#006241', color: '#006241' }}
+                              >
+                                Xem
+                              </Link>
+                            )}
                             <button
                               disabled={addingId === product.productId || outOfStock}
                               onClick={(e) => void handleAddToCart(product.productId, e)}
@@ -598,7 +876,8 @@ export default function Products() {
                               ) : (
                                 <>
                                   <ShoppingCart size={12} />
-                                  <span>Thêm vào giỏ</span>
+                                  <span className="hidden sm:inline">Thêm vào giỏ</span>
+                                  <span className="sm:hidden">Thêm</span>
                                 </>
                               )}
                             </button>
@@ -616,6 +895,122 @@ export default function Products() {
           </div>
         </div>
       </div>
+
+      {/* Quick View Modal */}
+      {quickViewId && (() => {
+        const p = products.find((x) => x.productId === quickViewId);
+        if (!p) return null;
+        const base = Number(p.basePrice);
+        const effective = Number(p.effectivePrice);
+        const hasDiscount = effective < base - 0.01;
+        const discountPct = calcDiscountPct(base, effective);
+        const out = p.quantityAvailable === 0;
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            onClick={() => setQuickViewId(null)}
+          >
+            <div
+              className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setQuickViewId(null)}
+                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-md transition hover:bg-gray-100"
+              >
+                <X size={18} />
+              </button>
+              <div className="grid sm:grid-cols-2">
+                <div className="relative h-64 sm:h-full bg-gray-50">
+                  {p.primaryImageUrl ? (
+                    <img src={p.primaryImageUrl} alt={p.productName} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center" style={{ background: '#f2f0eb' }}>
+                      <Leaf size={48} className="opacity-20" style={{ color: '#006241' }} />
+                    </div>
+                  )}
+                  {hasDiscount && discountPct > 0 && (
+                    <span className="absolute left-3 top-3 rounded-full bg-red-500 px-3 py-1 text-xs font-black text-white shadow-md">
+                      -{discountPct}%
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col p-6">
+                  {p.category && (
+                    <p className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: '#006241' }}>
+                      {p.category.categoryName}
+                    </p>
+                  )}
+                  <h2 className="mt-2 text-xl font-black" style={{ color: '#1E3932' }}>
+                    {p.productName}
+                  </h2>
+                  {Number(p.ratingAverage) > 0 && (
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            size={14}
+                            fill={s <= Math.round(Number(p.ratingAverage)) ? '#f59e0b' : 'none'}
+                            className={s <= Math.round(Number(p.ratingAverage)) ? 'text-amber-400' : 'text-gray-200'}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-gray-500">({p.ratingCount} đánh giá)</span>
+                    </div>
+                  )}
+                  {p.origin && (
+                    <p className="mt-2 text-sm text-gray-500">📍 Xuất xứ: {p.origin.originName}</p>
+                  )}
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="text-2xl font-black" style={{ color: '#006241' }}>
+                      {formatPrice(effective)}
+                    </span>
+                    {hasDiscount && (
+                      <span className="text-base text-gray-400 line-through">{formatPrice(base)}</span>
+                    )}
+                    {p.unit && <span className="text-xs text-gray-500">/ {p.unit}</span>}
+                  </div>
+
+                  <p className="mt-2 text-xs text-gray-500">
+                    {out ? (
+                      <span className="font-bold text-red-500">Hết hàng</span>
+                    ) : p.quantityAvailable <= 10 ? (
+                      <span className="font-semibold text-orange-500">
+                        Chỉ còn {p.quantityAvailable} sản phẩm
+                      </span>
+                    ) : (
+                      <span className="text-emerald-600">Còn hàng</span>
+                    )}
+                  </p>
+
+                  <div className="mt-auto flex gap-2 pt-6">
+                    <Link
+                      to={`/client/products/${p.productId}`}
+                      onClick={() => setQuickViewId(null)}
+                      className="flex flex-1 items-center justify-center rounded-xl border-2 px-4 py-3 text-sm font-bold transition hover:bg-[#006241] hover:text-white"
+                      style={{ borderColor: '#006241', color: '#006241' }}
+                    >
+                      Xem chi tiết
+                    </Link>
+                    <button
+                      disabled={out || addingId === p.productId}
+                      onClick={(e) => {
+                        void handleAddToCart(p.productId, e);
+                      }}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-bold text-white transition disabled:opacity-50 active:scale-95"
+                      style={{ background: out ? '#9ca3af' : '#00754A' }}
+                    >
+                      <ShoppingCart size={14} />
+                      {addingId === p.productId ? 'Đang thêm...' : 'Thêm vào giỏ'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
