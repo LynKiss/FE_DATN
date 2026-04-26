@@ -17,6 +17,7 @@ import {
 } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useClientSession } from '../../hooks/useClientSession';
+import { refreshGlobalCart } from '../../hooks/useCart';
 import { useToast } from '../../hooks/useToast';
 import { clientApi } from '../../lib/client-api';
 import {
@@ -46,6 +47,7 @@ type SupportBotReply = {
   handoffSuggested: boolean;
   products: SupportBotProductSuggestion[];
   intent: string;
+  cartChanged?: boolean;
 };
 
 type BotMessage = {
@@ -627,12 +629,17 @@ export default function Chatbox() {
       void (async () => {
         try {
           const response = await clientApi.post<SupportBotReply>(
-            '/support-chat/bot/reply',
+            session?.accessToken
+              ? '/support-chat/bot/reply/me'
+              : '/support-chat/bot/reply',
             {
               message: text,
               history,
             },
           );
+          if (response.cartChanged) {
+            void refreshGlobalCart();
+          }
           const reply: BotMessage = {
             id: botMessageIdCounter++,
             from: 'bot',
