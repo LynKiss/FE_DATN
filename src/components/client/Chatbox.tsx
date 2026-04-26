@@ -30,10 +30,29 @@ import {
 
 type BotTab = 'bot' | 'support';
 
+type SupportBotProductSuggestion = {
+  productId: string;
+  productName: string;
+  effectivePrice: string;
+  basePrice: string;
+  unit: string | null;
+  quantityAvailable: number;
+  primaryImageUrl: string | null;
+};
+
+type SupportBotReply = {
+  reply: string;
+  source: 'ai' | 'fallback';
+  handoffSuggested: boolean;
+  products: SupportBotProductSuggestion[];
+  intent: string;
+};
+
 type BotMessage = {
   id: number;
   from: 'user' | 'bot';
   text: string;
+  products?: SupportBotProductSuggestion[];
 };
 
 const FAQ_RESPONSES: Record<string, string> = {
@@ -214,6 +233,22 @@ async function getBotResponse(text: string): Promise<string> {
     '• Tìm sản phẩm ("tìm phân NPK")',
     '• Chuyển sang tab "Nhân viên" để chat trực tiếp với CSKH',
   ].join('\n');
+}
+
+function buildBotHistory(messages: BotMessage[]) {
+  return messages.slice(-10).map((message) => ({
+    role: message.from === 'user' ? 'user' : 'assistant',
+    content: message.text,
+  }));
+}
+
+function formatBotCurrency(value: string) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) {
+    return value;
+  }
+
+  return `${amount.toLocaleString('vi-VN')}đ`;
 }
 
 export default function Chatbox() {
@@ -578,6 +613,7 @@ export default function Chatbox() {
       from: 'user',
       text,
     };
+    const history = buildBotHistory([...botMessages, userMessage]);
 
     setBotMessages((current) => [...current, userMessage]);
     setBotInput('');
@@ -589,17 +625,39 @@ export default function Chatbox() {
 
     botTimerRef.current = window.setTimeout(() => {
       void (async () => {
-        const responseText = await getBotResponse(text);
-        const reply: BotMessage = {
-          id: botMessageIdCounter++,
-          from: 'bot',
-          text: responseText,
-        };
-        setBotMessages((current) => [...current, reply]);
-        setBotTyping(false);
+        try {
+          const response = await clientApi.post<SupportBotReply>(
+            '/support-chat/bot/reply',
+            {
+              message: text,
+              history,
+            },
+          );
+          const reply: BotMessage = {
+            id: botMessageIdCounter++,
+            from: 'bot',
+            text: response.reply,
+            products: response.products ?? [],
+          };
+          setBotMessages((current) => [...current, reply]);
 
-        if (!openRef.current || activeTabRef.current !== 'bot') {
-          setBotUnreadCount((current) => current + 1);
+          if (!openRef.current || activeTabRef.current !== 'bot') {
+            setBotUnreadCount((current) => current + 1);
+          }
+        } catch {
+          const fallbackText = await getBotResponse(text);
+          const fallbackReply: BotMessage = {
+            id: botMessageIdCounter++,
+            from: 'bot',
+            text: fallbackText,
+          };
+          setBotMessages((current) => [...current, fallbackReply]);
+
+          if (!openRef.current || activeTabRef.current !== 'bot') {
+            setBotUnreadCount((current) => current + 1);
+          }
+        } finally {
+          setBotTyping(false);
         }
       })();
     }, 700);
@@ -781,7 +839,37 @@ export default function Chatbox() {
                               : { background: '#f2f0eb' }
                           }
                         >
-                          {message.text}
+                          <p className="whitespace-pre-line">{message.text}</p>
+                          {!isUser && message.products?.length ? (
+                            <div className="mt-3 space-y-2">
+                              {message.products.map((product) => (
+                                <button
+                                  key={product.productId}
+                                  type="button"
+                                  onClick={() => {
+                                    setOpen(false);
+                                    void navigate(
+                                      `/client/products/${product.productId}`,
+                                    );
+                                  }}
+                                  className="block w-full rounded-2xl border border-[#006241]/10 bg-white/75 px-3 py-2 text-left transition hover:border-[#006241]/25 hover:bg-white"
+                                >
+                                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#006241]/70">
+                                    {product.quantityAvailable > 0
+                                      ? 'Goi y san pham'
+                                      : 'Tam het hang'}
+                                  </p>
+                                  <p className="mt-1 text-sm font-bold text-[#1E3932]">
+                                    {product.productName}
+                                  </p>
+                                  <p className="mt-1 text-xs text-gray-500">
+                                    {formatBotCurrency(product.effectivePrice)}
+                                    {product.unit ? ` / ${product.unit}` : ''}
+                                  </p>
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     );
