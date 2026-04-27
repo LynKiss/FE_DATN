@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell,
   ChevronDown,
   Globe,
+  LoaderCircle,
   LogOut,
   Menu,
   MoonStar,
@@ -10,6 +11,7 @@ import {
   Settings,
   ShieldCheck,
   SunMedium,
+  X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminSession } from '../hooks/useAdminSession';
@@ -31,6 +33,27 @@ type TopbarProps = {
   onOpenSidebar: () => void;
 };
 
+type AdminSearchItem = {
+  id: string;
+  type: string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  path: string;
+};
+
+type AdminSearchGroup = {
+  key: string;
+  label: string;
+  items: AdminSearchItem[];
+};
+
+type AdminSearchResponse = {
+  query: string;
+  total: number;
+  groups: AdminSearchGroup[];
+};
+
 export default function Topbar({ onOpenSidebar }: TopbarProps) {
   const navigate = useNavigate();
   const { session } = useAdminSession();
@@ -44,6 +67,13 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
   const [notifications, setNotifications] = useState<NotifItem[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchGroups, setSearchGroups] = useState<AdminSearchGroup[]>([]);
+  const [searchError, setSearchError] = useState('');
+  const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const isVietnamese = language === 'vi';
 
   const initials = useMemo(
@@ -65,12 +95,16 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
       if (!notifRef.current?.contains(event.target as Node)) {
         setNotifOpen(false);
       }
+      if (!searchContainerRef.current?.contains(event.target as Node)) {
+        setSearchOpen(false);
+      }
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setAccountMenuOpen(false);
         setNotifOpen(false);
+        setSearchOpen(false);
       }
     }
 
@@ -82,6 +116,56 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
       document.removeEventListener('keydown', handleEscape);
     };
   }, []);
+
+  useEffect(() => {
+    const keyword = searchQuery.trim();
+    setSelectedSearchIndex(0);
+
+    if (keyword.length < 2) {
+      setSearchGroups([]);
+      setSearchError('');
+      setSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSearchLoading(true);
+    const timer = window.setTimeout(() => {
+      apiClient
+        .get<AdminSearchResponse>(
+          `/admin-search?q=${encodeURIComponent(keyword)}&limit=5`,
+        )
+        .then((data) => {
+          if (cancelled) return;
+          setSearchGroups(data.groups ?? []);
+          setSearchError('');
+          setSearchOpen(true);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setSearchGroups([]);
+          setSearchError(
+            isVietnamese
+              ? 'Không thể tìm kiếm lúc này.'
+              : 'Search is not available right now.',
+          );
+          setSearchOpen(true);
+        })
+        .finally(() => {
+          if (!cancelled) setSearchLoading(false);
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [isVietnamese, searchQuery]);
+
+  const flatSearchItems = useMemo(
+    () => searchGroups.flatMap((group) => group.items),
+    [searchGroups],
+  );
 
   const loadNotifications = async () => {
     setNotifLoading(true);
@@ -114,6 +198,52 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
     }
   }
 
+  function openSearchItem(item: AdminSearchItem) {
+    setSearchOpen(false);
+    setSearchQuery('');
+    setSearchGroups([]);
+    navigate(item.path);
+  }
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setSearchOpen(true);
+      setSelectedSearchIndex((current) =>
+        flatSearchItems.length ? (current + 1) % flatSearchItems.length : 0,
+      );
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setSearchOpen(true);
+      setSelectedSearchIndex((current) =>
+        flatSearchItems.length
+          ? (current - 1 + flatSearchItems.length) % flatSearchItems.length
+          : 0,
+      );
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const selected = flatSearchItems[selectedSearchIndex] ?? flatSearchItems[0];
+      if (selected) {
+        openSearchItem(selected);
+      } else if (searchQuery.trim()) {
+        navigate(`/admin/products?search=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchOpen(false);
+      }
+    }
+  }
+
+  function itemGlobalIndex(groupIndex: number, itemIndex: number) {
+    return searchGroups
+      .slice(0, groupIndex)
+      .reduce((sum, group) => sum + group.items.length, itemIndex);
+  }
+
   return (
     <header className="app-elevated-soft sticky top-0 z-30 flex h-20 items-center justify-between border-b border-on-surface-variant/5 px-4 backdrop-blur-xl sm:px-6 lg:px-10">
       <div className="flex min-w-0 flex-1 items-center gap-4 lg:gap-8">
@@ -131,13 +261,19 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
           </h2>
         </div>
 
-        <div className="relative hidden w-full max-w-md lg:block">
+        <div ref={searchContainerRef} className="relative hidden w-full max-w-md lg:block">
           <Search
             className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50"
             size={18}
           />
           <input
             type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            onFocus={() => {
+              if (searchQuery.trim().length >= 2) setSearchOpen(true);
+            }}
+            onKeyDown={handleSearchKeyDown}
             placeholder={
               isVietnamese
                 ? 'Tìm nhanh tài nguyên...'
@@ -145,6 +281,93 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
             }
             className="w-full rounded-full border-none bg-on-surface-variant/5 py-2.5 pl-12 pr-6 text-sm transition-all focus:ring-2 focus:ring-primary/20"
           />
+          {searchQuery ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSearchGroups([]);
+                setSearchOpen(false);
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 transition hover:text-primary"
+            >
+              <X size={16} />
+            </button>
+          ) : null}
+
+          {searchOpen && (searchQuery.trim().length >= 2 || searchLoading) ? (
+            <div className="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-[34rem] overflow-hidden rounded-[1.75rem] border border-on-surface-variant/10 bg-white shadow-2xl">
+              <div className="flex items-center justify-between border-b border-on-surface-variant/8 px-5 py-3">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-on-surface-variant/60">
+                  {isVietnamese ? 'Tìm kiếm toàn hệ thống' : 'Global search'}
+                </p>
+                {searchLoading ? (
+                  <LoaderCircle size={15} className="animate-spin text-primary" />
+                ) : null}
+              </div>
+
+              <div className="max-h-[28rem] overflow-y-auto p-3">
+                {searchError ? (
+                  <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                    {searchError}
+                  </div>
+                ) : !searchLoading && flatSearchItems.length === 0 ? (
+                  <div className="rounded-2xl bg-on-surface-variant/5 px-4 py-8 text-center text-sm text-on-surface-variant">
+                    {isVietnamese
+                      ? `Không tìm thấy kết quả cho "${searchQuery.trim()}".`
+                      : `No results for "${searchQuery.trim()}".`}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {searchGroups.map((group, groupIndex) => (
+                      <div key={group.key}>
+                        <p className="mb-1 px-2 text-[11px] font-black uppercase tracking-[0.18em] text-primary/70">
+                          {group.label}
+                        </p>
+                        <div className="space-y-1">
+                          {group.items.map((item, itemIndex) => {
+                            const index = itemGlobalIndex(groupIndex, itemIndex);
+                            const selected = index === selectedSearchIndex;
+                            return (
+                              <button
+                                key={`${item.type}-${item.id}`}
+                                type="button"
+                                onMouseEnter={() => setSelectedSearchIndex(index)}
+                                onClick={() => openSearchItem(item)}
+                                className={`flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition ${
+                                  selected
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'hover:bg-on-surface-variant/5'
+                                }`}
+                              >
+                                <span className="min-w-0">
+                                  <span className="block truncate text-sm font-black text-on-surface">
+                                    {item.title}
+                                  </span>
+                                  <span className="mt-0.5 block truncate text-xs text-on-surface-variant">
+                                    {item.subtitle}
+                                  </span>
+                                </span>
+                                <span className="shrink-0 rounded-full bg-on-surface-variant/8 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-on-surface-variant">
+                                  {item.badge}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-on-surface-variant/8 px-5 py-3 text-[11px] font-semibold text-on-surface-variant/60">
+                {isVietnamese
+                  ? 'Enter để mở kết quả đang chọn, mũi tên để di chuyển.'
+                  : 'Press Enter to open, use arrows to navigate.'}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
