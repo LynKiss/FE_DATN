@@ -57,31 +57,31 @@ export type PublicCommerceSettings = {
 export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
   cod: {
     isActive: true,
-    description: 'Khach hang thanh toan khi nhan hang.',
+    description: 'Khách hàng thanh toán khi nhận hàng.',
   },
   bank_transfer: {
     isActive: true,
-    description: 'Chuyen khoan ngan hang va doi xac nhan.',
+    description: 'Chuyển khoản ngân hàng và đợi xác nhận.',
     bankName: '',
     accountNumber: '',
     accountHolder: '',
   },
   momo: {
     isActive: false,
-    description: 'Thanh toan qua vi MoMo.',
+    description: 'Thanh toán qua ví MoMo.',
     partnerCode: '',
     accessKey: '',
     secretKey: '',
   },
   vnpay: {
     isActive: false,
-    description: 'Thanh toan qua cong VNPay.',
+    description: 'Thanh toán qua cổng VNPay.',
     tmnCode: '',
     hashSecret: '',
   },
   zalopay: {
     isActive: false,
-    description: 'Thanh toan qua vi ZaloPay.',
+    description: 'Thanh toán qua ví ZaloPay.',
     appId: '',
     key1: '',
     key2: '',

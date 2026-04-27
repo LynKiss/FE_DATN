@@ -62,28 +62,28 @@ const STATUS_CONFIG: Record<
     icon: FC<{ size?: number; className?: string }>;
   }
 > = {
-  pending: { label: 'Cho xu ly', color: '#b45309', bg: '#fef3c7', icon: Clock },
-  confirmed: { label: 'Da xac nhan', color: '#1d4ed8', bg: '#dbeafe', icon: CheckCircle2 },
-  processing: { label: 'Dang xu ly', color: '#6d28d9', bg: '#ede9fe', icon: Package },
-  shipping: { label: 'Dang giao hang', color: '#0369a1', bg: '#e0f2fe', icon: Truck },
-  delivered: { label: 'Da giao thanh cong', color: '#15803d', bg: '#dcfce7', icon: CheckCircle2 },
-  cancelled: { label: 'Da huy', color: '#dc2626', bg: '#fee2e2', icon: XCircle },
-  returned: { label: 'Da tra hang', color: '#9f1239', bg: '#ffe4e6', icon: AlertCircle },
+  pending: { label: 'Chờ xử lý', color: '#b45309', bg: '#fef3c7', icon: Clock },
+  confirmed: { label: 'Đã xác nhận', color: '#1d4ed8', bg: '#dbeafe', icon: CheckCircle2 },
+  processing: { label: 'Đang xử lý', color: '#6d28d9', bg: '#ede9fe', icon: Package },
+  shipping: { label: 'Đang giao hàng', color: '#0369a1', bg: '#e0f2fe', icon: Truck },
+  delivered: { label: 'Đã giao thành công', color: '#15803d', bg: '#dcfce7', icon: CheckCircle2 },
+  cancelled: { label: 'Đã hủy', color: '#dc2626', bg: '#fee2e2', icon: XCircle },
+  returned: { label: 'Đã trả hàng', color: '#9f1239', bg: '#ffe4e6', icon: AlertCircle },
 };
 
 const PAYMENT_LABELS: Record<string, string> = {
-  cod: 'Thanh toan khi nhan hang (COD)',
-  bank_transfer: 'Chuyen khoan ngan hang',
-  momo: 'Vi MoMo',
+  cod: 'Thanh toán khi nhận hàng (COD)',
+  bank_transfer: 'Chuyển khoản ngân hàng',
+  momo: 'Ví MoMo',
   vnpay: 'VNPay',
   zalopay: 'ZaloPay',
 };
 
 const PAYMENT_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  unpaid: { label: 'Chua thanh toan', color: '#b45309' },
-  paid: { label: 'Da thanh toan', color: '#15803d' },
-  failed: { label: 'Thanh toan that bai', color: '#dc2626' },
-  refunded: { label: 'Da hoan tien', color: '#6d28d9' },
+  unpaid: { label: 'Chưa thanh toán', color: '#b45309' },
+  paid: { label: 'Đã thanh toán', color: '#15803d' },
+  failed: { label: 'Thanh toán thất bại', color: '#dc2626' },
+  refunded: { label: 'Đã hoàn tiền', color: '#6d28d9' },
 };
 
 function formatPrice(value: number | string) {
@@ -299,9 +299,9 @@ export default function OrderDetail() {
               to="/client/orders"
               className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-[#006241] hover:underline"
             >
-              <ArrowLeft size={14} /> Lich su don hang
+              <ArrowLeft size={14} /> Lịch sử đơn hàng
             </Link>
-            <h1 className="text-2xl font-black text-[#1E3932]">Don hang #{shortId}</h1>
+            <h1 className="text-2xl font-black text-[#1E3932]">Đơn hàng #{shortId}</h1>
             <p className="mt-1 text-xs text-gray-400">{formatDate(order.createdAt)}</p>
           </div>
           <div
@@ -319,7 +319,7 @@ export default function OrderDetail() {
               <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 pb-3">
                   <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-gray-400">
-                    <Navigation size={13} /> Theo doi giao hang realtime
+                    <Navigation size={13} /> Theo dõi giao hàng realtime
                   </h3>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-surface px-3 py-1 text-xs font-bold text-on-surface-variant">
@@ -356,7 +356,7 @@ export default function OrderDetail() {
                   ) : (
                     <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
                       <MapPin size={28} />
-                      <p className="text-xs">Chua co vi tri giao hang</p>
+                      <p className="text-xs">Chưa có vị trí giao hàng</p>
                     </div>
                   )}
 
@@ -370,15 +370,15 @@ export default function OrderDetail() {
 
                 <div className="grid grid-cols-2 gap-px bg-black/5 md:grid-cols-4">
                   <TrackingStat
-                    label="Nguon"
+                    label="Nguồn"
                     value={tracking ? TRACKING_SOURCE_LABELS[tracking.activeSource] : '-'}
                   />
                   <TrackingStat
-                    label="Cap nhat"
+                    label="Cập nhật"
                     value={tracking ? formatTrackingTime(tracking.activeLocation?.updatedAt ?? null) : '-'}
                   />
                   <TrackingStat
-                    label="Toc do"
+                    label="Tốc độ"
                     value={
                       tracking?.activeLocation?.speedKph !== null &&
                       tracking?.activeLocation?.speedKph !== undefined
@@ -403,7 +403,7 @@ export default function OrderDetail() {
             {!isCancelled && (
               <div className="rounded-2xl bg-white p-5 shadow-sm">
                 <h3 className="mb-5 text-sm font-black uppercase tracking-wider text-gray-400">
-                  Trang thai don hang
+                  Trạng thái đơn hàng
                 </h3>
                 <div className="relative">
                   <div className="absolute left-[15px] top-4 bottom-4 w-0.5 bg-black/8" />
@@ -436,7 +436,7 @@ export default function OrderDetail() {
                               {stepInfo.label}
                             </p>
                             {isCurrent ? (
-                              <p className="text-xs text-[#006241]">Trang thai hien tai</p>
+                              <p className="text-xs text-[#006241]">Trạng thái hiện tại</p>
                             ) : null}
                           </div>
                         </div>
@@ -449,7 +449,7 @@ export default function OrderDetail() {
 
             <div className="rounded-2xl bg-white p-5 shadow-sm">
               <h3 className="mb-4 text-sm font-black uppercase tracking-wider text-gray-400">
-                San pham da dat
+                Sản phẩm đã đặt
               </h3>
               <div className="space-y-4">
                 {order.items.map((item) => (
@@ -479,7 +479,7 @@ export default function OrderDetail() {
                         to={`/client/products/${item.productId}#reviews`}
                         className="shrink-0 flex items-center gap-1 rounded-full border border-[#006241]/20 px-2.5 py-1 text-[11px] font-semibold text-[#006241] transition hover:bg-[#006241]/10"
                       >
-                        <Star size={10} /> Danh gia
+                        <Star size={10} /> Đánh giá
                       </Link>
                     ) : null}
                   </div>
@@ -488,25 +488,25 @@ export default function OrderDetail() {
 
               <div className="mt-5 space-y-2 border-t border-black/5 pt-4 text-sm">
                 <div className="flex justify-between text-gray-500">
-                  <span>Tam tinh</span>
+                  <span>Tạm tính</span>
                   <span>{formatPrice(order.subtotalAmount)}</span>
                 </div>
                 {Number(order.discountAmount) > 0 ? (
                   <div className="flex justify-between text-[#c82014]">
-                    <span>Giam gia</span>
+                    <span>Giảm giá</span>
                     <span>-{formatPrice(order.discountAmount)}</span>
                   </div>
                 ) : null}
                 <div className="flex justify-between text-gray-500">
-                  <span>Phi van chuyen</span>
+                  <span>Phí vận chuyển</span>
                   <span>
                     {Number(order.deliveryCost) === 0
-                      ? 'Mien phi'
+                      ? 'Miễn phí'
                       : formatPrice(order.deliveryCost)}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-black/5 pt-2 text-base font-black">
-                  <span className="text-[#1E3932]">Tong thanh toan</span>
+                  <span className="text-[#1E3932]">Tổng thanh toán</span>
                   <span className="text-[#006241]">{formatPrice(order.totalPayment)}</span>
                 </div>
               </div>
@@ -516,7 +516,7 @@ export default function OrderDetail() {
           <div className="space-y-4">
             <div className="rounded-2xl bg-white p-5 shadow-sm">
               <h3 className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-gray-400">
-                <MapPin size={13} /> Dia chi giao hang
+                <MapPin size={13} /> Địa chỉ giao hàng
               </h3>
               <p className="text-sm font-semibold text-[#1E3932]">{order.fullName}</p>
               <p className="text-sm text-gray-500">{order.phone}</p>
@@ -525,7 +525,7 @@ export default function OrderDetail() {
 
             <div className="rounded-2xl bg-white p-5 shadow-sm">
               <h3 className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-gray-400">
-                <CreditCard size={13} /> Thanh toan
+                <CreditCard size={13} /> Thanh toán
               </h3>
               <p className="text-sm text-[#1E3932]">
                 {PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod}
@@ -538,7 +538,7 @@ export default function OrderDetail() {
             {order.note ? (
               <div className="rounded-2xl bg-white p-5 shadow-sm">
                 <h3 className="mb-2 text-xs font-black uppercase tracking-wider text-gray-400">
-                  Ghi chu
+                  Ghi chú
                 </h3>
                 <p className="text-sm text-gray-600">{order.note}</p>
               </div>
@@ -548,7 +548,7 @@ export default function OrderDetail() {
               {order.status === 'pending' ? (
                 <button
                   onClick={async () => {
-                    if (!window.confirm('Ban co chac muon huy don hang nay?')) return;
+                    if (!window.confirm('Bạn có chắc muốn hủy đơn hàng này?')) return;
                     try {
                       await clientApi.patch(`/orders/${order.id}/cancel`);
                       setOrder((current) =>
@@ -558,13 +558,13 @@ export default function OrderDetail() {
                       alert(
                         error instanceof Error
                           ? error.message
-                          : 'Khong the huy don hang',
+                          : 'Không thể hủy đơn hàng',
                       );
                     }
                   }}
                   className="w-full rounded-full border border-red-200 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50 active:scale-95"
                 >
-                  Huy don hang
+                  Hủy đơn hàng
                 </button>
               ) : null}
               <button
@@ -576,14 +576,14 @@ export default function OrderDetail() {
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-full border border-[#006241]/20 py-2.5 text-sm font-bold text-[#006241] transition hover:bg-[#006241]/10"
               >
-                <RefreshCw size={15} /> Lam moi tracking
+                <RefreshCw size={15} /> Làm mới tracking
               </button>
               <Link
                 to="/client/products"
                 className="flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-bold text-white transition active:scale-95"
                 style={{ background: '#00754A' }}
               >
-                <Leaf size={15} /> Tiep tuc mua sam
+                <Leaf size={15} /> Tiếp tục mua sắm
               </Link>
             </div>
           </div>

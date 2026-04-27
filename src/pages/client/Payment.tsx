@@ -59,16 +59,16 @@ const PAYMENT_METHODS: Array<{
 }> = [
   {
     id: 'cod',
-    label: 'Thanh toan khi nhan hang (COD)',
-    desc: 'Tra tien mat khi nhan duoc hang. Khong phu thu.',
+    label: 'Thanh toán khi nhận hàng (COD)',
+    desc: 'Trả tiền mặt khi nhận được hàng. Không phụ thu.',
     icon: Truck,
     emoji: '💵',
     online: false,
   },
   {
     id: 'bank_transfer',
-    label: 'Chuyen khoan ngan hang',
-    desc: 'Chuyen khoan va doi doi chieu giao dich.',
+    label: 'Chuyển khoản ngân hàng',
+    desc: 'Chuyển khoản và đợi đối chiếu giao dịch.',
     icon: Banknote,
     emoji: '🏦',
     online: true,
@@ -76,8 +76,8 @@ const PAYMENT_METHODS: Array<{
   },
   {
     id: 'momo',
-    label: 'Vi MoMo',
-    desc: 'Quet ma QR thanh toan nhanh qua ung dung MoMo.',
+    label: 'Ví MoMo',
+    desc: 'Quét mã QR thanh toán nhanh qua ứng dụng MoMo.',
     icon: CreditCard,
     emoji: '📱',
     online: true,
@@ -86,7 +86,7 @@ const PAYMENT_METHODS: Array<{
   {
     id: 'vnpay',
     label: 'VNPay',
-    desc: 'Thanh toan qua cong VNPay.',
+    desc: 'Thanh toán qua cổng VNPay.',
     icon: CreditCard,
     emoji: '💳',
     online: true,
@@ -95,7 +95,7 @@ const PAYMENT_METHODS: Array<{
   {
     id: 'zalopay',
     label: 'ZaloPay',
-    desc: 'Thanh toan qua ung dung ZaloPay hoac ma QR.',
+    desc: 'Thanh toán qua ứng dụng ZaloPay hoặc mã QR.',
     icon: CreditCard,
     emoji: '🔵',
     online: true,
@@ -245,7 +245,7 @@ export default function Payment() {
         success: true,
         amount: String(total),
         gatewayCode: 'DEMO_SUCCESS',
-        gatewayMessage: 'Thanh toan thanh cong (demo)',
+        gatewayMessage: 'Thanh toán thành công (demo)',
         rawPayload: { demo: true },
       });
       setSimulateOpen(false);
@@ -325,7 +325,7 @@ export default function Payment() {
       alert(
         error instanceof Error
           ? error.message
-          : 'Dat hang that bai. Vui long thu lai.',
+          : 'Đặt hàng thất bại. Vui lòng thử lại.',
       );
     } finally {
       setPlacing(false);
@@ -355,17 +355,17 @@ export default function Payment() {
             <CheckCircle2 size={40} className="text-[#006241]" />
           </div>
           <h1 className="text-2xl font-black text-[#1E3932]">
-            Dat hang thanh cong!
+            Đặt hàng thành công!
           </h1>
           <p className="mt-2 text-sm text-gray-500">
-            Cam on ban da tin tuong Cultivated Ledger. Chung toi se xu ly don
-            hang cua ban som nhat.
+            Cảm ơn bạn đã tin tưởng Cultivated Ledger. Chúng tôi sẽ xử lý đơn
+            hàng của bạn sớm nhất.
           </p>
 
           <div className="mt-6 rounded-2xl bg-white p-5 text-left shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                Tong thanh toan
+                Tổng thanh toán
               </p>
               <p className="text-xl font-black text-[#006241]">
                 {formatPrice(Number(success.totalPayment))}
@@ -374,52 +374,52 @@ export default function Payment() {
 
             {success.paymentMethod === 'cod' && (
               <p className="text-sm text-gray-600">
-                Vui long chuan bi{' '}
+                Vui lòng chuẩn bị{' '}
                 <span className="font-bold text-[#1E3932]">
                   {formatPrice(Number(success.totalPayment))}
                 </span>{' '}
-                khi nhan hang.
+                khi nhận hàng.
               </p>
             )}
 
             {success.paymentMethod === 'bank_transfer' && (
               <div className="rounded-xl bg-[#f2f0eb] p-3">
                 <p className="text-xs font-bold text-[#1E3932]">
-                  Thong tin chuyen khoan:
+                  Thông tin chuyển khoản:
                 </p>
                 <p className="mt-1 text-xs text-gray-600">
-                  Ngan hang: {bankTransferConfig.bankName || 'Dang cap nhat'}
+                  Ngân hàng: {bankTransferConfig.bankName || 'Đang cập nhật'}
                   <br />
                   STK:{' '}
-                  {bankTransferConfig.accountNumber || 'Dang cap nhat'}
+                  {bankTransferConfig.accountNumber || 'Đang cập nhật'}
                   <br />
                   Chu TK:{' '}
-                  {bankTransferConfig.accountHolder || 'Dang cap nhat'}
+                  {bankTransferConfig.accountHolder || 'Đang cập nhật'}
                   <br />
-                  Noi dung: DH{success.orderId.slice(-8).toUpperCase()}
+                  Nội dung: DH{success.orderId.slice(-8).toUpperCase()}
                 </p>
               </div>
             )}
 
             {success.paymentMethod === 'momo' && (
               <div className="rounded-xl bg-pink-50 p-3 text-sm text-pink-800">
-                Da xac nhan thanh toan MoMo thanh cong.
+                Đã xác nhận thanh toán MoMo thành công.
               </div>
             )}
             {success.paymentMethod === 'vnpay' && (
               <div className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800">
-                Da xac nhan thanh toan VNPay thanh cong.
+                Đã xác nhận thanh toán VNPay thành công.
               </div>
             )}
             {success.paymentMethod === 'zalopay' && (
               <div className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800">
-                Da xac nhan thanh toan ZaloPay thanh cong.
+                Đã xác nhận thanh toán ZaloPay thành công.
               </div>
             )}
 
             <p className="mt-3 text-xs text-gray-400">
-              Don hang se duoc giao trong 2-4 ngay lam viec. Ban co the theo doi
-              trong muc don hang.
+              Đơn hàng sẽ được giao trong 2-4 ngày làm việc. Bạn có thể theo dõi
+              trong mục đơn hàng.
             </p>
           </div>
 
@@ -428,14 +428,14 @@ export default function Payment() {
               to={`/client/orders/${success.orderId}`}
               className="flex-1 rounded-full border border-[#006241] py-3 text-sm font-bold text-[#006241] transition hover:bg-[#006241] hover:text-white"
             >
-              Xem don hang
+              Xem đơn hàng
             </Link>
             <Link
               to="/client"
               className="flex-1 rounded-full py-3 text-sm font-bold text-white transition active:scale-95"
               style={{ background: '#00754A' }}
             >
-              Ve trang chu
+              Về trang chủ
             </Link>
           </div>
         </div>
@@ -534,10 +534,10 @@ export default function Payment() {
         <div className="mx-auto max-w-5xl px-4 py-10 lg:px-6">
           <div className="mb-8 flex items-center justify-center gap-3 text-sm">
             {[
-              { label: 'Gio hang', done: true },
-              { label: 'Dia chi & Van chuyen', done: true },
-              { label: 'Thanh toan', active: true },
-              { label: 'Xac nhan' },
+              { label: 'Giỏ hàng', done: true },
+              { label: 'Địa chỉ & Vận chuyển', done: true },
+              { label: 'Thanh toán', active: true },
+              { label: 'Xác nhận' },
             ].map((step, index) => (
               <div key={step.label} className="flex items-center gap-2">
                 {index > 0 && (
@@ -562,8 +562,8 @@ export default function Payment() {
           <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
             <div>
               <h2 className="mb-4 flex items-center gap-2 text-lg font-black text-[#1E3932]">
-                <CreditCard size={20} className="text-[#006241]" /> Phuong thuc
-                thanh toan
+                <CreditCard size={20} className="text-[#006241]" /> Phương thức
+                thanh toán
               </h2>
 
               {loadingSettings ? (
@@ -572,8 +572,8 @@ export default function Payment() {
                 </div>
               ) : availableMethods.length === 0 ? (
                 <div className="rounded-2xl bg-white p-5 text-sm text-gray-500">
-                  Hien tai admin da tat tat ca phuong thuc thanh toan. Vui long
-                  lien he cua hang de duoc ho tro.
+                  Hiện tại admin đã tắt tất cả phương thức thanh toán. Vui lòng
+                  liên hệ cửa hàng để được hỗ trợ.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -625,7 +625,7 @@ export default function Payment() {
                       />
                       <div>
                         <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                          Dia chi nhan hang
+                          Địa chỉ nhận hàng
                         </p>
                         <p className="text-sm text-[#1E3932]">
                           {state.shippingAddress}
@@ -642,7 +642,7 @@ export default function Payment() {
                       />
                       <div>
                         <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                          Phuong thuc van chuyen
+                          Phương thức vận chuyển
                         </p>
                         <p className="text-sm text-[#1E3932]">
                           {state.deliveryName}
@@ -659,8 +659,8 @@ export default function Payment() {
                   className="mt-0.5 shrink-0 text-[#006241]"
                 />
                 <p>
-                  Thong tin thanh toan cua ban duoc bao mat. Chung toi khong luu
-                  tru thong tin the.
+                  Thông tin thanh toán của bạn được bảo mật. Chúng tôi không lưu
+                  trữ thông tin thẻ.
                 </p>
               </div>
 
@@ -669,7 +669,7 @@ export default function Payment() {
                   to="/client/checkout"
                   className="flex items-center gap-2 rounded-full border border-black/10 px-5 py-3 text-sm font-semibold text-gray-500 hover:text-[#006241]"
                 >
-                  <ArrowLeft size={15} /> Quay lai
+                  <ArrowLeft size={15} /> Quay lại
                 </Link>
                 <button
                   onClick={() => void handlePlaceOrder()}
@@ -681,8 +681,8 @@ export default function Payment() {
                     <LoaderCircle size={16} className="animate-spin" />
                   ) : null}
                   {placing
-                    ? 'Dang xu ly...'
-                    : `Dat hang · ${formatPrice(total)}`}
+                    ? 'Đang xử lý...'
+                    : `Đặt hàng · ${formatPrice(total)}`}
                 </button>
               </div>
             </div>
@@ -690,7 +690,7 @@ export default function Payment() {
             <div>
               <div className="rounded-2xl bg-white p-5 shadow-sm">
                 <p className="mb-4 text-sm font-black uppercase tracking-wider text-gray-400">
-                  Xac nhan don hang
+                  Xác nhận đơn hàng
                 </p>
                 {cart && (
                   <div className="max-h-52 space-y-3 overflow-y-auto">
@@ -730,31 +730,31 @@ export default function Payment() {
 
                 <div className="mt-4 space-y-2 border-t border-black/5 pt-4 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Tam tinh</span>
+                    <span className="text-gray-500">Tạm tính</span>
                     <span className="font-semibold">
                       {formatPrice(subtotal)}
                     </span>
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Giam gia</span>
+                      <span className="text-gray-500">Giảm giá</span>
                       <span className="font-semibold text-red-500">
                         -{formatPrice(discountAmount)}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Van chuyen</span>
+                    <span className="text-gray-500">Vận chuyển</span>
                     <span
                       className={`font-semibold ${
                         shipping === 0 ? 'text-[#006241]' : ''
                       }`}
                     >
-                      {shipping === 0 ? 'Mien phi' : formatPrice(shipping)}
+                      {shipping === 0 ? 'Miễn phí' : formatPrice(shipping)}
                     </span>
                   </div>
                   <div className="flex justify-between border-t border-black/5 pt-2 text-base font-black">
-                    <span className="text-[#1E3932]">Tong cong</span>
+                    <span className="text-[#1E3932]">Tổng cộng</span>
                     <span className="text-[#006241]">
                       {formatPrice(total)}
                     </span>
