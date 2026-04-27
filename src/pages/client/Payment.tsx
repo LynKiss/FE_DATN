@@ -737,7 +737,9 @@ export default function Payment() {
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Giảm giá</span>
+                      <span className="text-gray-500">
+                        Giảm giá{state.discountCode ? ` (${state.discountCode})` : ''}
+                      </span>
                       <span className="font-semibold text-red-500">
                         -{formatPrice(discountAmount)}
                       </span>

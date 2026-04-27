@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { MapPin, Plus, Check, ChevronRight, ArrowLeft, Leaf, Truck } from 'lucide-react';
+import { MapPin, Plus, Check, ChevronRight, ArrowLeft, Leaf, Truck, BadgePercent, CheckCircle2, Tag } from 'lucide-react';
 
 const VIETNAM_PROVINCES = [
   'An Giang','Bà Rịa - Vũng Tàu','Bắc Giang','Bắc Kạn','Bạc Liêu','Bắc Ninh','Bến Tre','Bình Định','Bình Dương','Bình Phước',
@@ -14,6 +14,18 @@ const VIETNAM_PROVINCES = [
 import { clientApi } from '../../lib/client-api';
 import { useCart } from '../../hooks/useCart';
 import { useClientSession } from '../../hooks/useClientSession';
+import {
+  type Voucher,
+  fetchVouchersForCart,
+  getVoucherProgress,
+  money,
+  sortVouchers,
+  validateVoucherCode,
+  voucherExpiryLabel,
+  voucherMissingAmount,
+  voucherSavings,
+  voucherValueLabel,
+} from '../../lib/vouchers';
 
 type Address = {
   id: string;
@@ -47,8 +59,13 @@ export default function Checkout() {
   const { cart } = useCart();
 
   const state = (location.state as { discountCode?: string; discountAmount?: number } | null) ?? {};
-  const discountCode = state.discountCode;
-  const discountAmount = state.discountAmount ?? 0;
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState(state.discountCode ?? '');
+  const [appliedDiscountAmount, setAppliedDiscountAmount] = useState(state.discountAmount ?? 0);
+  const [voucherInput, setVoucherInput] = useState(state.discountCode ?? '');
+  const [voucherError, setVoucherError] = useState('');
+  const [validatingVoucher, setValidatingVoucher] = useState(false);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [loadingVouchers, setLoadingVouchers] = useState(false);
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -91,12 +108,72 @@ export default function Checkout() {
     }).catch(() => {}).finally(() => setLoadingAddresses(false));
   }, [session, navigate]);
 
+  const subtotal = Number(cart?.totalAmount ?? 0);
+  const productIds = useMemo(
+    () => cart?.items.map((item) => item.productId) ?? [],
+    [cart],
+  );
+  const sortedVouchers = useMemo(() => sortVouchers(vouchers), [vouchers]);
+  const quickVouchers = sortedVouchers.slice(0, 3);
+
+  useEffect(() => {
+    if (!cart?.items.length) {
+      setVouchers([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingVouchers(true);
+
+    fetchVouchersForCart({ orderValue: subtotal, productIds })
+      .then((data) => {
+        if (!cancelled) setVouchers(data);
+      })
+      .catch(() => {
+        if (!cancelled) setVouchers([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingVouchers(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cart, subtotal, productIds.join('|')]);
+
+  const applyVoucher = async (code: string) => {
+    if (!cart) return;
+    const normalized = code.trim().toUpperCase();
+    if (!normalized) return;
+
+    setVoucherInput(normalized);
+    setVoucherError('');
+    setValidatingVoucher(true);
+    try {
+      const result = await validateVoucherCode(normalized, {
+        orderValue: subtotal,
+        productIds,
+      });
+      setAppliedDiscountCode(result.code);
+      setAppliedDiscountAmount(Number(result.discountAmount));
+    } catch (error) {
+      setAppliedDiscountCode('');
+      setAppliedDiscountAmount(0);
+      setVoucherError(
+        error instanceof Error
+          ? error.message
+          : 'Voucher không hợp lệ hoặc đã hết hạn',
+      );
+    } finally {
+      setValidatingVoucher(false);
+    }
+  };
+
   if (!session || !cart) return null;
 
-  const subtotal = Number(cart.totalAmount);
   const selectedDelivery = deliveryMethods.find((d) => d.id === selectedDeliveryId);
   const shipping = selectedDelivery ? Number(selectedDelivery.basePrice) : 0;
-  const total = Math.max(0, subtotal - discountAmount) + shipping;
+  const total = Math.max(0, subtotal - appliedDiscountAmount) + shipping;
 
   const handleSaveAddress = async () => {
     if (!form.recipientName || !form.phone || !form.addressLine || !form.province) return;
@@ -138,8 +215,8 @@ export default function Checkout() {
         deliveryName: selectedDelivery?.name ?? '',
         shippingCost: shipping,
         note,
-        discountCode,
-        discountAmount,
+        discountCode: appliedDiscountCode || undefined,
+        discountAmount: appliedDiscountAmount,
         subtotal,
         total,
       },
@@ -367,7 +444,88 @@ export default function Checkout() {
           </div>
 
           {/* Order summary */}
-          <div>
+          <div className="space-y-4">
+            <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+              <p className="mb-3 flex items-center gap-2 text-sm font-black text-[#1E3932]">
+                <Tag size={15} /> Voucher cho đơn này
+              </p>
+
+              {appliedDiscountCode ? (
+                <div className="mb-3 rounded-2xl border border-[#006241]/15 bg-[#edf7ef] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="flex items-center gap-2 text-sm font-black text-[#006241]">
+                        <CheckCircle2 size={16} /> {appliedDiscountCode}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-[#1E3932]/80">
+                        Đang giảm {formatPrice(appliedDiscountAmount)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAppliedDiscountCode('');
+                        setAppliedDiscountAmount(0);
+                        setVoucherInput('');
+                        setVoucherError('');
+                      }}
+                      className="text-xs font-bold text-gray-400 hover:text-red-500"
+                    >
+                      Đổi mã
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex gap-2">
+                <input
+                  value={voucherInput}
+                  onChange={(event) => setVoucherInput(event.target.value.toUpperCase())}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') void applyVoucher(voucherInput);
+                  }}
+                  placeholder="Nhập mã voucher"
+                  className="min-w-0 flex-1 rounded-full border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
+                />
+                <button
+                  type="button"
+                  onClick={() => void applyVoucher(voucherInput)}
+                  disabled={validatingVoucher || !voucherInput.trim()}
+                  className="rounded-full bg-[#006241] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+                >
+                  {validatingVoucher ? '...' : 'Áp dụng'}
+                </button>
+              </div>
+              {voucherError ? (
+                <p className="mt-2 text-xs font-semibold text-red-500">
+                  {voucherError}
+                </p>
+              ) : null}
+
+              <div className="mt-4 space-y-2">
+                {loadingVouchers ? (
+                  <div className="rounded-2xl bg-[#f2f0eb] px-4 py-5 text-center text-xs font-semibold text-gray-400">
+                    Đang gợi ý voucher...
+                  </div>
+                ) : quickVouchers.length ? (
+                  quickVouchers.map((voucher) => (
+                    <div key={voucher.id}>
+                      <CheckoutVoucherCard
+                        voucher={voucher}
+                        subtotal={subtotal}
+                        selected={appliedDiscountCode === voucher.code}
+                        onApply={() => void applyVoucher(voucher.code)}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl bg-[#f2f0eb] px-4 py-5 text-center text-xs font-semibold text-gray-400">
+                    Chưa có voucher phù hợp.
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="rounded-2xl bg-white p-5">
               <p className="mb-4 text-sm font-black uppercase tracking-wider text-gray-400">
                 Đơn hàng ({cart.totalItems} sản phẩm)
@@ -405,10 +563,10 @@ export default function Checkout() {
                   <span className="text-gray-500">Tạm tính</span>
                   <span className="font-semibold">{formatPrice(subtotal)}</span>
                 </div>
-                {discountAmount > 0 && (
+                {appliedDiscountAmount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">Giảm giá</span>
-                    <span className="font-semibold text-red-500">-{formatPrice(discountAmount)}</span>
+                    <span className="font-semibold text-red-500">-{formatPrice(appliedDiscountAmount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -426,6 +584,77 @@ export default function Checkout() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CheckoutVoucherCard({
+  voucher,
+  subtotal,
+  selected,
+  onApply,
+}: {
+  voucher: Voucher;
+  subtotal: number;
+  selected: boolean;
+  onApply: () => void;
+}) {
+  const eligible = Boolean(voucher.eligible);
+  const progress = getVoucherProgress(voucher, subtotal);
+  const missingAmount = voucherMissingAmount(voucher);
+
+  return (
+    <div
+      className={`rounded-2xl border p-3 ${
+        selected
+          ? 'border-[#006241] bg-[#edf7ef]'
+          : eligible
+            ? 'border-[#006241]/15 bg-white'
+            : 'border-black/6 bg-[#fbfaf7]'
+      }`}
+    >
+      <div className="flex gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#006241] text-white">
+          <BadgePercent size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-black text-[#1E3932]">{voucher.code}</p>
+              <p className="line-clamp-1 text-xs font-semibold text-gray-500">
+                {voucher.name}
+              </p>
+            </div>
+            <span className="rounded-full bg-[#d6a51d]/18 px-2 py-1 text-[11px] font-black text-[#8a6400]">
+              {voucherValueLabel(voucher)}
+            </span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/5">
+            <div
+              className="h-full rounded-full bg-[#006241]"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="text-[11px] font-semibold text-gray-500">
+              {eligible
+                ? `Giảm ${money(voucherSavings(voucher))}`
+                : `Mua thêm ${money(missingAmount)}`}
+            </p>
+            <button
+              type="button"
+              onClick={onApply}
+              disabled={!eligible || selected}
+              className="rounded-full bg-[#006241] px-3 py-1.5 text-[11px] font-black text-white disabled:bg-gray-200 disabled:text-gray-500"
+            >
+              {selected ? 'Đã chọn' : eligible ? 'Áp dụng' : 'Chưa đủ'}
+            </button>
+          </div>
+          <p className="mt-1 text-[10px] font-semibold text-gray-400">
+            Hạn: {voucherExpiryLabel(voucher.expiresAt)}
+          </p>
         </div>
       </div>
     </div>

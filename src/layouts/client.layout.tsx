@@ -167,6 +167,7 @@ export default function ClientLayout() {
   const navLinks = [
     { to: '/client', label: isVi ? 'Trang chủ' : 'Home', end: true },
     { to: '/client/products', label: isVi ? 'Sản phẩm' : 'Products' },
+    { to: '/client/vouchers', label: isVi ? 'Voucher' : 'Vouchers' },
     { to: '/client/news', label: isVi ? 'Tin tức' : 'News' },
   ];
 
