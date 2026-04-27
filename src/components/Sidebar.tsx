@@ -78,6 +78,13 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       // Dashboard ai có quyền admin nào cũng thấy được → để rỗng
     },
     {
+      id: 'analytics',
+      label: isVietnamese ? 'Phân tích AI' : 'AI Analytics',
+      icon: BarChart3,
+      path: '/admin/analytics',
+      permissions: ['manage_inventory'],
+    },
+    {
       id: 'products',
       label: isVietnamese ? 'Sản phẩm' : 'Products',
       icon: Package,

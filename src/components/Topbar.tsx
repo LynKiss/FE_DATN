@@ -373,18 +373,20 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
 
       <div className="flex items-center gap-3 sm:gap-4 lg:gap-6">
         <nav className="mr-2 hidden items-center gap-6 md:flex">
-          <a
-            href="#"
+          <button
+            type="button"
+            onClick={() => navigate('/admin/analytics')}
             className="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
           >
             {isVietnamese ? 'Phân tích' : 'Analytics'}
-          </a>
-          <a
-            href="#"
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/orders')}
             className="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
           >
             {isVietnamese ? 'Vận hành' : 'Operations'}
-          </a>
+          </button>
         </nav>
 
         <div className="flex items-center gap-3 border-l border-on-surface-variant/10 pl-3 text-on-surface-variant/80 sm:gap-4 sm:pl-4 lg:pl-6">

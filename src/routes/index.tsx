@@ -9,6 +9,7 @@ import { ROUTE_PATHS } from './route-names';
 
 // Admin pages
 const DashboardPage = lazy(() => import('../features/admin/dashboard/page'));
+const AnalyticsPage = lazy(() => import('../features/admin/analytics/page'));
 const ProductsPage = lazy(() => import('../features/admin/products/page'));
 const ProductCreatePage = lazy(() => import('../features/admin/products-create/page'));
 const ProductImportPage = lazy(() => import('../features/admin/products-import/page'));
@@ -95,6 +96,7 @@ export const router = createBrowserRouter([
             element: <AdminLayout />,
             children: [
               { index: true, element: withSuspense(<DashboardPage />) },
+              { path: 'analytics', element: withSuspense(<AnalyticsPage />) },
               { path: 'products', element: withSuspense(<ProductsPage />) },
               { path: 'products/new', element: withSuspense(<ProductCreatePage />) },
               { path: 'products/import', element: withSuspense(<ProductImportPage />) },
