@@ -258,7 +258,7 @@ export default function Addresses() {
   }
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-3xl px-4 py-10 lg:px-6">
         {/* Back */}
         <Link
@@ -281,8 +281,7 @@ export default function Addresses() {
           </div>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-white active:scale-95"
-            style={{ background: '#00754A' }}
+            className="client-pill-primary flex items-center gap-2 px-5 py-3 text-sm font-bold"
           >
             <Plus size={15} />
             Thêm địa chỉ
@@ -305,7 +304,7 @@ export default function Addresses() {
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#006241] border-t-transparent" />
           </div>
         ) : addresses.length === 0 ? (
-          <div className="rounded-2xl bg-white p-12 text-center shadow-sm">
+          <div className="client-card p-12 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: '#d4e9e2' }}>
               <MapPin size={28} style={{ color: '#006241' }} />
             </div>
@@ -313,8 +312,7 @@ export default function Addresses() {
             <p className="mt-1 text-sm text-gray-400">Thêm địa chỉ để đặt hàng nhanh hơn</p>
             <button
               onClick={openCreate}
-              className="mt-5 flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white mx-auto"
-              style={{ background: '#00754A' }}
+              className="client-pill-primary mx-auto mt-5 flex items-center gap-2 px-6 py-3 text-sm font-bold"
             >
               <Plus size={15} /> Thêm địa chỉ đầu tiên
             </button>
@@ -324,7 +322,7 @@ export default function Addresses() {
             {addresses.map((addr) => (
               <div
                 key={addr.id}
-                className={`rounded-2xl bg-white p-5 shadow-sm border-2 transition ${
+                className={`client-card border-2 p-5 transition ${
                   addr.isDefault ? 'border-[#006241]' : 'border-transparent'
                 }`}
               >
@@ -395,7 +393,7 @@ export default function Addresses() {
       {/* Add/Edit Modal */}
       {formOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+          <div className="client-card w-full max-w-lg">
             <div className="border-b border-black/5 px-6 pt-6 pb-4">
               <h2 className="text-lg font-black text-[#1E3932]">
                 {editTarget ? 'Chỉnh sửa địa chỉ' : 'Thêm địa chỉ mới'}
@@ -471,7 +469,7 @@ export default function Addresses() {
                       if (found) void fetchDistricts(found.code);
                       else { setDistricts([]); setWards([]); }
                     }}
-                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241] disabled:opacity-60"
+                    className="client-input w-full px-4 py-2.5 text-sm disabled:opacity-60"
                   >
                     <option value="">
                       {loadingProvinces ? 'Đang tải...' : '-- Chọn tỉnh/thành phố --'}
@@ -497,7 +495,7 @@ export default function Addresses() {
                       if (found) void fetchWards(found.code);
                       else setWards([]);
                     }}
-                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241] disabled:opacity-60"
+                    className="client-input w-full px-4 py-2.5 text-sm disabled:opacity-60"
                   >
                     <option value="">
                       {loadingDistricts ? 'Đang tải...' : !form.province ? '-- Chọn tỉnh trước --' : '-- Chọn quận/huyện --'}
@@ -517,7 +515,7 @@ export default function Addresses() {
                     value={form.ward}
                     disabled={!form.district || loadingWards}
                     onChange={(e) => setForm((f) => ({ ...f, ward: e.target.value }))}
-                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241] disabled:opacity-60"
+                    className="client-input w-full px-4 py-2.5 text-sm disabled:opacity-60"
                   >
                     <option value="">
                       {loadingWards ? 'Đang tải...' : !form.district ? '-- Chọn quận trước --' : '-- Chọn phường/xã --'}
@@ -549,15 +547,14 @@ export default function Addresses() {
             <div className="flex justify-end gap-3 border-t border-black/5 px-6 py-4">
               <button
                 onClick={() => setFormOpen(false)}
-                className="rounded-full border border-black/10 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                className="client-pill-dark-outline px-5 py-2.5 text-sm font-semibold"
               >
                 Hủy
               </button>
               <button
                 onClick={() => void handleSave()}
                 disabled={saving}
-                className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white disabled:opacity-60 active:scale-95"
-                style={{ background: '#00754A' }}
+                className="client-pill-primary flex items-center gap-2 px-6 py-2.5 text-sm font-bold disabled:opacity-60"
               >
                 {saving ? <LoaderCircle size={14} className="animate-spin" /> : null}
                 {saving ? 'Đang lưu...' : editTarget ? 'Lưu thay đổi' : 'Thêm địa chỉ'}
@@ -570,7 +567,7 @@ export default function Addresses() {
       {/* Delete confirm */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl">
+          <div className="client-card w-full max-w-sm">
             <div className="p-6">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
                 <Trash2 size={20} className="text-red-500" />
@@ -583,7 +580,7 @@ export default function Addresses() {
             <div className="flex justify-end gap-3 border-t border-black/5 px-6 py-4">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="rounded-full border border-black/10 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                className="client-pill-dark-outline px-5 py-2.5 text-sm font-semibold"
               >
                 Hủy
               </button>

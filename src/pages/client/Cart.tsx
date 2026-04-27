@@ -165,10 +165,7 @@ export default function Cart() {
 
   if (!session) {
     return (
-      <div
-        style={{ background: '#f2f0eb', minHeight: '60vh' }}
-        className="flex items-center justify-center"
-      >
+      <div className="client-surface flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
           <ShoppingCart size={48} className="mx-auto mb-4 text-[#006241]/30" />
           <h2 className="text-xl font-black text-[#1E3932]">
@@ -179,8 +176,7 @@ export default function Cart() {
           </p>
           <Link
             to="/client/login"
-            className="mt-5 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white"
-            style={{ background: '#00754A' }}
+            className="client-pill-primary mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold"
           >
             Đăng nhập
           </Link>
@@ -190,7 +186,7 @@ export default function Cart() {
   }
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-6xl px-4 py-10 lg:px-6">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -206,7 +202,7 @@ export default function Cart() {
           </div>
           <Link
             to="/client/vouchers"
-            className="inline-flex items-center gap-2 rounded-full border border-[#006241]/20 bg-white px-5 py-2.5 text-sm font-black text-[#006241] shadow-sm transition hover:border-[#006241]/40 hover:bg-[#edf3ee]"
+            className="client-pill-outline inline-flex items-center gap-2 px-5 py-2.5 text-sm font-black"
           >
             <TicketPercent size={16} /> Săn voucher
           </Link>
@@ -217,7 +213,7 @@ export default function Cart() {
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#006241] border-t-transparent" />
           </div>
         ) : !cart || cart.items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-[2rem] bg-white py-20 text-center shadow-sm">
+          <div className="client-card flex flex-col items-center justify-center py-20 text-center">
             <ShoppingCart size={56} className="mb-4 text-[#006241]/20" />
             <h2 className="text-xl font-black text-[#1E3932]">
               Giỏ hàng trống
@@ -228,14 +224,13 @@ export default function Cart() {
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link
                 to="/client/products"
-                className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white"
-                style={{ background: '#00754A' }}
+                className="client-pill-primary inline-flex items-center gap-2 px-6 py-3 text-sm font-bold"
               >
                 <Leaf size={16} /> Khám phá sản phẩm
               </Link>
               <Link
                 to="/client/vouchers"
-                className="inline-flex items-center gap-2 rounded-full border border-[#006241]/20 px-6 py-3 text-sm font-bold text-[#006241]"
+                className="client-pill-outline inline-flex items-center gap-2 px-6 py-3 text-sm font-bold"
               >
                 <TicketPercent size={16} /> Xem voucher
               </Link>
@@ -247,7 +242,7 @@ export default function Cart() {
               {cart.items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-start gap-4 rounded-[1.5rem] bg-white p-4 shadow-sm"
+                  className="client-card flex items-start gap-4 p-4"
                 >
                   <Link
                     to={`/client/products/${item.productId}`}
@@ -330,16 +325,15 @@ export default function Cart() {
 
               <Link
                 to="/client/products"
-                className="flex items-center gap-2 rounded-[1.5rem] border-2 border-dashed border-[#006241]/20 bg-white px-5 py-4 text-sm font-semibold text-[#006241] transition hover:border-[#006241]/40"
+                className="flex items-center gap-2 rounded-xl border-2 border-dashed border-[#006241]/20 bg-white px-5 py-4 text-sm font-semibold text-[#006241] transition hover:border-[#006241]/40"
               >
                 <Leaf size={16} /> Tiếp tục mua sắm
               </Link>
             </div>
 
             <div className="space-y-4">
-              <div className="overflow-hidden rounded-[2rem] bg-[#173d2b] text-white shadow-[0_24px_60px_rgba(23,61,43,0.22)]">
+              <div className="client-feature-band overflow-hidden">
                 <div className="relative p-5">
-                  <div className="absolute right-4 top-4 h-24 w-24 rounded-full bg-[#d6a51d]/30 blur-2xl" />
                   <p className="relative flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-white/70">
                     <Sparkles size={14} /> Voucher tốt nhất
                   </p>
@@ -356,13 +350,13 @@ export default function Cart() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+              <div className="client-card p-5">
                 <p className="mb-3 flex items-center gap-2 text-sm font-black text-[#1E3932]">
                   <Tag size={15} /> Mã giảm giá
                 </p>
 
                 {discountResult ? (
-                  <div className="rounded-2xl border border-[#006241]/15 bg-[#edf7ef] p-4">
+                  <div className="rounded-xl border border-[#006241]/15 bg-[#d4e9e2]/45 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="flex items-center gap-2 text-sm font-black text-[#006241]">
@@ -395,13 +389,12 @@ export default function Cart() {
                           }
                         }}
                         placeholder="Nhập mã hoặc chọn voucher bên dưới"
-                        className="min-w-0 flex-1 rounded-full border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
+                        className="client-input min-w-0 flex-1 px-4 py-2.5 text-sm"
                       />
                       <button
                         onClick={() => void validateAndApply(discountCode)}
                         disabled={validatingCode || !discountCode.trim()}
-                        className="rounded-full px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
-                        style={{ background: '#006241' }}
+                        className="client-pill-primary px-4 py-2.5 text-sm font-bold disabled:opacity-60"
                       >
                         {validatingCode ? '...' : 'Áp dụng'}
                       </button>
@@ -427,7 +420,7 @@ export default function Cart() {
                     </Link>
                   </div>
                   {loadingVouchers ? (
-                    <div className="rounded-2xl bg-[#f2f0eb] px-4 py-5 text-center text-xs font-semibold text-gray-400">
+                    <div className="rounded-xl bg-[#edebe9] px-4 py-5 text-center text-xs font-semibold text-gray-500">
                       Đang tìm voucher phù hợp...
                     </div>
                   ) : displayedVouchers.length ? (
@@ -442,14 +435,14 @@ export default function Cart() {
                       </div>
                     ))
                   ) : (
-                    <div className="rounded-2xl bg-[#f2f0eb] px-4 py-5 text-center text-xs font-semibold text-gray-400">
+                    <div className="rounded-xl bg-[#edebe9] px-4 py-5 text-center text-xs font-semibold text-gray-500">
                       Chưa có voucher phù hợp với giỏ hàng này.
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+              <div className="client-card p-5">
                 <p className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wider text-gray-400">
                   <PackageCheck size={15} /> Tóm tắt đơn hàng
                 </p>
@@ -489,8 +482,7 @@ export default function Cart() {
                 </div>
                 <button
                   onClick={handleCheckout}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-bold text-white transition hover:opacity-90 active:scale-95"
-                  style={{ background: '#00754A' }}
+                  className="client-pill-primary mt-5 flex w-full items-center justify-center gap-2 py-3.5 text-sm font-bold"
                 >
                   Tiến hành đặt hàng <ArrowRight size={16} />
                 </button>
@@ -523,16 +515,16 @@ function VoucherMiniCard({
 
   return (
     <div
-      className={`overflow-hidden rounded-2xl border ${
+      className={`overflow-hidden rounded-xl border ${
         selected
-          ? 'border-[#006241] bg-[#edf7ef]'
+          ? 'border-[#006241] bg-[#d4e9e2]/45'
           : eligible
             ? 'border-[#006241]/15 bg-white'
             : 'border-black/6 bg-[#fbfaf7]'
       }`}
     >
       <div className="flex gap-3 p-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#006241] text-white">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#006241] text-white">
           <BadgePercent size={20} />
         </div>
         <div className="min-w-0 flex-1">
@@ -543,13 +535,13 @@ function VoucherMiniCard({
                 {voucher.name}
               </p>
             </div>
-            <span className="rounded-full bg-[#d6a51d]/18 px-2 py-1 text-xs font-black text-[#8a6400]">
+            <span className="rounded-full bg-[#d4e9e2] px-2 py-1 text-xs font-black text-[#006241]">
               {voucherValueLabel(voucher)}
             </span>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/5">
             <div
-              className="h-full rounded-full bg-[#006241]"
+              className="h-full rounded-full bg-[#00754A]"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -563,7 +555,7 @@ function VoucherMiniCard({
               type="button"
               onClick={onApply}
               disabled={!eligible || selected}
-              className="rounded-full bg-[#006241] px-3 py-1.5 text-[11px] font-black text-white disabled:bg-gray-200 disabled:text-gray-500"
+              className="client-pill-primary px-3 py-1.5 text-[11px] font-black disabled:border-gray-200 disabled:bg-gray-200 disabled:text-gray-500"
             >
               {selected ? 'Đã chọn' : eligible ? 'Áp dụng' : 'Chưa đủ'}
             </button>

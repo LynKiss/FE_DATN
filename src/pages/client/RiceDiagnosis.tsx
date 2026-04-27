@@ -54,7 +54,7 @@ function ProductRecommendationCard({
   const hasDiscount = effectivePrice < basePrice - 0.01;
 
   return (
-    <div className="group overflow-hidden rounded-[1.75rem] border border-black/8 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+    <div className="client-card-soft group overflow-hidden transition">
       <Link to={`/client/products/${product.productId}`} className="block bg-[#edf3ee]">
         {product.primaryImageUrl ? (
           <img
@@ -104,7 +104,7 @@ function ProductRecommendationCard({
         <div className="flex gap-2">
           <Link
             to={`/client/products/${product.productId}`}
-            className="flex-1 rounded-full border border-[#006241]/20 px-4 py-2.5 text-center text-sm font-bold text-[#006241] transition hover:bg-[#006241]/8"
+            className="client-pill-outline flex-1 px-4 py-2.5 text-center text-sm font-bold"
           >
             Xem chi tiết
           </Link>
@@ -112,7 +112,7 @@ function ProductRecommendationCard({
             type="button"
             onClick={(event) => onAddToCart(event, product.productId)}
             disabled={loading || product.quantityAvailable <= 0}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[#006241] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#004e34] disabled:cursor-not-allowed disabled:opacity-50"
+            className="client-pill-primary inline-flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? (
               <LoaderCircle size={15} className="animate-spin" />
@@ -336,10 +336,10 @@ export default function RiceDiagnosis() {
   }
 
   return (
-    <div style={{ background: '#f2f0eb' }} className="min-h-[80vh]">
+    <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6 lg:py-12">
         <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="overflow-hidden rounded-[2.5rem] border border-black/8 bg-[#1f3f35] p-8 text-white shadow-[0_24px_60px_rgba(0,0,0,0.14)]">
+          <div className="client-feature-band overflow-hidden p-8">
             <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-black uppercase tracking-[0.24em] text-white/80">
               <Leaf size={14} />
               Rice AI
@@ -363,7 +363,7 @@ export default function RiceDiagnosis() {
               ].map((item) => (
                 <div
                   key={item}
-                  className="rounded-[1.5rem] border border-white/10 bg-white/6 p-4 text-sm text-white/75"
+                  className="rounded-xl border border-white/10 bg-white/6 p-4 text-sm text-white/75"
                 >
                   {item}
                 </div>
@@ -371,7 +371,7 @@ export default function RiceDiagnosis() {
             </div>
           </div>
 
-          <div className="rounded-[2.5rem] border border-black/8 bg-white p-6 shadow-sm sm:p-7">
+          <div className="client-card p-6 sm:p-7">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-[#006241]/70">
@@ -394,13 +394,13 @@ export default function RiceDiagnosis() {
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="mt-6 flex w-full flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#006241]/35 bg-[#edf3ee] px-6 py-10 text-center transition hover:border-[#006241]"
+              className="mt-6 flex w-full flex-col items-center justify-center rounded-xl border border-dashed border-[#006241]/35 bg-[#edf3ee] px-6 py-10 text-center transition hover:border-[#006241]"
             >
               {previewUrl ? (
                 <img
                   src={previewUrl}
                   alt="Rice preview"
-                  className="h-56 w-full rounded-[1.5rem] object-cover"
+                  className="h-56 w-full rounded-xl object-cover"
                 />
               ) : (
                 <>
@@ -429,7 +429,7 @@ export default function RiceDiagnosis() {
               <button
                 type="button"
                 onClick={() => inputRef.current?.click()}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-[#006241]/20 px-5 py-3 text-sm font-bold text-[#006241] transition hover:bg-[#006241]/8"
+                className="client-pill-outline inline-flex flex-1 items-center justify-center gap-2 px-5 py-3 text-sm font-bold"
               >
                 Chọn ảnh
               </button>
@@ -437,7 +437,7 @@ export default function RiceDiagnosis() {
                 type="button"
                 disabled={!file || submitting}
                 onClick={() => void handleSubmit()}
-                className="inline-flex flex-[1.3] items-center justify-center gap-2 rounded-full bg-[#006241] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#004e34] disabled:cursor-not-allowed disabled:opacity-50"
+                className="client-pill-primary inline-flex flex-[1.3] items-center justify-center gap-2 px-5 py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting ? (
                   <LoaderCircle size={16} className="animate-spin" />
@@ -449,7 +449,7 @@ export default function RiceDiagnosis() {
             </div>
 
             {file ? (
-              <div className="mt-4 rounded-[1.25rem] bg-[#f5f7f3] px-4 py-3 text-xs font-semibold text-[#1E3932]">
+              <div className="mt-4 rounded-xl bg-[#f5f7f3] px-4 py-3 text-xs font-semibold text-[#1E3932]">
                 Tệp đã chọn: {file.name} · {formatFileSize(file.size)}
               </div>
             ) : null}
@@ -457,7 +457,7 @@ export default function RiceDiagnosis() {
         </section>
 
         {result ? (
-          <section className="mt-8 rounded-[2.5rem] border border-black/8 bg-white p-6 shadow-sm sm:p-8">
+          <section className="client-card mt-8 p-6 sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-[#006241]/70">
@@ -757,7 +757,7 @@ export default function RiceDiagnosis() {
         ) : null}
 
         <section className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-[2.25rem] border border-black/8 bg-white p-6 shadow-sm sm:p-8">
+          <div className="client-card p-6 sm:p-8">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-[#006241]/70">
@@ -775,13 +775,13 @@ export default function RiceDiagnosis() {
                 ? Array.from({ length: 4 }).map((_, index) => (
                     <div
                       key={index}
-                      className="h-40 animate-pulse rounded-[1.75rem] bg-[#f5f7f3]"
+                      className="h-40 animate-pulse rounded-xl bg-[#f5f7f3]"
                     />
                   ))
                 : diseases.map((disease) => (
                     <div
                       key={disease.diseaseId}
-                      className="rounded-[1.75rem] border border-black/6 bg-[#fdfdfc] p-5"
+                      className="rounded-xl border border-black/6 bg-[#fdfdfc] p-5"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -805,7 +805,7 @@ export default function RiceDiagnosis() {
             </div>
           </div>
 
-          <div className="rounded-[2.25rem] border border-black/8 bg-white p-6 shadow-sm sm:p-8">
+          <div className="client-card p-6 sm:p-8">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-[#006241]/70">

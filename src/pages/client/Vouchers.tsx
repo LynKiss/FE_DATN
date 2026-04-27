@@ -89,16 +89,14 @@ export default function Vouchers() {
   }
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-6xl px-4 py-10 lg:px-6">
-        <section className="relative overflow-hidden rounded-[2.5rem] bg-[#173d2b] p-7 text-white shadow-[0_30px_80px_-45px_rgba(23,61,43,0.9)] md:p-10">
-          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#d6a51d]/35 blur-3xl" />
-          <div className="absolute bottom-0 right-10 hidden h-36 w-36 rounded-[2rem] border border-white/10 bg-white/8 rotate-12 md:block" />
-          <div className="relative max-w-3xl">
-            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-white/80">
+        <section className="client-feature-band p-7 md:p-10">
+          <div className="max-w-3xl">
+            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white/80">
               <Sparkles size={14} /> Kho voucher
             </p>
-            <h1 className="mt-5 text-4xl font-black tracking-tight md:text-6xl">
+            <h1 className="mt-5 text-3xl font-semibold leading-tight md:text-5xl">
               Săn voucher trước khi đặt hàng
             </h1>
             <p className="mt-4 max-w-2xl text-sm font-medium leading-7 text-white/72">
@@ -122,7 +120,7 @@ export default function Vouchers() {
         </section>
 
         {!session ? (
-          <div className="mt-6 rounded-[2rem] border border-[#d6a51d]/25 bg-[#fff7db] p-5 text-sm font-semibold text-[#7a5a00]">
+          <div className="mt-6 rounded-xl border border-[#006241]/15 bg-[#d4e9e2]/45 p-5 text-sm font-semibold text-[#1E3932]">
             Đăng nhập để thấy voucher riêng và biết mã nào bạn đã dùng. Danh
             sách bên dưới chỉ gồm voucher công khai.
           </div>
@@ -141,8 +139,8 @@ export default function Vouchers() {
                 onClick={() => setFilter(item.key as VoucherFilter)}
                 className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-black transition ${
                   filter === item.key
-                    ? 'bg-[#006241] text-white'
-                    : 'bg-white text-[#1E3932] hover:bg-[#006241]/10'
+                    ? 'bg-[#00754A] text-white'
+                    : 'border border-[#00754A]/25 bg-white text-[#1E3932] hover:bg-[#d4e9e2]'
                 }`}
               >
                 {item.label}
@@ -151,7 +149,7 @@ export default function Vouchers() {
           </div>
           <Link
             to="/client/cart"
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-black text-[#006241] shadow-sm transition hover:bg-[#edf3ee]"
+            className="client-pill-outline inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-black"
           >
             <ShoppingCart size={16} /> Về giỏ hàng
           </Link>
@@ -176,7 +174,7 @@ export default function Vouchers() {
             ))}
           </div>
         ) : (
-          <div className="mt-6 flex flex-col items-center justify-center rounded-[2rem] bg-white py-20 text-center shadow-sm">
+          <div className="client-card mt-6 flex flex-col items-center justify-center py-20 text-center">
             <TicketPercent size={56} className="mb-4 text-[#006241]/20" />
             <h2 className="text-xl font-black text-[#1E3932]">
               Chưa có voucher phù hợp
@@ -187,8 +185,7 @@ export default function Vouchers() {
             </p>
             <Link
               to="/client/products"
-              className="mt-6 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white"
-              style={{ background: '#00754A' }}
+              className="client-pill-primary mt-6 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold"
             >
               <Leaf size={16} /> Mua sắm ngay
             </Link>
@@ -201,8 +198,8 @@ export default function Vouchers() {
 
 function MetricPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
+    <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/55">
         {label}
       </p>
       <p className="mt-1 text-sm font-black text-white">{value}</p>
@@ -228,19 +225,18 @@ function VoucherHuntCard({
   const progress = getVoucherProgress(voucher, subtotal);
 
   return (
-    <article className="group overflow-hidden rounded-[2rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+    <article className="client-card client-card-hover group overflow-hidden">
       <div className="relative min-h-40 overflow-hidden bg-[#1E3932] p-5 text-white">
-        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#d6a51d]/40 blur-2xl transition group-hover:scale-125" />
         <div className="relative flex items-start justify-between">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/12">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/12">
             <BadgePercent size={28} />
           </div>
-          <span className="rounded-full bg-[#d6a51d] px-3 py-1 text-sm font-black text-[#1E3932]">
+          <span className="rounded-full bg-[#d4e9e2] px-3 py-1 text-sm font-black text-[#006241]">
             {voucherValueLabel(voucher)}
           </span>
         </div>
         <div className="relative mt-5">
-          <p className="text-2xl font-black tracking-tight">{voucher.code}</p>
+          <p className="text-2xl font-black">{voucher.code}</p>
           <p className="mt-1 line-clamp-2 text-sm font-medium text-white/70">
             {voucher.name}
           </p>
@@ -266,14 +262,14 @@ function VoucherHuntCard({
             <span className="text-gray-500">
               Đơn tối thiểu {money(voucherMinOrder(voucher))}
             </span>
-            <span className={eligible ? 'text-[#006241]' : 'text-[#a56b00]'}>
+            <span className={eligible ? 'text-[#006241]' : 'text-[#8a5a00]'}>
               {eligible ? 'Đủ điều kiện' : `Thiếu ${money(missingAmount)}`}
             </span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-[#f2f0eb]">
             <div
               className={`h-full rounded-full ${
-                eligible ? 'bg-[#006241]' : 'bg-[#d6a51d]'
+                eligible ? 'bg-[#00754A]' : 'bg-[#fbbc05]'
               }`}
               style={{ width: `${progress}%` }}
             />
@@ -281,7 +277,7 @@ function VoucherHuntCard({
         </div>
 
         {voucher.isPrivate ? (
-          <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[#edf3ee] px-4 py-3 text-xs font-bold text-[#006241]">
+          <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#d4e9e2] px-4 py-3 text-xs font-bold text-[#006241]">
             <LockKeyhole size={14} /> Voucher riêng cho tài khoản của bạn
           </div>
         ) : null}
@@ -299,7 +295,7 @@ function VoucherHuntCard({
             type="button"
             onClick={onApply}
             disabled={!eligible}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#006241] px-4 py-3 text-sm font-black text-white transition hover:bg-[#00533a] disabled:bg-gray-200 disabled:text-gray-500"
+            className="client-pill-primary flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-black disabled:border-gray-200 disabled:bg-gray-200 disabled:text-gray-500"
           >
             {eligible ? 'Áp dụng vào giỏ' : 'Chưa đủ điều kiện'}
             {eligible ? <ArrowRight size={15} /> : null}
@@ -312,8 +308,8 @@ function VoucherHuntCard({
 
 function InfoBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-[#f7f5ef] px-4 py-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-400">
+    <div className="rounded-xl bg-[#edebe9] px-4 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-gray-500">
         {label}
       </p>
       <p className="mt-1 text-sm font-black text-[#1E3932]">{value}</p>

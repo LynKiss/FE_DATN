@@ -87,7 +87,7 @@ export default function Account() {
 
   if (loading) {
     return (
-      <div style={{ background: '#f2f0eb', minHeight: '60vh' }} className="flex items-center justify-center">
+      <div className="client-surface flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#006241] border-t-transparent" />
       </div>
     );
@@ -96,7 +96,7 @@ export default function Account() {
   const initials = (profile?.fullName ?? profile?.username ?? 'U').slice(0, 2).toUpperCase();
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-5xl px-4 py-10 lg:px-6">
         <div className="mb-8">
           <p className="text-xs font-bold uppercase tracking-[0.25em]" style={{ color: '#006241' }}>
@@ -123,7 +123,7 @@ export default function Account() {
           {/* Sidebar */}
           <div className="space-y-3">
             {/* Avatar card */}
-            <div className="rounded-2xl bg-white p-5 text-center shadow-sm">
+            <div className="client-card p-5 text-center">
               <div
                 className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full text-xl font-black text-white"
                 style={{ background: '#1E3932' }}
@@ -137,7 +137,7 @@ export default function Account() {
             </div>
 
             {/* Nav */}
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <div className="client-card overflow-hidden">
               {[
                 { id: 'profile', label: 'Thông tin cá nhân', icon: User },
                 { id: 'password', label: 'Đổi mật khẩu', icon: KeyRound },
@@ -183,7 +183,7 @@ export default function Account() {
           </div>
 
           {/* Main panel */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
+          <div className="client-card p-6">
             {activeTab === 'profile' ? (
               <>
                 <h2 className="mb-5 text-lg font-black text-[#1E3932]">Thông tin cá nhân</h2>
@@ -196,7 +196,7 @@ export default function Account() {
                       value={form.fullName}
                       onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
                       placeholder="Nguyễn Văn A"
-                      className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
+                      className="client-input w-full px-4 py-2.5 text-sm"
                     />
                   </div>
                   <div>
@@ -225,15 +225,14 @@ export default function Account() {
                       value={form.phoneNumber}
                       onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))}
                       placeholder="0901234567"
-                      className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
+                      className="client-input w-full px-4 py-2.5 text-sm"
                     />
                   </div>
                 </div>
                 <button
                   onClick={() => void handleSaveProfile()}
                   disabled={saving}
-                  className="mt-6 flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white disabled:opacity-60 active:scale-95"
-                  style={{ background: '#00754A' }}
+                  className="client-pill-primary mt-6 flex items-center gap-2 px-6 py-3 text-sm font-bold disabled:opacity-60"
                 >
                   {saving ? <LoaderCircle size={15} className="animate-spin" /> : <Save size={15} />}
                   {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
@@ -259,15 +258,14 @@ export default function Account() {
                           setPasswords((p) => ({ ...p, [field.key]: e.target.value }))
                         }
                         required
-                        className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
+                        className="client-input w-full px-4 py-2.5 text-sm"
                       />
                     </div>
                   ))}
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white disabled:opacity-60 active:scale-95"
-                    style={{ background: '#00754A' }}
+                    className="client-pill-primary flex items-center gap-2 px-6 py-3 text-sm font-bold disabled:opacity-60"
                   >
                     {saving ? <LoaderCircle size={15} className="animate-spin" /> : <KeyRound size={15} />}
                     {saving ? 'Đang cập nhật...' : 'Đổi mật khẩu'}

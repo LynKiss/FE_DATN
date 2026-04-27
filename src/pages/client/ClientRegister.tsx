@@ -56,7 +56,7 @@ export default function ClientRegister() {
 
   if (success) {
     return (
-      <div style={{ background: '#f2f0eb', minHeight: '100vh' }} className="flex items-center justify-center px-4">
+      <div className="client-surface flex min-h-screen items-center justify-center px-4">
         <div className="text-center">
           <CheckCircle2 size={56} className="mx-auto mb-4 text-[#006241]" />
           <h2 className="text-2xl font-black text-[#1E3932]">Đăng ký thành công!</h2>
@@ -67,15 +67,12 @@ export default function ClientRegister() {
   }
 
   return (
-    <div
-      style={{ background: '#f2f0eb', minHeight: '100vh' }}
-      className="flex items-center justify-center px-4 py-12"
-    >
+    <div className="client-surface flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link to="/client" className="inline-flex flex-col items-center gap-3">
             <div
-              className="flex h-14 w-14 items-center justify-center rounded-full shadow-lg"
+              className="flex h-14 w-14 items-center justify-center rounded-full"
               style={{ background: '#1E3932' }}
             >
               <Leaf size={26} className="text-white" />
@@ -89,7 +86,7 @@ export default function ClientRegister() {
           </Link>
         </div>
 
-        <div className="rounded-2xl bg-white p-8 shadow-md">
+        <div className="client-card p-8">
           {error && (
             <div className="mb-4 flex items-start gap-2.5 rounded-xl bg-red-50 p-3.5 text-sm text-red-700">
               <AlertCircle size={16} className="mt-0.5 shrink-0" />
@@ -107,7 +104,7 @@ export default function ClientRegister() {
                   value={form.fullName}
                   onChange={setField('fullName')}
                   placeholder="Nguyễn Văn A"
-                  className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241] focus:bg-white"
+                  className="client-input w-full px-4 py-2.5 text-sm"
                 />
               </div>
               <div>
@@ -120,7 +117,7 @@ export default function ClientRegister() {
                   placeholder="user123"
                   required
                   autoComplete="username"
-                  className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241] focus:bg-white"
+                  className="client-input w-full px-4 py-2.5 text-sm"
                 />
               </div>
             </div>
@@ -136,7 +133,7 @@ export default function ClientRegister() {
                 placeholder="email@example.com"
                 required
                 autoComplete="email"
-                className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241] focus:bg-white"
+                className="client-input w-full px-4 py-2.5 text-sm"
               />
             </div>
 
@@ -150,7 +147,7 @@ export default function ClientRegister() {
                 onChange={setField('phoneNumber')}
                 placeholder="0901234567"
                 autoComplete="tel"
-                className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241] focus:bg-white"
+                className="client-input w-full px-4 py-2.5 text-sm"
               />
             </div>
 
@@ -167,7 +164,7 @@ export default function ClientRegister() {
                   required
                   minLength={6}
                   autoComplete="new-password"
-                  className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 pr-12 text-sm outline-none focus:border-[#006241] focus:bg-white"
+                  className="client-input w-full px-4 py-2.5 pr-12 text-sm"
                 />
                 <button
                   type="button"
@@ -190,15 +187,14 @@ export default function ClientRegister() {
                 placeholder="••••••••"
                 required
                 autoComplete="new-password"
-                className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241] focus:bg-white"
+                className="client-input w-full px-4 py-2.5 text-sm"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-bold text-white disabled:opacity-60 active:scale-95"
-              style={{ background: '#00754A' }}
+              className="client-pill-primary flex w-full items-center justify-center gap-2 py-3.5 text-sm font-bold disabled:opacity-60"
             >
               {loading && <LoaderCircle size={16} className="animate-spin" />}
               {loading ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}

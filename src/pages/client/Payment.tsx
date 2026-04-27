@@ -447,7 +447,7 @@ export default function Payment() {
     <>
       {simulateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+          <div className="client-card w-full max-w-sm overflow-hidden">
             <div
               className="px-6 py-5 text-center text-white"
               style={{ background: selectedMethodInfo?.color ?? '#1E3932' }}

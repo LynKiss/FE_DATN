@@ -172,7 +172,7 @@ export default function NewsDetail() {
 
   if (loading) {
     return (
-      <div style={{ background: '#f2f0eb', minHeight: '60vh' }} className="flex items-center justify-center">
+      <div className="client-surface flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#006241] border-t-transparent" />
       </div>
     );
@@ -183,12 +183,12 @@ export default function NewsDetail() {
   const authorName = article.author?.username ?? 'Ban biên tập';
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       {/* Hero image */}
       {article.titleImageUrl && (
         <div className="relative h-72 overflow-hidden md:h-[420px]" style={{ background: '#1E3932' }}>
           <img src={article.titleImageUrl} alt={article.title} className="h-full w-full object-cover opacity-70" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent" />
+          <div className="absolute inset-0 bg-black/40" />
         </div>
       )}
 
@@ -200,7 +200,7 @@ export default function NewsDetail() {
         <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
           {/* Main article */}
           <div className="space-y-6">
-            <article className="rounded-3xl bg-white p-8 shadow-sm md:p-10">
+            <article className="client-card p-8 md:p-10">
               <div className="mb-5 flex flex-wrap items-center gap-3 text-xs text-gray-400">
                 <span className="flex items-center gap-1.5">
                   <Calendar size={13} />
@@ -274,7 +274,7 @@ export default function NewsDetail() {
             </article>
 
             {/* Comments section */}
-            <section className="rounded-3xl bg-white p-8 shadow-sm md:p-10">
+            <section className="client-card p-8 md:p-10">
               <h2 className="mb-6 flex items-center gap-2 text-lg font-black text-[#1E3932]">
                 <MessageCircle size={20} /> Bình luận ({comments.length})
               </h2>
@@ -295,14 +295,13 @@ export default function NewsDetail() {
                         onChange={(e) => setCommentInput(e.target.value)}
                         placeholder="Viết bình luận của bạn..."
                         rows={3}
-                        className="w-full resize-none rounded-2xl border border-black/10 bg-[#f2f0eb] px-4 py-3 text-sm outline-none focus:border-[#006241]/40 focus:bg-white transition"
+                        className="client-input w-full resize-none px-4 py-3 text-sm"
                       />
                       <div className="flex justify-end">
                         <button
                           type="submit"
                           disabled={!commentInput.trim() || submittingComment}
-                          className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold text-white transition disabled:opacity-50"
-                          style={{ background: '#006241' }}
+                          className="client-pill-primary inline-flex items-center gap-2 px-5 py-2 text-sm font-bold disabled:opacity-50"
                         >
                           {submittingComment ? <LoaderCircle size={14} className="animate-spin" /> : <Send size={14} />}
                           Gửi
@@ -379,7 +378,7 @@ export default function NewsDetail() {
           {/* Sidebar */}
           <aside className="space-y-4">
             {related.length > 0 && (
-              <div className="rounded-3xl bg-white p-5 shadow-sm">
+              <div className="client-card p-5">
                 <h3 className="mb-4 text-sm font-black uppercase tracking-wider text-gray-400">Bài viết liên quan</h3>
                 <div className="space-y-4">
                   {related.map((r) => (
@@ -404,7 +403,7 @@ export default function NewsDetail() {
               </div>
             )}
 
-            <div className="rounded-3xl p-5 text-center" style={{ background: '#1E3932' }}>
+            <div className="client-feature-band p-5 text-center">
               <span className="text-3xl">📬</span>
               <h3 className="mt-3 font-black text-white">Nhận tin mới nhất</h3>
               <p className="mt-1 text-xs text-white/60">Cập nhật kiến thức nông nghiệp mỗi tuần.</p>
@@ -413,7 +412,7 @@ export default function NewsDetail() {
                 placeholder="Email của bạn..."
                 className="mt-3 w-full rounded-full bg-white/10 px-4 py-2.5 text-sm text-white placeholder-white/40 outline-none focus:bg-white/20"
               />
-              <button className="mt-2 w-full rounded-full py-2.5 text-sm font-bold text-white" style={{ background: '#00754A' }}>
+              <button className="client-pill-primary mt-2 w-full py-2.5 text-sm font-bold">
                 Đăng ký
               </button>
             </div>

@@ -292,7 +292,7 @@ export default function ProductDetail() {
 
   if (loading) {
     return (
-      <div style={{ background: '#f2f0eb', minHeight: '60vh' }} className="flex items-center justify-center">
+      <div className="client-surface flex min-h-[60vh] items-center justify-center">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#006241] border-t-transparent" />
       </div>
     );
@@ -318,7 +318,7 @@ export default function ProductDetail() {
   reviews.forEach((r) => { dist[r.rating] = (dist[r.rating] ?? 0) + 1; });
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
         {/* Breadcrumb */}
         <div className="mb-6 flex items-center gap-2 text-sm text-gray-500">
@@ -343,7 +343,7 @@ export default function ProductDetail() {
         <div className="grid gap-10 lg:grid-cols-2">
           {/* Images */}
           <div>
-            <div className="overflow-hidden rounded-2xl bg-white shadow-md">
+            <div className="client-card overflow-hidden">
               {currentImage ? (
                 <img src={currentImage} alt={product.productName} className="h-96 w-full object-contain p-4" />
               ) : (
@@ -418,7 +418,7 @@ export default function ProductDetail() {
             )}
 
             {/* Details */}
-            <div className="mt-5 space-y-2 rounded-2xl bg-white p-4">
+            <div className="client-card mt-5 space-y-2 p-4">
               {product.origin && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Xuất xứ</span>
@@ -480,7 +480,7 @@ export default function ProductDetail() {
               <button
                 onClick={() => void handleAddToCart()}
                 disabled={adding || product.quantityAvailable === 0}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-[#006241] py-3.5 text-sm font-bold text-[#006241] transition hover:bg-[#006241] hover:text-white disabled:opacity-50 active:scale-95"
+                className="client-pill-outline flex flex-1 items-center justify-center gap-2 py-3.5 text-sm font-bold disabled:opacity-50"
               >
                 <ShoppingCart size={18} />
                 {adding ? 'Đang thêm...' : addedMsg ? '✓ Đã thêm!' : 'Thêm vào giỏ'}
@@ -488,8 +488,7 @@ export default function ProductDetail() {
               <button
                 onClick={() => void handleBuyNow()}
                 disabled={product.quantityAvailable === 0}
-                className="flex flex-1 items-center justify-center rounded-full py-3.5 text-sm font-bold text-white transition disabled:opacity-50 active:scale-95"
-                style={{ background: '#00754A' }}
+                className="client-pill-primary flex flex-1 items-center justify-center py-3.5 text-sm font-bold disabled:opacity-50"
               >
                 Mua ngay
               </button>
@@ -794,7 +793,7 @@ export default function ProductDetail() {
                 <Link
                   key={p.productId}
                   to={`/client/products/${p.productId}`}
-                  className="group overflow-hidden rounded-2xl border border-black/5 bg-white transition-all hover:-translate-y-1 hover:shadow-xl"
+                  className="client-card-soft group overflow-hidden transition-all"
                 >
                   <div className="overflow-hidden bg-[#f2f0eb]">
                     {p.primaryImageUrl ? (

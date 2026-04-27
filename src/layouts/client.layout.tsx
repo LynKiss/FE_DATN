@@ -172,7 +172,7 @@ export default function ClientLayout() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ background: '#f2f0eb' }}>
+    <div className="client-surface flex min-h-screen flex-col">
       {/* Top bar */}
       <div style={{ background: '#1E3932' }} className="hidden text-white/70 lg:block">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2 text-xs">
@@ -196,9 +196,9 @@ export default function ClientLayout() {
       {/* Main navbar */}
       <header
         className={`sticky top-0 z-50 transition-shadow duration-300 ${
-          scrolled ? 'shadow-[0_4px_24px_rgba(0,0,0,0.12)]' : ''
+          scrolled ? 'shadow-[0_1px_3px_rgba(0,0,0,0.1),0_2px_2px_rgba(0,0,0,0.06),0_0_2px_rgba(0,0,0,0.07)]' : ''
         }`}
-        style={{ background: 'rgba(242,240,235,0.95)', backdropFilter: 'blur(16px)' }}
+        style={{ background: '#f2f0eb' }}
       >
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 lg:px-6 lg:py-4">
           {/* Logo */}
@@ -285,7 +285,7 @@ export default function ClientLayout() {
 
                 {/* Suggestions dropdown */}
                 {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute left-0 top-full mt-2 w-72 overflow-hidden rounded-2xl border border-black/8 bg-white shadow-xl">
+                  <div className="client-menu-surface absolute left-0 top-full mt-2 w-72 overflow-hidden">
                     {suggestions.map((p) => (
                       <button
                         key={p.productId}
@@ -363,7 +363,7 @@ export default function ClientLayout() {
                   )}
                 </button>
                 {notifOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-2xl border border-black/8 bg-white shadow-xl">
+                  <div className="client-menu-surface absolute right-0 top-full mt-2 w-80 overflow-hidden">
                     <div className="border-b border-black/5 px-4 py-3">
                       <p className="text-sm font-bold text-[#1E3932]">Thông báo</p>
                     </div>
@@ -444,7 +444,7 @@ export default function ClientLayout() {
                 </button>
 
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 overflow-hidden rounded-2xl border border-black/8 bg-white shadow-xl">
+                  <div className="client-menu-surface absolute right-0 top-full mt-2 w-52 overflow-hidden">
                     <div className="border-b border-black/5 px-4 py-3">
                       <p className="text-sm font-bold text-[#1E3932]">{displayName}</p>
                       <p className="truncate text-xs text-gray-400">{session.user.email}</p>
@@ -484,8 +484,7 @@ export default function ClientLayout() {
             ) : (
               <Link
                 to="/client/login"
-                className="hidden rounded-full px-5 py-2 text-sm font-bold text-white transition active:scale-95 lg:flex"
-                style={{ background: '#00754A' }}
+                className="client-pill-primary hidden px-5 py-2 text-sm font-bold lg:flex"
               >
                 Đăng nhập
               </Link>
@@ -542,8 +541,7 @@ export default function ClientLayout() {
                   <Link
                     to="/client/login"
                     onClick={() => setMobileOpen(false)}
-                    className="flex-1 rounded-full py-2.5 text-center text-sm font-bold text-white"
-                    style={{ background: '#00754A' }}
+                    className="client-pill-primary flex-1 py-2.5 text-center text-sm font-bold"
                   >
                     Đăng nhập
                   </Link>

@@ -736,7 +736,7 @@ export default function Chatbox() {
 
       {open ? (
         <div
-          className="fixed bottom-24 right-6 z-50 flex w-80 flex-col overflow-hidden rounded-3xl shadow-2xl sm:w-96"
+          className="client-card fixed bottom-24 right-6 z-50 flex w-80 flex-col overflow-hidden sm:w-96"
           style={{ height: '560px', maxHeight: 'calc(100vh - 120px)' }}
         >
           <div
@@ -785,7 +785,7 @@ export default function Chatbox() {
             <button
               type="button"
               onClick={() => setActiveTab('bot')}
-              className={`rounded-2xl px-3 py-2 text-sm font-bold transition ${
+              className={`rounded-full px-3 py-2 text-sm font-bold transition ${
                 activeTab === 'bot'
                   ? 'bg-[#d4e9e2] text-[#006241]'
                   : 'text-gray-500 hover:bg-[#f2f0eb]'
@@ -803,7 +803,7 @@ export default function Chatbox() {
             <button
               type="button"
               onClick={() => setActiveTab('support')}
-              className={`rounded-2xl px-3 py-2 text-sm font-bold transition ${
+              className={`rounded-full px-3 py-2 text-sm font-bold transition ${
                 activeTab === 'support'
                   ? 'bg-[#d4e9e2] text-[#006241]'
                   : 'text-gray-500 hover:bg-[#f2f0eb]'
@@ -859,7 +859,7 @@ export default function Chatbox() {
                                       `/client/products/${product.productId}`,
                                     );
                                   }}
-                                  className="block w-full rounded-2xl border border-[#006241]/10 bg-white/75 px-3 py-2 text-left transition hover:border-[#006241]/25 hover:bg-white"
+                                  className="block w-full rounded-xl border border-[#006241]/10 bg-white/75 px-3 py-2 text-left transition hover:border-[#006241]/25 hover:bg-white"
                                 >
                                   <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#006241]/70">
                                     {product.quantityAvailable > 0
@@ -962,7 +962,7 @@ export default function Chatbox() {
                     },
                   })
                 }
-                className="inline-flex items-center gap-2 rounded-full bg-[#006241] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#005237]"
+                className="client-pill-primary inline-flex items-center gap-2 px-5 py-3 text-sm font-bold"
               >
                 <LogIn size={16} />
                 Đi đến đăng nhập
@@ -1056,7 +1056,7 @@ export default function Chatbox() {
                   <button
                     type="button"
                     onClick={() => void ensureConversation()}
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[#006241] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#005237]"
+                    className="client-pill-primary flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-bold"
                   >
                     <RefreshCw size={15} />
                     Tạo cuộc trò chuyện mới

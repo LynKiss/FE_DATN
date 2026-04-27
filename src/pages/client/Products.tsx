@@ -337,10 +337,10 @@ export default function Products() {
   };
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
         {/* Trust badges banner */}
-        <div className="mb-6 grid grid-cols-3 gap-3 rounded-2xl border border-[#006241]/10 bg-white p-3 sm:gap-4 sm:p-4">
+        <div className="client-card-soft mb-6 grid grid-cols-3 gap-3 p-3 sm:gap-4 sm:p-4">
           {TRUST_BADGES.map((b) => (
             <div key={b.title} className="flex items-center gap-2 sm:gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#006241]/8 sm:h-11 sm:w-11">
@@ -372,7 +372,7 @@ export default function Products() {
               onClick={() => updateParam('onSale', onSaleOnly ? '' : '1')}
               className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
                 onSaleOnly
-                  ? 'bg-red-500 text-white shadow'
+                  ? 'bg-red-500 text-white'
                   : 'bg-white border border-red-200 text-red-500 hover:bg-red-50'
               }`}
             >
@@ -387,7 +387,7 @@ export default function Products() {
                 }
                 className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition ${
                   ratingMin === String(r)
-                    ? 'bg-amber-500 text-white shadow'
+                    ? 'bg-[#fbbc05] text-[#1E3932]'
                     : 'bg-white border border-amber-200 text-amber-600 hover:bg-amber-50'
                 }`}
               >
@@ -402,7 +402,7 @@ export default function Products() {
         <form onSubmit={handleSearch} className="mb-4 flex gap-2 lg:hidden">
           <div className="relative flex-1">
             <input value={localSearch} onChange={(e) => setLocalSearch(e.target.value)} placeholder="Tìm sản phẩm..."
-              className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-4 pr-10 text-sm outline-none focus:border-[#006241]" />
+              className="client-input w-full bg-white py-2.5 pl-4 pr-10 text-sm" />
             <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-[#006241]"><Search size={16} /></button>
           </div>
         </form>
@@ -435,12 +435,12 @@ export default function Products() {
               </div>
             )}
 
-            <div className={`space-y-6 ${filtersOpen ? 'p-5' : 'rounded-2xl bg-white p-5'}`}>
+            <div className={`space-y-6 ${filtersOpen ? 'p-5' : 'client-card p-5'}`}>
               {/* Desktop search */}
               <div className="hidden lg:block">
                 <form onSubmit={handleSearch} className="relative">
                   <input value={localSearch} onChange={(e) => setLocalSearch(e.target.value)} placeholder="Tìm sản phẩm..."
-                    className="w-full rounded-full border border-black/10 bg-[#f2f0eb] py-2.5 pl-4 pr-10 text-sm outline-none focus:border-[#006241]" />
+                    className="client-input w-full py-2.5 pl-4 pr-10 text-sm" />
                   <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-[#006241]"><Search size={16} /></button>
                 </form>
               </div>
@@ -633,7 +633,7 @@ export default function Products() {
                   : 'grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4'
               }>
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="overflow-hidden rounded-2xl border border-[#006241]/10 bg-white shadow-sm">
+                  <div key={i} className="client-card-soft overflow-hidden">
                     <div className="h-44 animate-pulse bg-gray-100" />
                     <div className="space-y-2 p-4">
                       <div className="h-3 w-1/3 animate-pulse rounded-full bg-gray-100" />
@@ -645,14 +645,14 @@ export default function Products() {
                 ))}
               </div>
             ) : products.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-3xl bg-white py-24 text-center shadow-sm">
+              <div className="client-card flex flex-col items-center justify-center py-24 text-center">
                 <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full" style={{ background: '#d4e9e2' }}>
                   <Leaf size={36} style={{ color: '#006241' }} />
                 </div>
                 <h3 className="text-lg font-black text-[#1E3932]">Không tìm thấy sản phẩm</h3>
                 <p className="mt-2 max-w-xs text-sm text-gray-400">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm để xem thêm sản phẩm.</p>
                 <button onClick={() => { setLocalSearch(''); setLocalPriceMin(''); setLocalPriceMax(''); setSearchParams(new URLSearchParams()); }}
-                  className="mt-6 rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-sm transition active:scale-95" style={{ background: '#006241' }}>
+                  className="client-pill-primary mt-6 px-6 py-2.5 text-sm font-bold">
                   Xóa bộ lọc
                 </button>
               </div>
@@ -677,10 +677,10 @@ export default function Products() {
                   return (
                     <div
                       key={product.productId}
-                      className={`group overflow-hidden rounded-2xl border border-[#006241]/12 bg-white shadow-sm transition-all duration-300 hover:border-[#006241]/30 hover:shadow-lg ${
+                      className={`client-card-soft group overflow-hidden transition-all duration-300 hover:border-[#006241]/30 ${
                         isList
-                          ? 'flex flex-row hover:shadow-md'
-                          : 'flex flex-col hover:-translate-y-1'
+                          ? 'flex flex-row'
+                          : 'flex flex-col'
                       }`}
                     >
                       {/* Image area */}
@@ -717,17 +717,17 @@ export default function Products() {
                         {/* Badges (top-left stack) */}
                         <div className={`absolute left-2 top-2 flex flex-col gap-1 ${isList ? '' : 'sm:left-3 sm:top-3 sm:gap-1.5'}`}>
                           {hasDiscount && discountPct > 0 && (
-                            <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white shadow-md sm:px-2.5 sm:py-1 sm:text-[11px]">
+                            <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white sm:px-2.5 sm:py-1 sm:text-[11px]">
                               -{discountPct}%
                             </span>
                           )}
                           {!isList && isNewProduct(product.createdAt) && (
-                            <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-500 px-2 py-0.5 text-[10px] font-black text-white shadow-md">
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-[#d4e9e2] px-2 py-0.5 text-[10px] font-black text-[#006241]">
                               <Sparkles size={9} /> Mới
                             </span>
                           )}
                           {!isList && isBestSeller(product) && (
-                            <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-black text-white shadow-md">
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-[#edebe9] px-2 py-0.5 text-[10px] font-black text-[#1E3932]">
                               <Award size={9} /> Bán chạy
                             </span>
                           )}
@@ -739,7 +739,7 @@ export default function Products() {
                             onClick={() => void handleToggleWishlist(product.productId)}
                             disabled={togglingWishlistId === product.productId}
                             title={isWishlisted ? 'Bỏ yêu thích' : 'Yêu thích'}
-                            className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full shadow-md transition-all ${
+                            className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full transition-all ${
                               isWishlisted
                                 ? 'bg-red-50 text-red-500'
                                 : 'bg-white/95 text-gray-400 hover:text-red-400'
@@ -752,7 +752,7 @@ export default function Products() {
                         {/* Out of stock overlay */}
                         {outOfStock && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
-                            <span className="rounded-full bg-white px-3 py-1 text-[10px] font-black text-gray-800 shadow-lg sm:px-4 sm:py-1.5 sm:text-xs">
+                            <span className="rounded-full bg-white px-3 py-1 text-[10px] font-black text-gray-800 sm:px-4 sm:py-1.5 sm:text-xs">
                               Hết hàng
                             </span>
                           </div>
@@ -827,7 +827,7 @@ export default function Products() {
                           <div className="mb-2">
                             <div className="flex flex-wrap items-baseline gap-1.5">
                               <span
-                                className={`font-black tracking-tight ${isList ? 'text-base sm:text-lg' : 'text-base'}`}
+                                className={`font-black ${isList ? 'text-base sm:text-lg' : 'text-base'}`}
                                 style={{ color: '#006241' }}
                               >
                                 {effective > 0 ? formatPrice(effective) : 'Liên hệ'}
@@ -850,8 +850,7 @@ export default function Products() {
                             {isList ? (
                               <button
                                 onClick={() => setQuickViewId(product.productId)}
-                                className="flex items-center justify-center rounded-xl border-2 px-3 py-2 text-xs font-bold transition hover:bg-[#006241] hover:text-white"
-                                style={{ borderColor: '#006241', color: '#006241' }}
+                                className="client-pill-outline flex items-center justify-center px-3 py-2 text-xs font-bold"
                                 title="Xem nhanh"
                               >
                                 <Eye size={14} />
@@ -859,8 +858,7 @@ export default function Products() {
                             ) : (
                               <Link
                                 to={`/client/products/${product.productId}`}
-                                className="flex items-center justify-center rounded-xl border-2 px-3 py-2 text-xs font-bold transition hover:bg-[#006241] hover:text-white"
-                                style={{ borderColor: '#006241', color: '#006241' }}
+                                className="client-pill-outline flex items-center justify-center px-3 py-2 text-xs font-bold"
                               >
                                 Xem
                               </Link>
@@ -868,7 +866,7 @@ export default function Products() {
                             <button
                               disabled={addingId === product.productId || outOfStock}
                               onClick={(e) => void handleAddToCart(product.productId, e)}
-                              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold text-white transition disabled:opacity-50 active:scale-95"
+                              className="client-pill-primary flex flex-1 items-center justify-center gap-1.5 py-2 text-xs font-bold disabled:opacity-50"
                               style={{ background: outOfStock ? '#9ca3af' : '#00754A' }}
                             >
                               {addingId === product.productId ? (
@@ -911,12 +909,12 @@ export default function Products() {
             onClick={() => setQuickViewId(null)}
           >
             <div
-              className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+              className="client-card relative w-full max-w-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setQuickViewId(null)}
-                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-md transition hover:bg-gray-100"
+                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 transition hover:bg-gray-100"
               >
                 <X size={18} />
               </button>
@@ -930,7 +928,7 @@ export default function Products() {
                     </div>
                   )}
                   {hasDiscount && discountPct > 0 && (
-                    <span className="absolute left-3 top-3 rounded-full bg-red-500 px-3 py-1 text-xs font-black text-white shadow-md">
+                    <span className="absolute left-3 top-3 rounded-full bg-red-500 px-3 py-1 text-xs font-black text-white">
                       -{discountPct}%
                     </span>
                   )}
@@ -988,8 +986,7 @@ export default function Products() {
                     <Link
                       to={`/client/products/${p.productId}`}
                       onClick={() => setQuickViewId(null)}
-                      className="flex flex-1 items-center justify-center rounded-xl border-2 px-4 py-3 text-sm font-bold transition hover:bg-[#006241] hover:text-white"
-                      style={{ borderColor: '#006241', color: '#006241' }}
+                      className="client-pill-outline flex flex-1 items-center justify-center px-4 py-3 text-sm font-bold"
                     >
                       Xem chi tiết
                     </Link>
@@ -998,7 +995,7 @@ export default function Products() {
                       onClick={(e) => {
                         void handleAddToCart(p.productId, e);
                       }}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-bold text-white transition disabled:opacity-50 active:scale-95"
+                      className="client-pill-primary flex flex-1 items-center justify-center gap-1.5 py-3 text-sm font-bold disabled:opacity-50"
                       style={{ background: out ? '#9ca3af' : '#00754A' }}
                     >
                       <ShoppingCart size={14} />

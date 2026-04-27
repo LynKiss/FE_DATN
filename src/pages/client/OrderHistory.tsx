@@ -92,14 +92,14 @@ export default function OrderHistory() {
 
   if (loading && !data) {
     return (
-      <div style={{ background: '#f2f0eb', minHeight: '60vh' }} className="flex items-center justify-center">
+      <div className="client-surface flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#006241] border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-4xl px-4 py-10 lg:px-6">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -146,7 +146,7 @@ export default function OrderHistory() {
             <div className="h-7 w-7 animate-spin rounded-full border-4 border-[#006241] border-t-transparent" />
           </div>
         ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-white py-20 text-center">
+          <div className="client-card flex flex-col items-center justify-center py-20 text-center">
             <Package size={48} className="mb-4 text-[#006241]/20" />
             <h2 className="font-black text-[#1E3932]">
               {filter === 'all' ? 'Chưa có đơn hàng' : 'Không có đơn hàng'}
@@ -154,8 +154,7 @@ export default function OrderHistory() {
             <p className="mt-1 text-sm text-gray-500">Hãy khám phá và đặt hàng ngay!</p>
             <Link
               to="/client/products"
-              className="mt-5 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white"
-              style={{ background: '#00754A' }}
+              className="client-pill-primary mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold"
             >
               <Leaf size={16} /> Khám phá sản phẩm
             </Link>
@@ -170,7 +169,7 @@ export default function OrderHistory() {
                   <Link
                     key={order.id}
                     to={`/client/orders/${order.id}`}
-                    className="block overflow-hidden rounded-2xl bg-white shadow-sm transition-all hover:shadow-md"
+                    className="client-card block overflow-hidden transition-all"
                   >
                     <div className="flex items-center justify-between border-b border-black/5 p-4">
                       <div className="flex items-center gap-3">

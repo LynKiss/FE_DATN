@@ -121,7 +121,7 @@ function ProductCard({ product, onAddToCart, adding }: {
   const outOfStock = product.quantityAvailable === 0;
 
   return (
-    <div className="group flex w-56 shrink-0 flex-col overflow-hidden rounded-2xl border border-black/6 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:w-64">
+    <div className="client-card-soft group flex w-56 shrink-0 flex-col overflow-hidden transition-all duration-300 sm:w-64">
       <div className="relative overflow-hidden bg-[#f2f0eb]">
         <Link to={`/client/products/${product.productId}`}>
           {product.primaryImageUrl ? (
@@ -134,7 +134,7 @@ function ProductCard({ product, onAddToCart, adding }: {
           )}
         </Link>
         {hasDiscount && discountPct > 0 && (
-          <span className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-black text-white shadow">
+          <span className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-black text-white">
             -{discountPct}%
           </span>
         )}
@@ -181,12 +181,11 @@ function ProductCard({ product, onAddToCart, adding }: {
           )}
           <div className="mt-3 flex gap-2">
             <Link to={`/client/products/${product.productId}`}
-              className="flex-1 rounded-full border border-[#006241] py-2 text-center text-xs font-bold text-[#006241] transition hover:bg-[#006241] hover:text-white">
+              className="client-pill-outline flex-1 py-2 text-center text-xs font-bold">
               Chi tiết
             </Link>
             <button onClick={(e) => onAddToCart(e)} disabled={adding || outOfStock}
-              className="flex flex-1 items-center justify-center gap-1 rounded-full py-2 text-xs font-bold text-white transition disabled:opacity-50 active:scale-95"
-              style={{ background: '#00754A' }}>
+              className="client-pill-primary flex flex-1 items-center justify-center gap-1 py-2 text-xs font-bold disabled:opacity-50">
               {adding
                 ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 : <><ShoppingCart size={11} />Thêm</>}
@@ -216,7 +215,7 @@ function ProductCarousel({ products, addingId, onAddToCart, loading }: {
     return (
       <div className="flex gap-4 overflow-hidden">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-80 w-56 shrink-0 animate-pulse rounded-2xl bg-white sm:w-64" />
+          <div key={i} className="client-card h-80 w-56 shrink-0 animate-pulse sm:w-64" />
         ))}
       </div>
     );
@@ -228,7 +227,7 @@ function ProductCarousel({ products, addingId, onAddToCart, loading }: {
     <div className="relative">
       {/* Prev button */}
       <button onClick={() => scroll('left')}
-        className="absolute -left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-lg transition hover:bg-[#006241] hover:text-white">
+        className="absolute -left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white transition hover:bg-[#006241] hover:text-white">
         <ChevronLeft size={18} />
       </button>
 
@@ -248,7 +247,7 @@ function ProductCarousel({ products, addingId, onAddToCart, loading }: {
 
       {/* Next button */}
       <button onClick={() => scroll('right')}
-        className="absolute -right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-lg transition hover:bg-[#006241] hover:text-white">
+        className="absolute -right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white transition hover:bg-[#006241] hover:text-white">
         <ChevronRight size={18} />
       </button>
     </div>
@@ -369,10 +368,6 @@ export default function Home() {
 
       {/* ===== HERO ===== */}
       {isSectionEnabled('hero') && (<section style={{ background: heroBgColor }} className="relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-        <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full opacity-20" style={{ background: '#006241', filter: 'blur(80px)' }} />
-        <div className="absolute right-1/3 top-0 h-96 w-96 rounded-full opacity-10" style={{ background: '#00754A', filter: 'blur(100px)' }} />
-
         <div className="mx-auto max-w-7xl px-6 py-16 lg:py-24">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
@@ -388,12 +383,11 @@ export default function Home() {
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link to="/client/products"
-                  className="flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 active:scale-95"
-                  style={{ background: '#00754A' }}>
+                  className="client-pill-primary flex items-center gap-2 px-7 py-3.5 text-sm font-bold">
                   {heroButtonText} <ArrowRight size={16} />
                 </Link>
                 <Link to="/client/news"
-                  className="flex items-center gap-2 rounded-full border px-7 py-3.5 text-sm font-bold transition-all hover:-translate-y-0.5"
+                  className="flex items-center gap-2 rounded-full border px-7 py-3.5 text-sm font-bold transition-all active:scale-95"
                   style={{ borderColor: 'rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.8)' }}>
                   Đọc tin tức
                 </Link>
@@ -415,9 +409,9 @@ export default function Home() {
                 <div className="leaf-3 absolute bottom-16 left-12 select-none text-lg">🌱</div>
                 <div className="leaf-4 absolute bottom-20 right-4 select-none text-2xl">🌾</div>
                 <div className="float-box absolute left-1/2 top-1/2" style={{ transform: 'translate(-50%, -50%) rotateX(10deg) rotateY(-15deg)', transformStyle: 'preserve-3d' }}>
-                  <div className="relative flex h-52 w-44 flex-col items-center justify-center overflow-hidden rounded-2xl"
-                    style={{ background: 'linear-gradient(145deg, #2d5a3d, #1a3d2a)', boxShadow: '8px 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: 'rgba(0,117,74,0.4)', border: '1px solid rgba(0,117,74,0.5)' }}>
+                  <div className="relative flex h-52 w-44 flex-col items-center justify-center overflow-hidden rounded-xl"
+                    style={{ background: '#1E3932', boxShadow: 'var(--client-card-shadow)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl" style={{ background: 'rgba(0,117,74,0.4)', border: '1px solid rgba(0,117,74,0.5)' }}>
                       <span className="text-4xl">🌾</span>
                     </div>
                     <p className="text-center text-xs font-black uppercase tracking-widest text-white/80">Phân bón</p>
@@ -425,7 +419,6 @@ export default function Home() {
                     <div className="mt-3 flex gap-1">
                       {[1,2,3,4,5].map((s) => <Star key={s} size={8} fill="#d4e9e2" className="text-[#d4e9e2]" />)}
                     </div>
-                    <div className="absolute inset-0 rounded-2xl" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%)' }} />
                   </div>
                 </div>
               </div>
@@ -443,7 +436,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {statsData.map((s) => (
-              <div key={s.label} className="rounded-2xl bg-white p-5 text-center shadow-sm">
+              <div key={s.label} className="client-card p-5 text-center">
                 <p className="text-3xl font-black" style={{ color: '#006241' }}>{s.value}</p>
                 <p className="mt-1 text-xs text-gray-500">{s.label}</p>
               </div>
@@ -470,7 +463,7 @@ export default function Home() {
                 const Icon = getCategoryIcon(cat.categorySlug);
                 return (
                   <Link key={cat.categoryId} to={`/client/products?categoryId=${cat.categoryId}`}
-                    className="group flex flex-col items-center gap-3 rounded-2xl bg-white p-4 text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+                    className="client-card group flex flex-col items-center gap-3 p-4 text-center transition-all duration-200">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full transition-all duration-200 group-hover:scale-110" style={{ background: '#d4e9e2' }}>
                       <Icon size={22} style={{ color: '#006241' }} />
                     </div>
@@ -530,7 +523,7 @@ export default function Home() {
       )}
 
       {/* ===== SALE BANNER ===== */}
-      {isSectionEnabled('sale_banner') && (<section style={{ background: 'linear-gradient(135deg, #c82014 0%, #e53e3e 100%)' }}>
+      {isSectionEnabled('sale_banner') && (<section style={{ background: '#c82014' }}>
         <div className="mx-auto max-w-7xl px-6 py-12">
           <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
             <div>
@@ -542,7 +535,7 @@ export default function Home() {
               <p className="mt-2 text-sm text-white/70">{saleBannerSubtitle}</p>
             </div>
             <Link to="/client/products"
-              className="shrink-0 rounded-full bg-white px-8 py-3.5 text-sm font-bold text-red-600 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-95">
+              className="shrink-0 rounded-full bg-white px-8 py-3.5 text-sm font-bold text-red-600 transition-all active:scale-95">
               {saleBannerButton}
             </Link>
           </div>
@@ -576,7 +569,6 @@ export default function Home() {
 
       {/* ===== WHY CHOOSE US ===== */}
       {isSectionEnabled('why_us') && (<section style={{ background: '#1E3932' }} className="relative overflow-hidden py-16">
-        <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         <div className="relative mx-auto max-w-7xl px-6">
           <div className="mb-12 text-center">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em]" style={{ color: '#d4e9e2' }}>Tại sao chọn chúng tôi</p>
@@ -584,7 +576,7 @@ export default function Home() {
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {whyUsData.map((item) => (
-              <div key={item.title} className="rounded-2xl p-6 text-center"
+              <div key={item.title} className="rounded-xl p-6 text-center"
                 style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full text-2xl" style={{ background: 'rgba(0,117,74,0.3)' }}>{item.emoji}</div>
                 <h3 className="mb-2 font-black text-white">{item.title}</h3>
@@ -604,7 +596,7 @@ export default function Home() {
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="rounded-2xl bg-[#f2f0eb] p-6">
+              <div key={t.name} className="rounded-xl bg-[#f2f0eb] p-6">
                 <div className="mb-4 flex gap-1">
                   {Array.from({ length: t.stars }).map((_, i) => <Star key={i} size={14} fill="#006241" className="text-[#006241]" />)}
                 </div>
@@ -640,7 +632,7 @@ export default function Home() {
             <div className="grid gap-6 md:grid-cols-3">
               {news.map((article, idx) => (
                 <Link key={article.newsId} to={`/client/news/${article.slug}`}
-                  className="group overflow-hidden rounded-2xl bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                  className="client-card group overflow-hidden transition-all duration-300">
                   <div className="relative overflow-hidden" style={{ background: '#d4e9e2' }}>
                     {article.titleImageUrl ? (
                       <img src={article.titleImageUrl} alt={article.title}
@@ -691,7 +683,7 @@ export default function Home() {
               { step: '2', emoji: '🛒', title: 'Đặt hàng online', desc: 'Thêm vào giỏ hàng, nhập địa chỉ giao hàng và chọn phương thức thanh toán phù hợp.' },
               { step: '3', emoji: '🚚', title: 'Nhận hàng tận nơi', desc: 'Hàng được đóng gói cẩn thận và giao đến tận tay bạn trong 2–4 ngày làm việc.' },
             ].map((item) => (
-              <div key={item.step} className="relative rounded-2xl bg-white p-6 text-center shadow-sm">
+              <div key={item.step} className="client-card relative p-6 text-center">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl" style={{ background: '#d4e9e2' }}>{item.emoji}</div>
                 <div className="absolute left-4 top-4 flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white" style={{ background: '#006241' }}>{item.step}</div>
                 <h3 className="mb-2 font-black text-[#1E3932]">{item.title}</h3>
@@ -701,8 +693,7 @@ export default function Home() {
           </div>
           <div className="mt-10 text-center">
             <Link to="/client/products"
-              className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 active:scale-95"
-              style={{ background: '#00754A' }}>
+              className="client-pill-primary inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold">
               <ShoppingCart size={16} /> Bắt đầu mua sắm
             </Link>
           </div>
@@ -729,13 +720,12 @@ export default function Home() {
                 onChange={(e) => { setNewsletterEmail(e.target.value); setNewsletterStatus('idle'); }}
                 placeholder="Nhập email của bạn..."
                 required
-                className="flex-1 rounded-full border border-black/10 bg-[#f2f0eb] px-5 py-3 text-sm outline-none focus:border-[#006241]"
+                className="client-input flex-1 px-5 py-3 text-sm"
               />
               <button
                 type="submit"
                 disabled={newsletterStatus === 'loading'}
-                className="rounded-full px-6 py-3 text-sm font-bold text-white transition active:scale-95 disabled:opacity-60"
-                style={{ background: '#00754A' }}
+                className="client-pill-primary px-6 py-3 text-sm font-bold disabled:opacity-60"
               >
                 {newsletterStatus === 'loading' ? '...' : 'Đăng ký'}
               </button>
