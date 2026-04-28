@@ -19,19 +19,19 @@
 
 @layer base {
   :root {
-    --theme-primary: #1b5e20;
-    --theme-primary-container: #347a3a;
-    --theme-primary-fixed: #d9f7c9;
-    --theme-surface: #f4f7f1;
+    --theme-primary: #006241;
+    --theme-primary-container: #00754A;
+    --theme-primary-fixed: #d4e9e2;
+    --theme-surface: #f2f0eb;
     --theme-surface-container: #ffffff;
-    --theme-on-surface: #16311f;
-    --theme-on-surface-variant: #607162;
-    --theme-accent: #d9f7c9;
-    --theme-sidebar-bg: #213529;
+    --theme-on-surface: rgba(0, 0, 0, 0.87);
+    --theme-on-surface-variant: rgba(0, 0, 0, 0.58);
+    --theme-accent: #d4e9e2;
+    --theme-sidebar-bg: #1E3932;
     --theme-elevated: rgba(255, 255, 255, 0.86);
     --theme-elevated-soft: rgba(255, 255, 255, 0.62);
-    --theme-panel-border: rgba(22, 49, 31, 0.08);
-    --theme-shadow: 0 30px 70px -36px rgba(21, 66, 18, 0.28);
+    --theme-panel-border: rgba(0, 0, 0, 0.06);
+    --theme-shadow: 0 0 0.5px rgba(0, 0, 0, 0.14), 0 1px 1px rgba(0, 0, 0, 0.24);
 
     --client-starbucks-green: #006241;
     --client-green-accent: #00754A;
@@ -161,6 +161,54 @@
   }
   .input-base:focus {
     border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  }
+
+  .admin-card,
+  .admin-panel,
+  .admin-modal {
+    border: 1px solid var(--theme-panel-border);
+    border-radius: 12px;
+    background: var(--theme-surface-container);
+    box-shadow: var(--theme-shadow);
+  }
+
+  .admin-card {
+    overflow: hidden;
+  }
+
+  .admin-panel {
+    padding: 1.25rem;
+  }
+
+  .admin-modal {
+    overflow: hidden;
+  }
+
+  .admin-pill,
+  .admin-pill-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 50px;
+    transition: all 0.2s ease;
+  }
+
+  .admin-pill:active,
+  .admin-pill-outline:active {
+    transform: scale(0.95);
+  }
+
+  .admin-pill-primary {
+    border: 1px solid #00754A;
+    background: #00754A;
+    color: #ffffff;
+  }
+
+  .admin-pill-outline {
+    border: 1px solid #00754A;
+    background: transparent;
+    color: #00754A;
   }
 
   .client-surface {

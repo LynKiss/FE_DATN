@@ -629,7 +629,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 pb-8">
-      <div className="overflow-hidden rounded-[2rem] border border-white/60 bg-[linear-gradient(135deg,rgba(27,94,32,0.95),rgba(52,122,58,0.82),rgba(214,165,29,0.78))] p-6 text-white shadow-[0_30px_80px_-45px_rgba(21,66,18,0.75)]">
+      <div className="overflow-hidden rounded-xl border border-[#1E3932] bg-[#1E3932] p-6 text-white shadow-sm">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] backdrop-blur">
@@ -1202,20 +1202,19 @@ function MetricCard({
   loading: boolean;
 }) {
   const toneStyles: Record<typeof tone, string> = {
-    green: 'from-green-50 to-white text-green-800',
-    emerald: 'from-emerald-50 to-white text-emerald-800',
-    blue: 'from-sky-50 to-white text-sky-800',
-    amber: 'from-amber-50 to-white text-amber-800',
-    orange: 'from-orange-50 to-white text-orange-800',
+    green: 'bg-green-50 text-green-800',
+    emerald: 'bg-emerald-50 text-emerald-800',
+    blue: 'bg-sky-50 text-sky-800',
+    amber: 'bg-amber-50 text-amber-800',
+    orange: 'bg-orange-50 text-orange-800',
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative overflow-hidden rounded-[1.7rem] border border-white/70 bg-gradient-to-br p-5 shadow-sm ${toneStyles[tone]}`}
+      className={`relative overflow-hidden rounded-xl border border-white/70 p-5 shadow-sm ${toneStyles[tone]}`}
     >
-      <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-current opacity-[0.08]" />
       <div className="relative flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-black uppercase tracking-widest text-on-surface-variant/70">{title}</p>
@@ -1244,7 +1243,7 @@ function ChartCard({
   className?: string;
 }) {
   return (
-    <section className={`rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur ${className}`}>
+    <section className={`rounded-xl border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur ${className}`}>
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-black text-on-surface">{title}</h3>
@@ -1271,7 +1270,7 @@ function DataPanel({
   className?: string;
 }) {
   return (
-    <section className={`rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur ${className}`}>
+    <section className={`rounded-xl border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur ${className}`}>
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-black text-on-surface">{title}</h3>

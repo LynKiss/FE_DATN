@@ -136,7 +136,7 @@ function ContentEditModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg overflow-hidden rounded-[2rem] bg-white shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-sm flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-on-surface-variant/8 shrink-0">
           <h3 className="text-base font-black text-on-surface">
@@ -556,7 +556,7 @@ export default function Interface() {
                 <p className="text-sm text-on-surface-variant">Thay đổi trực tiếp hiển thị các phần trên trang chủ client.</p>
               </div>
             </div>
-            <div className="overflow-hidden rounded-[2rem] border border-on-surface-variant/8 bg-white">
+            <div className="overflow-hidden rounded-xl border border-on-surface-variant/8 bg-white">
               {sections.map((sec, i) => (
                 <div
                   key={sec.id}
@@ -608,7 +608,7 @@ export default function Interface() {
 
             {/* Current featured */}
             {featuredProducts.length > 0 && (
-              <div className="mb-5 rounded-[2rem] border border-on-surface-variant/8 bg-white p-5">
+              <div className="mb-5 rounded-xl border border-on-surface-variant/8 bg-white p-5">
                 <p className="mb-3 text-xs font-black uppercase tracking-wider text-on-surface-variant/50">Đang được đánh dấu nổi bật</p>
                 <div className="space-y-2">
                   {featuredProducts.map((p) => (
@@ -637,7 +637,7 @@ export default function Interface() {
             )}
 
             {/* Search to add */}
-            <div className="rounded-[2rem] border border-on-surface-variant/8 bg-white p-5">
+            <div className="rounded-xl border border-on-surface-variant/8 bg-white p-5">
               <p className="mb-3 text-xs font-black uppercase tracking-wider text-on-surface-variant/50">Tìm sản phẩm để thêm vào nổi bật</p>
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -717,7 +717,7 @@ export default function Interface() {
             <div className="grid gap-4 lg:grid-cols-3">
               {THEME_OPTIONS.map((theme) => (
                 <button key={theme.id} onClick={() => setActiveTheme(theme.id)}
-                  className={`group relative overflow-hidden rounded-[2rem] border-2 p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${activeTheme === theme.id ? 'border-primary shadow-md' : 'border-on-surface-variant/10 bg-white hover:border-primary/30'}`}>
+                  className={`group relative overflow-hidden rounded-xl border-2 p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${activeTheme === theme.id ? 'border-primary shadow-md' : 'border-on-surface-variant/10 bg-white hover:border-primary/30'}`}>
                   <div className="mb-4 flex h-28 items-center justify-center overflow-hidden rounded-2xl" style={{ background: theme.bg }}>
                     <div className="flex gap-2">
                       <div className="h-12 w-12 rounded-xl shadow-md" style={{ background: theme.primary }} />
@@ -746,7 +746,7 @@ export default function Interface() {
               <h2 className="text-xl font-black text-primary">Cài đặt hiển thị</h2>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5">
+              <div className="rounded-xl border border-on-surface-variant/10 bg-white p-5">
                 <p className="mb-3 font-bold text-on-surface flex items-center gap-2">
                   {mode === 'light' ? <Sun size={18} className="text-amber-500" /> : <Moon size={18} className="text-indigo-400" />}
                   Chế độ màu
@@ -760,7 +760,7 @@ export default function Interface() {
                   ))}
                 </div>
               </div>
-              <div className="rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5">
+              <div className="rounded-xl border border-on-surface-variant/10 bg-white p-5">
                 <p className="mb-3 font-bold text-on-surface flex items-center gap-2"><Type size={18} className="text-primary" />Kiểu chữ</p>
                 <div className="space-y-2">
                   {TYPOGRAPHY_OPTIONS.map((t) => (
@@ -771,7 +771,7 @@ export default function Interface() {
                   ))}
                 </div>
               </div>
-              <div className="rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5">
+              <div className="rounded-xl border border-on-surface-variant/10 bg-white p-5">
                 <p className="mb-3 font-bold text-on-surface flex items-center gap-2"><Grid3X3 size={18} className="text-primary" />Mật độ layout</p>
                 <div className="space-y-2">
                   {[{ id: 'compact', label: 'Gọn' }, { id: 'comfortable', label: 'Thoải mái' }, { id: 'spacious', label: 'Rộng rãi' }].map((d) => (
@@ -797,7 +797,7 @@ export default function Interface() {
 
             <div className="grid gap-5 lg:grid-cols-2">
               {/* Color customization */}
-              <div className="rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5 space-y-4">
+              <div className="rounded-xl border border-on-surface-variant/10 bg-white p-5 space-y-4">
                 <p className="font-bold text-on-surface flex items-center gap-2">
                   <Palette size={18} className="text-primary" />
                   Màu sắc tùy chỉnh
@@ -833,7 +833,7 @@ export default function Interface() {
               </div>
 
               {/* Layout & Brand */}
-              <div className="rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5 space-y-4">
+              <div className="rounded-xl border border-on-surface-variant/10 bg-white p-5 space-y-4">
                 <p className="font-bold text-on-surface flex items-center gap-2">
                   <Settings2 size={18} className="text-primary" />
                   Layout & Thương hiệu
@@ -937,7 +937,7 @@ export default function Interface() {
             </div>
 
             {/* Live preview */}
-            <div className="mt-6 rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5">
+            <div className="mt-6 rounded-xl border border-on-surface-variant/10 bg-white p-5">
               <p className="mb-4 font-bold text-on-surface flex items-center gap-2">
                 <Eye size={18} className="text-primary" />
                 Xem trước thay đổi
@@ -1014,7 +1014,7 @@ export default function Interface() {
                 ))}
               </div>
             </div>
-            <div className="overflow-hidden rounded-[2rem] border border-on-surface-variant/10 bg-white">
+            <div className="overflow-hidden rounded-xl border border-on-surface-variant/10 bg-white">
               <div className="flex items-center gap-2 border-b border-on-surface-variant/8 bg-surface px-5 py-3">
                 <div className="flex gap-1.5">
                   {['#ef4444', '#f59e0b', '#22c55e'].map((c) => <div key={c} className="h-2.5 w-2.5 rounded-full" style={{ background: c }} />)}
@@ -1046,7 +1046,7 @@ export default function Interface() {
               <Plus size={16} /> Thêm khối
             </button>
           </div>
-          <div className="overflow-hidden rounded-[2rem] border border-on-surface-variant/8 bg-white">
+          <div className="overflow-hidden rounded-xl border border-on-surface-variant/8 bg-white">
             {blocks.map((block, index) => (
               <div key={block.id}
                 className={`group flex items-center justify-between px-5 py-4 transition-colors hover:bg-primary/[0.02] ${index > 0 ? 'border-t border-on-surface-variant/5' : ''} ${block.status === 'hidden' ? 'opacity-50' : ''}`}>

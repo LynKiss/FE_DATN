@@ -588,7 +588,7 @@ export default function Payments() {
                 return (
                   <section
                     key={method.key}
-                    className={`overflow-hidden rounded-[2rem] border bg-white shadow-sm transition ${
+                    className={`overflow-hidden rounded-xl border bg-white shadow-sm transition ${
                       cfg.isActive
                         ? 'border-on-surface/12'
                         : 'border-on-surface/6 opacity-70'
@@ -718,7 +718,7 @@ export default function Payments() {
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           ) : (
-            <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+            <section className="overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm">
               <div className="border-b border-on-surface/8 px-6 py-5">
                 <h2 className="text-lg font-black text-on-surface">
                   Cấu hình SMTP
@@ -892,7 +892,7 @@ export default function Payments() {
             ))}
           </div>
 
-          <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
+          <section className="rounded-xl border border-on-surface/8 bg-white p-5 shadow-sm">
             <div className="grid gap-3 sm:grid-cols-[1fr_180px_160px_auto]">
               <label className="relative">
                 <Search
@@ -946,7 +946,7 @@ export default function Payments() {
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+          <section className="overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="min-w-full text-left">
                 <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">

@@ -226,7 +226,7 @@ export default function AgingDebtPage() {
       {/* Record payment modal */}
       {payingPo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-on-surface">Ghi thanh toán — {payingPo.poCode}</h3>
               <button onClick={() => setPayingPo(null)} className="rounded-lg p-1.5 hover:bg-surface-variant"><X className="h-4 w-4" /></button>

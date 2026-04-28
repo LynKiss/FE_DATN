@@ -216,7 +216,7 @@ export default function ProductCreate() {
           </p>
         </div>
         <button type="button" onClick={() => void handleSubmit()} disabled={saving || loading}
-          className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-primary-container px-6 py-3 text-sm font-black text-white shadow-xl shadow-primary/20 disabled:opacity-60">
+          className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-black text-white shadow-sm shadow-primary/20 disabled:opacity-60">
           {saving ? <LoaderCircle size={18} className="animate-spin" /> : <Save size={18} />}
           <span>{isVietnamese ? 'Lưu sản phẩm' : 'Save product'}</span>
         </button>
@@ -225,7 +225,7 @@ export default function ProductCreate() {
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         {/* Left: main info */}
         <div className="space-y-6">
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm sm:p-8">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm sm:p-8">
             <p className="mb-5 text-[11px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
               {isVietnamese ? 'Thông tin cơ bản' : 'Basic information'}
             </p>
@@ -338,14 +338,14 @@ export default function ProductCreate() {
         {/* Right: image + hints */}
         <aside className="space-y-6">
           {/* Primary image upload */}
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
             <p className="mb-1 text-[10px] font-black uppercase tracking-[0.24em] text-on-surface-variant/50">
               {isVietnamese ? 'Ảnh đại diện' : 'Primary image'}
             </p>
             <p className="mb-4 text-xs text-on-surface-variant/60">
               {isVietnamese ? 'Ảnh hiển thị chính trong danh sách và trang chi tiết.' : 'Main image shown in listings and detail page.'}
             </p>
-            <label className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center gap-3 rounded-[1.75rem] border border-dashed border-on-surface/15 bg-surface p-4 text-center transition hover:border-primary/40">
+            <label className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-on-surface/15 bg-surface p-4 text-center transition hover:border-primary/40">
               {imagePreviews.length > 0 ? (
                 <div className="grid w-full grid-cols-2 gap-3">
                   {imagePreviews.map((preview, index) => (
@@ -390,7 +390,7 @@ export default function ProductCreate() {
 
           {/* Price guidance */}
           {formState.productPriceSale && formState.productPrice && (
-            <section className="rounded-[2.5rem] border border-amber-100 bg-amber-50 p-5">
+            <section className="rounded-xl border border-amber-100 bg-amber-50 p-5">
               <p className="text-xs font-black uppercase tracking-wider text-amber-700">Xem trước giảm giá</p>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-sm">
@@ -412,7 +412,7 @@ export default function ProductCreate() {
           )}
 
           {/* Hints */}
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <PackagePlus size={22} />

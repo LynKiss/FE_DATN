@@ -136,7 +136,7 @@ export default function PricingPage() {
       </div>
 
       {/* List */}
-      <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
+      <section className="rounded-xl border border-on-surface/8 bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
           <label className="relative">
             <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
@@ -159,7 +159,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
@@ -363,7 +363,7 @@ function CalcModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/50 p-4 pt-8">
-      <div className="w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white shadow-2xl" style={{ maxHeight: '92vh' }}>
+      <div className="w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-sm" style={{ maxHeight: '92vh' }}>
         <div className="sticky top-0 flex items-center justify-between border-b border-on-surface/8 bg-white px-6 py-5">
           <h2 className="text-xl font-black text-on-surface">Tính giá bán đề xuất</h2>
           <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-full border border-on-surface/10 hover:bg-on-surface/5">
@@ -554,7 +554,7 @@ function CalcModal({
       {/* Apply confirmation dialog */}
       {applyModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl space-y-5">
+          <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-sm space-y-5">
             <h3 className="text-lg font-black text-on-surface">Áp dụng giá lên sản phẩm</h3>
             <p className="text-sm text-on-surface-variant">Bạn có thể điều chỉnh giá trước khi áp dụng:</p>
             <div className="space-y-4">

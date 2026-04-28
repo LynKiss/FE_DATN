@@ -168,6 +168,7 @@ export default function Orders() {
   const isVietnamese = language === 'vi';
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
+  const openOrderId = searchParams.get('openOrder');
 
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [ordersMeta, setOrdersMeta] = useState<OrderResponse['meta']>({
@@ -223,6 +224,18 @@ export default function Orders() {
   );
 
   const activeMapPoint = tracking?.activeLocation ?? tracking?.manualLocation ?? tracking?.gpsLocation ?? null;
+
+  useEffect(() => {
+    if (!openOrderId) {
+      return;
+    }
+
+    void openOrderDetail(openOrderId).finally(() => {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('openOrder');
+      setSearchParams(nextParams, { replace: true });
+    });
+  }, [openOrderId]);
 
   useEffect(() => {
     const nextParams = new URLSearchParams();
@@ -583,7 +596,7 @@ export default function Orders() {
         </p>
       </div>
 
-      <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
+      <section className="admin-panel">
         <div className="grid gap-3 lg:grid-cols-[1.3fr_240px_140px_auto]">
           <label className="relative">
             <Search
@@ -598,14 +611,14 @@ export default function Orders() {
                   ? 'Tim theo ma don, khach hang, so dien thoai'
                   : 'Search by order, customer, phone'
               }
-              className="w-full rounded-2xl border border-on-surface/10 bg-surface py-3 pl-11 pr-4 text-sm outline-none"
+              className="w-full rounded-xl border border-on-surface/10 bg-surface py-3 pl-11 pr-4 text-sm outline-none"
             />
           </label>
 
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value as 'all' | OrderStatus)}
-            className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
+            className="rounded-xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
           >
             <option value="all">{isVietnamese ? 'Tất cả trạng thái' : 'All statuses'}</option>
             {STATUS_OPTIONS.map((item) => (
@@ -621,7 +634,7 @@ export default function Orders() {
               setLimit(Number(event.target.value));
               setPage(1);
             }}
-            className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
+            className="rounded-xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
           >
             {[10, 20, 50].map((value) => (
               <option key={value} value={value}>
@@ -635,7 +648,7 @@ export default function Orders() {
               type="button"
               onClick={() => setReloadKey((current) => current + 1)}
               disabled={loading}
-              className="inline-flex items-center gap-2 rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary disabled:opacity-50"
+              className="admin-pill admin-pill-outline px-4 py-3 text-sm font-semibold disabled:opacity-50"
             >
               <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
               {isVietnamese ? 'Làm mới' : 'Refresh'}
@@ -669,7 +682,7 @@ export default function Orders() {
               key={nextStatusLabel}
               type="button"
               onClick={() => setStatus(nextStatusLabel as OrderStatus)}
-              className={`group rounded-2xl border p-4 text-left shadow-sm transition hover:scale-[1.02] hover:shadow-md ${
+              className={`group rounded-xl border p-4 text-left shadow-sm transition hover:scale-[1.02] ${
                 status === nextStatusLabel
                   ? 'border-primary bg-primary/5'
                   : `border-on-surface/8 ${bg}`
@@ -685,12 +698,12 @@ export default function Orders() {
       </div>
 
       {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
           {error}
         </div>
       ) : null}
 
-      <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+      <section className="admin-card">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left">
             <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
@@ -796,19 +809,19 @@ export default function Orders() {
                 href={`/admin/invoices/${selectedOrder.id}/print`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-2xl border border-primary/40 bg-white px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-primary/5"
+                className="admin-pill admin-pill-outline px-4 py-2.5 text-sm font-bold"
               >
                 🖨 {isVietnamese ? 'In hóa đơn' : 'Print invoice'}
               </a>
               {getAllowedNextStatuses(selectedOrder.status).length === 0 ? (
-                <span className="rounded-2xl border border-on-surface/10 bg-surface/60 px-4 py-2.5 text-sm italic text-on-surface-variant/60">
+                <span className="rounded-xl border border-on-surface/10 bg-surface/60 px-4 py-2.5 text-sm italic text-on-surface-variant/60">
                   {isVietnamese ? 'Đơn hàng đã kết thúc' : 'Order is finalized'}
                 </span>
               ) : (
                 <select
                   value={nextStatus}
                   onChange={(event) => setNextStatus(event.target.value as OrderStatus)}
-                  className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none"
+                  className="rounded-xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none"
                 >
                   {getAllowedNextStatuses(selectedOrder.status).map((item) => (
                     <option key={item} value={item}>
@@ -823,13 +836,13 @@ export default function Orders() {
                     value={statusNote}
                     onChange={(event) => setStatusNote(event.target.value)}
                     placeholder={isVietnamese ? 'Ghi chú cập nhật' : 'Status note'}
-                    className="w-full rounded-2xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none sm:w-64"
+                    className="w-full rounded-xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none sm:w-64"
                   />
                   <button
                     type="button"
                     onClick={() => void handleUpdateStatus()}
                     disabled={updatingStatus}
-                    className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-black text-white disabled:opacity-60"
+                    className="admin-pill admin-pill-primary px-5 py-2.5 text-sm font-black disabled:opacity-60"
                   >
                     {updatingStatus
                       ? isVietnamese
@@ -874,7 +887,7 @@ export default function Orders() {
                   />
                 </div>
 
-                <div className="rounded-[1.5rem] border border-on-surface/8 bg-surface/50 p-4">
+                <div className="rounded-xl border border-on-surface/8 bg-surface/50 p-4">
                   <h3 className="text-sm font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
                     {isVietnamese ? 'Sản phẩm trong đơn' : 'Order items'}
                   </h3>
@@ -882,7 +895,7 @@ export default function Orders() {
                     {selectedOrder.items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between gap-4 rounded-2xl bg-white px-4 py-3"
+                        className="flex items-center justify-between gap-4 rounded-xl bg-white px-4 py-3"
                       >
                         <div>
                           <p className="font-semibold text-on-surface">{item.productName}</p>
@@ -903,7 +916,7 @@ export default function Orders() {
               </div>
 
               <div className="space-y-6">
-                <div className="rounded-[1.5rem] border border-on-surface/8 bg-surface/50 p-4">
+                <div className="rounded-xl border border-on-surface/8 bg-surface/50 p-4">
                   <h3 className="text-sm font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
                     {isVietnamese ? 'Tổng hợp thanh toán' : 'Payment summary'}
                   </h3>
@@ -936,7 +949,7 @@ export default function Orders() {
                   </div>
                 </div>
 
-                <div className="rounded-[1.5rem] border border-on-surface/8 bg-surface/50 p-4">
+                <div className="rounded-xl border border-on-surface/8 bg-surface/50 p-4">
                   <h3 className="text-sm font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
                     {isVietnamese ? 'Lịch sử trạng thái' : 'Status history'}
                   </h3>
@@ -947,7 +960,7 @@ export default function Orders() {
                       </p>
                     ) : (
                       selectedOrder.history.map((item) => (
-                        <div key={item.id} className="rounded-2xl bg-white px-4 py-3">
+                        <div key={item.id} className="rounded-xl bg-white px-4 py-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <p className="font-semibold text-on-surface">
                               {(item.oldStatus
@@ -974,7 +987,7 @@ export default function Orders() {
               </div>
             </div>
 
-            <section className="rounded-[1.5rem] border border-on-surface/8 bg-surface/50 p-4">
+            <section className="rounded-xl border border-on-surface/8 bg-surface/50 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
@@ -1016,7 +1029,7 @@ export default function Orders() {
                 <>
                   <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                     <div className="space-y-4">
-                      <div className="overflow-hidden rounded-2xl border border-on-surface/8 bg-white">
+                      <div className="overflow-hidden rounded-xl border border-on-surface/8 bg-white">
                         <div className="flex items-center justify-between px-4 py-3">
                           <p className="text-xs font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
                             {isVietnamese ? 'Vị trí đang dùng để hiển thị' : 'Active location'}
@@ -1069,21 +1082,21 @@ export default function Orders() {
                         <button
                           type="button"
                           onClick={() => seedManualFrom('active')}
-                          className="rounded-2xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
+                          className="rounded-xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
                         >
                           {isVietnamese ? 'Lấy vị trí đang hiển thị' : 'Use active point'}
                         </button>
                         <button
                           type="button"
                           onClick={() => seedManualFrom('gps')}
-                          className="rounded-2xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
+                          className="rounded-xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
                         >
                           {isVietnamese ? 'Lấy từ GPS' : 'Use GPS point'}
                         </button>
                         <button
                           type="button"
                           onClick={() => seedManualFrom('manual')}
-                          className="rounded-2xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
+                          className="rounded-xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
                         >
                           {isVietnamese ? 'Lấy từ demo hiện tại' : 'Use manual point'}
                         </button>
@@ -1100,7 +1113,7 @@ export default function Orders() {
                             key={item.label}
                             type="button"
                             onClick={() => nudgeManual(item.lat, item.lng)}
-                            className="rounded-2xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-bold text-on-surface transition hover:border-primary/30 hover:text-primary"
+                            className="rounded-xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-bold text-on-surface transition hover:border-primary/30 hover:text-primary"
                           >
                             {isVietnamese ? `Dich ${item.label}` : `Move ${item.label}`}
                           </button>
@@ -1109,7 +1122,7 @@ export default function Orders() {
                     </div>
 
                     <div className="space-y-4">
-                      <div className="rounded-2xl border border-on-surface/8 bg-white p-4">
+                      <div className="rounded-xl border border-on-surface/8 bg-white p-4">
                         <p className="text-xs font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
                           {isVietnamese ? 'Nguồn demo / manual' : 'Manual / demo source'}
                         </p>
@@ -1123,7 +1136,7 @@ export default function Orders() {
                               }))
                             }
                             placeholder="Latitude"
-                            className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
+                            className="rounded-xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                           />
                           <input
                             value={manualForm.longitude}
@@ -1134,7 +1147,7 @@ export default function Orders() {
                               }))
                             }
                             placeholder="Longitude"
-                            className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
+                            className="rounded-xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                           />
                           <input
                             value={manualForm.note}
@@ -1145,7 +1158,7 @@ export default function Orders() {
                               }))
                             }
                             placeholder={isVietnamese ? 'Ghi chú demo' : 'Manual note'}
-                            className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
+                            className="rounded-xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                           />
                           <button
                             type="button"
@@ -1155,7 +1168,7 @@ export default function Orders() {
                               !manualForm.latitude.trim() ||
                               !manualForm.longitude.trim()
                             }
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white transition hover:bg-primary/90 disabled:opacity-50"
+                            className="admin-pill admin-pill-primary px-4 py-3 text-sm font-bold disabled:opacity-50"
                           >
                             {manualSaving ? (
                               <LoaderCircle size={14} className="animate-spin" />
@@ -1167,7 +1180,7 @@ export default function Orders() {
                         </div>
                       </div>
 
-                      <div className="rounded-2xl border border-on-surface/8 bg-white p-4">
+                      <div className="rounded-xl border border-on-surface/8 bg-white p-4">
                         <p className="text-xs font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
                           {isVietnamese ? 'Nguồn GPS / live' : 'Live GPS source'}
                         </p>
@@ -1181,7 +1194,7 @@ export default function Orders() {
                               }))
                             }
                             placeholder="Latitude"
-                            className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
+                            className="rounded-xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                           />
                           <input
                             value={liveForm.longitude}
@@ -1192,7 +1205,7 @@ export default function Orders() {
                               }))
                             }
                             placeholder="Longitude"
-                            className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
+                            className="rounded-xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                           />
                           <div className="grid gap-3 sm:grid-cols-2">
                             <input
@@ -1204,7 +1217,7 @@ export default function Orders() {
                                 }))
                               }
                               placeholder={isVietnamese ? 'Hướng đi' : 'Heading'}
-                              className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
+                              className="rounded-xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                             />
                             <input
                               value={liveForm.speedKph}
@@ -1215,7 +1228,7 @@ export default function Orders() {
                                 }))
                               }
                               placeholder={isVietnamese ? 'Tốc độ kph' : 'Speed kph'}
-                              className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
+                              className="rounded-xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                             />
                           </div>
                           <input
@@ -1227,7 +1240,7 @@ export default function Orders() {
                               }))
                             }
                             placeholder={isVietnamese ? 'Nguồn GPS / thiết bị' : 'GPS provider / device'}
-                            className="rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
+                            className="rounded-xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
                           />
                           <button
                             type="button"
@@ -1237,7 +1250,7 @@ export default function Orders() {
                               !liveForm.latitude.trim() ||
                               !liveForm.longitude.trim()
                             }
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-bold text-primary transition hover:bg-primary/15 disabled:opacity-50"
+                            className="admin-pill admin-pill-outline px-4 py-3 text-sm font-bold disabled:opacity-50"
                           >
                             {liveSaving ? (
                               <LoaderCircle size={14} className="animate-spin" />
@@ -1351,7 +1364,7 @@ function Badge({ children, tone }: { children: string; tone: BadgeTone }) {
 
 function DetailCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-surface px-4 py-3">
+    <div className="rounded-xl bg-surface px-4 py-3">
       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
         {label}
       </p>
@@ -1381,7 +1394,7 @@ function SummaryRow({
 
 function InfoPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-surface px-3 py-2">
+    <div className="rounded-xl bg-surface px-3 py-2">
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
         {label}
       </p>

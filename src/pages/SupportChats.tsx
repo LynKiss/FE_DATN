@@ -310,7 +310,7 @@ export default function SupportChats() {
         </div>
       </div>
 
-      <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
+      <section className="rounded-xl border border-on-surface/8 bg-white p-5 shadow-sm">
         <form onSubmit={handleStartConversation} className="grid gap-3 lg:grid-cols-[1fr_auto]">
           <label className="relative">
             <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40" />
@@ -363,7 +363,7 @@ export default function SupportChats() {
 
       <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
         <section
-          className="flex flex-col overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm"
+          className="flex flex-col overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm"
           style={{ maxHeight: '74vh' }}
         >
           <div className="shrink-0 border-b border-on-surface/8 px-5 py-4">
@@ -432,7 +432,7 @@ export default function SupportChats() {
         </section>
 
         <section
-          className="flex flex-col overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm"
+          className="flex flex-col overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm"
           style={{ maxHeight: '74vh' }}
         >
           {selectedConv ? (

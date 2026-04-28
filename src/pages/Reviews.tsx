@@ -253,7 +253,7 @@ export default function Reviews() {
       </div>
 
       {/* Filter bar */}
-      <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
+      <section className="rounded-xl border border-on-surface/8 bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-[1fr_180px_160px_auto]">
           <label className="relative">
             <Search
@@ -311,7 +311,7 @@ export default function Reviews() {
       ) : null}
 
       {/* Table */}
-      <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left">
             <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">

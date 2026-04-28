@@ -309,7 +309,7 @@ export default function ProductInventoryDamage() {
       {tab === 'damage' && (
         <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
           {/* Product picker */}
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-sm font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
               Chọn sản phẩm
             </h2>
@@ -361,7 +361,7 @@ export default function ProductInventoryDamage() {
           </section>
 
           {/* Damage form */}
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm space-y-5">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm space-y-5">
             <h2 className="text-sm font-black uppercase tracking-[0.2em] text-on-surface-variant/50">Thông tin hàng hỏng</h2>
             {selectedProduct ? (
               <div className="rounded-2xl bg-primary/5 px-4 py-3">
@@ -422,7 +422,7 @@ export default function ProductInventoryDamage() {
       {tab === 'return' && (
         <div className="space-y-6">
           {/* Step 1: Lookup order */}
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
             <h2 className="mb-1 text-base font-black text-on-surface">Bước 1 — Tra cứu đơn hàng</h2>
             <p className="mb-4 text-sm text-on-surface-variant">Nhập mã đơn hàng để tự động lấy danh sách sản phẩm cần trả.</p>
             <div className="flex gap-3">
@@ -464,7 +464,7 @@ export default function ProductInventoryDamage() {
 
           {/* Step 2: Return lines */}
           {returnLines.length > 0 && (
-            <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm space-y-5">
+            <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm space-y-5">
               <h2 className="text-base font-black text-on-surface">Bước 2 — Chọn sản phẩm & lý do trả</h2>
               <p className="text-sm text-on-surface-variant">Chỉnh số lượng về 0 nếu không trả mặt hàng đó. Mỗi dòng ghi một giao dịch trả riêng.</p>
 
@@ -577,7 +577,7 @@ export default function ProductInventoryDamage() {
           )}
 
           {/* Return history */}
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white shadow-sm overflow-hidden">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white shadow-sm overflow-hidden">
             <button
               type="button"
               onClick={() => setShowHistory((v) => !v)}

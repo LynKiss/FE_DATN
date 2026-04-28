@@ -180,7 +180,7 @@ export default function CreditLimitsPage() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-on-surface">Cài hạn mức tín dụng</h3>
               <button onClick={() => { setShowModal(false); setForm({ userId: '', creditLimit: '', notes: '' }); }} className="rounded-lg p-1.5 hover:bg-surface-variant">

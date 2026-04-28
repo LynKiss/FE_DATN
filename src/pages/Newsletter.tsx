@@ -497,7 +497,7 @@ export default function Newsletter() {
       </div>
 
       {activeTab === 'subscribers' && (
-        <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+        <section className="overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-on-surface/8 px-6 py-5">
             <div className="flex items-center gap-3">
               <select
@@ -640,7 +640,7 @@ export default function Newsletter() {
           </div>
 
           <section
-            className={`rounded-[2rem] border px-5 py-4 shadow-sm ${
+            className={`rounded-xl border px-5 py-4 shadow-sm ${
               automation.smtp.isConfigured
                 ? 'border-emerald-200 bg-emerald-50'
                 : 'border-amber-200 bg-amber-50'
@@ -687,7 +687,7 @@ export default function Newsletter() {
               <LoaderCircle size={28} className="animate-spin text-primary" />
             </div>
           ) : campaigns.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-[2rem] border border-on-surface/8 bg-white py-16 text-on-surface-variant shadow-sm">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-on-surface/8 bg-white py-16 text-on-surface-variant shadow-sm">
               <FileText size={40} className="mb-3 text-primary/30" />
               <p className="text-sm">Chưa có chiến dịch nào. Hãy tạo chiến dịch đầu tiên.</p>
             </div>
@@ -696,7 +696,7 @@ export default function Newsletter() {
               {campaigns.map((campaign) => (
                 <section
                   key={campaign.id}
-                  className="rounded-[2rem] border border-on-surface/8 bg-white px-6 py-5 shadow-sm"
+                  className="rounded-xl border border-on-surface/8 bg-white px-6 py-5 shadow-sm"
                 >
                   <div className="flex flex-wrap items-start gap-4">
                     <div
@@ -818,7 +818,7 @@ export default function Newsletter() {
             />
           </div>
 
-          <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+          <section className="overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm">
             <div className="border-b border-on-surface/8 px-6 py-5">
               <h2 className="text-lg font-black text-on-surface">
                 Cấu hình gửi mail tự động
@@ -1025,7 +1025,7 @@ export default function Newsletter() {
       {showEditor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div
-            className="flex w-full max-w-3xl flex-col rounded-[2rem] bg-white shadow-2xl"
+            className="flex w-full max-w-3xl flex-col rounded-xl bg-white shadow-sm"
             style={{ maxHeight: '90vh' }}
           >
             <div className="flex items-center justify-between border-b border-on-surface/8 px-6 py-5">
@@ -1115,7 +1115,7 @@ export default function Newsletter() {
       {previewCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div
-            className="flex w-full max-w-3xl flex-col rounded-[2rem] bg-white shadow-2xl"
+            className="flex w-full max-w-3xl flex-col rounded-xl bg-white shadow-sm"
             style={{ maxHeight: '90vh' }}
           >
             <div className="flex items-center justify-between border-b border-on-surface/8 px-6 py-5">

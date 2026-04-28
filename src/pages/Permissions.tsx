@@ -169,7 +169,7 @@ export default function Permissions() {
 
   if (!canManagePermissions) {
     return (
-      <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-8 text-amber-800">
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-8 text-amber-800">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100">
           <ShieldCheck size={24} />
         </div>
@@ -203,7 +203,7 @@ export default function Permissions() {
           type="button"
           onClick={() => void handleSave()}
           disabled={saving || loading}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-container px-6 py-3 text-sm font-black text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-black text-white shadow-sm shadow-primary/20 transition-all hover:-translate-y-0.5 disabled:opacity-60"
         >
           {saving ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}
           {isVietnamese ? 'Lưu phân quyền' : 'Save permissions'}
@@ -216,7 +216,7 @@ export default function Permissions() {
         </div>
       ) : null}
 
-      <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-8 shadow-sm">
+      <section className="rounded-xl border border-on-surface-variant/5 bg-white p-8 shadow-sm">
         <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
           <div className="space-y-3">
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
@@ -287,7 +287,7 @@ export default function Permissions() {
               groupedPermissions.map(([groupName, items]) => (
                 <div
                   key={groupName}
-                  className="overflow-hidden rounded-[1.5rem] border border-on-surface/8"
+                  className="overflow-hidden rounded-xl border border-on-surface/8"
                 >
                   <div className="flex items-center justify-between bg-surface/70 px-5 py-3">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-on-surface-variant/70">

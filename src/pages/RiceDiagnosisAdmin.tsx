@@ -355,7 +355,7 @@ export default function RiceDiagnosisAdmin() {
 
   if (!canManage) {
     return (
-      <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-8 text-amber-800">
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-8 text-amber-800">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100">
           <ShieldCheck size={24} />
         </div>
@@ -399,7 +399,7 @@ export default function RiceDiagnosisAdmin() {
           <button
             type="button"
             onClick={openCreate}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-container px-5 py-3 text-sm font-black text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black text-white shadow-sm shadow-primary/20 transition hover:-translate-y-0.5"
           >
             <Plus size={16} />
             Thêm bệnh mới
@@ -408,7 +408,7 @@ export default function RiceDiagnosisAdmin() {
       </div>
 
       {/* Flask status — compact horizontal banner */}
-      <div className="rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+      <div className="rounded-xl border border-on-surface/8 bg-white shadow-sm">
         <div className="flex flex-wrap items-center gap-4 px-6 py-4">
           <div className="flex items-center gap-3">
             {serviceStatus?.reachable ? (
@@ -468,7 +468,7 @@ export default function RiceDiagnosisAdmin() {
       </div>
 
       {/* Search / filter + disease grid — full width */}
-      <section className="rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+      <section className="rounded-xl border border-on-surface/8 bg-white shadow-sm">
         <div className="flex flex-wrap items-center gap-3 border-b border-on-surface/8 px-6 py-4">
           <div className="relative min-w-[220px] flex-1">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant/40" />
@@ -507,7 +507,7 @@ export default function RiceDiagnosisAdmin() {
               {filteredList.map((item) => (
                 <div
                   key={item.diseaseId}
-                  className="flex flex-col rounded-[1.75rem] border border-on-surface/8 bg-surface/40 p-5"
+                  className="flex flex-col rounded-xl border border-on-surface/8 bg-surface/40 p-5"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -577,7 +577,7 @@ export default function RiceDiagnosisAdmin() {
 
       {modalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
-          <div className="max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-[2rem] bg-white shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-xl bg-white shadow-sm">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-on-surface/8 bg-white px-6 py-5">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
@@ -734,7 +734,7 @@ export default function RiceDiagnosisAdmin() {
               </div>
 
               <div className="space-y-5">
-                <div className="rounded-[1.75rem] border border-on-surface/8 p-5">
+                <div className="rounded-xl border border-on-surface/8 p-5">
                   <p className="text-xs font-black uppercase tracking-[0.14em] text-on-surface-variant/60">
                     Tìm sản phẩm để map
                   </p>
@@ -782,7 +782,7 @@ export default function RiceDiagnosisAdmin() {
                   </div>
                 </div>
 
-                <div className="rounded-[1.75rem] border border-on-surface/8 p-5">
+                <div className="rounded-xl border border-on-surface/8 p-5">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-black uppercase tracking-[0.14em] text-on-surface-variant/60">
                       Sản phẩm đã map
@@ -881,7 +881,7 @@ export default function RiceDiagnosisAdmin() {
                 type="button"
                 onClick={() => void handleSave()}
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-container px-5 py-3 text-sm font-black text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black text-white shadow-sm shadow-primary/20 transition hover:-translate-y-0.5 disabled:opacity-60"
               >
                 {saving ? (
                   <LoaderCircle size={16} className="animate-spin" />

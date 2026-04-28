@@ -160,7 +160,7 @@ function GeneralTab() {
         <p className="mt-1 text-sm text-on-surface-variant">Cấu hình thông tin cơ bản cho cửa hàng.</p>
       </div>
 
-      <div className="rounded-[1.75rem] border border-on-surface-variant/10 bg-white p-6 space-y-4">
+      <div className="rounded-xl border border-on-surface-variant/10 bg-white p-6 space-y-4">
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">
             Tên website
@@ -340,12 +340,12 @@ function ShippingTab() {
           <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : methods.length === 0 ? (
-        <div className="rounded-[1.75rem] border border-dashed border-on-surface-variant/20 p-12 text-center">
+        <div className="rounded-xl border border-dashed border-on-surface-variant/20 p-12 text-center">
           <Truck size={36} className="mx-auto mb-3 text-on-surface-variant/30" />
           <p className="text-sm text-on-surface-variant">Chưa có phương thức giao hàng nào.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[1.75rem] border border-on-surface-variant/10 bg-white">
+        <div className="overflow-hidden rounded-xl border border-on-surface-variant/10 bg-white">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-on-surface-variant/8 bg-on-surface-variant/3">
@@ -407,7 +407,7 @@ function ShippingTab() {
       {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+          <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-sm">
             <div className="px-6 py-5 border-b border-on-surface-variant/8">
               <h3 className="text-base font-black text-on-surface">
                 {editingId ? 'Chỉnh sửa phương thức giao hàng' : 'Thêm phương thức giao hàng'}
@@ -551,7 +551,7 @@ function SocialTab() {
         <p className="mt-1 text-sm text-on-surface-variant">Liên kết tới các trang mạng xã hội của cửa hàng.</p>
       </div>
 
-      <div className="rounded-[1.75rem] border border-on-surface-variant/10 bg-white p-6 space-y-5">
+      <div className="rounded-xl border border-on-surface-variant/10 bg-white p-6 space-y-5">
         {fields.map((f) => (
           <div key={f.key}>
             <label className="mb-1.5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-on-surface-variant">
@@ -660,7 +660,7 @@ function LanguageTab() {
       </div>
 
       {/* Language list */}
-      <div className="overflow-hidden rounded-[1.75rem] border border-on-surface-variant/10 bg-white">
+      <div className="overflow-hidden rounded-xl border border-on-surface-variant/10 bg-white">
         {allLanguages.map((lang, i) => {
           const isActive = activeLangCode === lang.code;
           return (
@@ -699,7 +699,7 @@ function LanguageTab() {
 
       {/* Add language form */}
       {showAddForm ? (
-        <div className="rounded-[1.75rem] border border-on-surface-variant/10 bg-white p-6 space-y-4">
+        <div className="rounded-xl border border-on-surface-variant/10 bg-white p-6 space-y-4">
           <h3 className="text-sm font-black text-on-surface">Thêm ngôn ngữ mới</h3>
           <div className="grid grid-cols-3 gap-3">
             <div>
@@ -814,7 +814,7 @@ function SidebarTab() {
         <p className="mt-1 text-sm text-on-surface-variant">Tat cac muc khong can hien thi trong menu admin toan he thong.</p>
       </div>
 
-      <div className="rounded-[1.75rem] border border-on-surface-variant/10 bg-white p-5">
+      <div className="rounded-xl border border-on-surface-variant/10 bg-white p-5">
         {loading ? (
           <div className="py-8 text-center text-sm text-on-surface-variant">Dang tai cau hinh...</div>
         ) : (
@@ -921,7 +921,7 @@ function SettingsHub({ onSelect }: { onSelect: (s: Section) => void }) {
           <button
             key={s.key}
             onClick={() => onSelect(s.key)}
-            className="group flex flex-col gap-4 rounded-[1.75rem] border border-on-surface-variant/10 bg-white p-6 text-left transition hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-lg"
+            className="group flex flex-col gap-4 rounded-xl border border-on-surface-variant/10 bg-white p-6 text-left transition hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-lg"
           >
             <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${s.iconBg} ${s.iconColor}`}>
               {s.icon}
@@ -945,7 +945,7 @@ function SettingsHub({ onSelect }: { onSelect: (s: Section) => void }) {
 
       {/* Info cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5">
+        <div className="rounded-xl border border-on-surface-variant/10 bg-white p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/8 text-primary">
               <MapPin size={18} />
@@ -959,7 +959,7 @@ function SettingsHub({ onSelect }: { onSelect: (s: Section) => void }) {
             Dropdown 63 tỉnh thành đã được tích hợp vào trang địa chỉ và thanh toán.
           </p>
         </div>
-        <div className="rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5">
+        <div className="rounded-xl border border-on-surface-variant/10 bg-white p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
               <Truck size={18} />
@@ -973,7 +973,7 @@ function SettingsHub({ onSelect }: { onSelect: (s: Section) => void }) {
             Thêm/sửa/xoá đơn vị vận chuyển. Phí được hiển thị trước khi thanh toán.
           </p>
         </div>
-        <div className="rounded-[1.5rem] border border-on-surface-variant/10 bg-white p-5">
+        <div className="rounded-xl border border-on-surface-variant/10 bg-white p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-pink-600">
               <Share2 size={18} />

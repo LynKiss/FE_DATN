@@ -20,7 +20,7 @@ export default function Security() {
 
       <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
         <div className="space-y-8 lg:col-span-8">
-          <section className="relative overflow-hidden rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-10 shadow-sm">
+          <section className="relative overflow-hidden rounded-xl border border-on-surface-variant/5 bg-white p-10 shadow-sm">
             <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-bl-full bg-primary/5" />
             <div className="mb-10 flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/5 bg-primary/10 text-primary">
@@ -96,7 +96,7 @@ export default function Security() {
             </div>
           </section>
 
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-10 shadow-sm">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-10 shadow-sm">
             <div className="mb-10 flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/5 bg-primary/10 text-primary">
                 <Globe size={28} />
@@ -156,7 +156,7 @@ export default function Security() {
         </div>
 
         <aside className="space-y-6 lg:col-span-4">
-          <div className="rounded-[2.5rem] bg-primary p-8 text-white shadow-2xl shadow-primary/20">
+          <div className="rounded-xl bg-primary p-8 text-white shadow-sm shadow-primary/20">
             <h3 className="mb-8 text-xs font-black uppercase tracking-[0.2em] text-white/50">
               {isVietnamese ? 'Vận hành hệ thống' : 'System Operations'}
             </h3>

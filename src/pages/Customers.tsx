@@ -855,7 +855,7 @@ export default function Customers() {
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-container px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:shadow-2xl"
+            className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm shadow-primary/20 transition-all hover:shadow-sm"
           >
             <Plus size={18} />
             <span>{isVietnamese ? 'Thêm tài khoản' : 'Add account'}</span>
@@ -881,7 +881,7 @@ export default function Customers() {
         />
       </div>
 
-      <div className="flex flex-col overflow-hidden rounded-[2.5rem] border border-on-surface-variant/5 bg-white shadow-sm">
+      <div className="flex flex-col overflow-hidden rounded-xl border border-on-surface-variant/5 bg-white shadow-sm">
         <div className="flex flex-col gap-4 border-b border-on-surface-variant/5 bg-white/50 p-6 backdrop-blur-sm">
           <div className="flex flex-wrap gap-3">
             <FilterChip
@@ -1108,7 +1108,7 @@ export default function Customers() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="flex items-center gap-4 rounded-[1.5rem] border border-on-surface/10 bg-surface px-5 py-4">
+            <div className="flex items-center gap-4 rounded-xl border border-on-surface/10 bg-surface px-5 py-4">
               <UserAvatar
                 name={selectedCustomer.username}
                 avatarUrl={selectedCustomer.avatarUrl}
@@ -1319,7 +1319,7 @@ export default function Customers() {
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
                 {isVietnamese ? 'Avatar đại diện' : 'Profile avatar'}
               </span>
-              <div className="flex items-center gap-4 rounded-[1.5rem] border border-on-surface/10 bg-surface px-4 py-4">
+              <div className="flex items-center gap-4 rounded-xl border border-on-surface/10 bg-surface px-4 py-4">
                 <UserAvatar
                   name={formState.username || (isVietnamese ? 'Tài khoản mới' : 'New account')}
                   avatarUrl={getAvatarPreviewUrl(
@@ -1443,7 +1443,7 @@ export default function Customers() {
         }
       >
         <div className="space-y-4">
-          <div className="flex items-center gap-4 rounded-[1.75rem] border border-on-surface/10 bg-surface px-5 py-4">
+          <div className="flex items-center gap-4 rounded-xl border border-on-surface/10 bg-surface px-5 py-4">
             <UserAvatar
               name={formState.username || (isVietnamese ? 'Tài khoản mới' : 'New account')}
               avatarUrl={getAvatarPreviewUrl(
@@ -1473,7 +1473,7 @@ export default function Customers() {
                 key={theme.id}
                 type="button"
                 onClick={() => setSelectedAvatarTheme(theme.id)}
-                className={`rounded-[1.5rem] border p-4 text-left transition ${
+                className={`rounded-xl border p-4 text-left transition ${
                   selectedAvatarTheme === theme.id
                     ? 'border-primary bg-primary/5 shadow-sm'
                     : 'border-on-surface/10 bg-white hover:border-primary/20'
@@ -1565,7 +1565,7 @@ function StatusBadge({
 
 function DetailCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1.5rem] border border-on-surface/10 bg-white px-5 py-4">
+    <div className="rounded-xl border border-on-surface/10 bg-white px-5 py-4">
       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
         {label}
       </p>
@@ -1890,7 +1890,7 @@ function KpiCard({
   highlight?: string;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-[2rem] border border-on-surface-variant/5 bg-white p-8 shadow-sm">
+    <div className="group relative overflow-hidden rounded-xl border border-on-surface-variant/5 bg-white p-8 shadow-sm">
       <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-bl-full bg-primary/5 transition-transform duration-500 group-hover:scale-125" />
       <div className="mb-6 flex items-start justify-between text-[10px] font-black uppercase tracking-[0.2em]">
         <p className="text-on-surface-variant/60">{title}</p>

@@ -361,7 +361,7 @@ function PoTab({
 
   return (
     <>
-      <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
+      <section className="rounded-xl border border-on-surface/8 bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-[1fr_200px_auto_auto]">
           <label className="relative">
             <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
@@ -402,7 +402,7 @@ function PoTab({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
@@ -533,7 +533,7 @@ function PoTab({
       {/* Create PO Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/50 p-4 pt-8">
-          <div className="w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-white shadow-2xl" style={{ maxHeight: '90vh' }}>
+          <div className="w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-sm" style={{ maxHeight: '90vh' }}>
             <div className="sticky top-0 flex items-center justify-between border-b border-on-surface/8 bg-white px-6 py-5">
               <h2 className="text-xl font-black text-on-surface">Tạo đơn đặt hàng mới</h2>
               <button type="button" onClick={() => setModalOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-full border border-on-surface/10 hover:bg-on-surface/5">
@@ -832,7 +832,7 @@ function GrTab({
 
   return (
     <>
-      <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
+      <section className="rounded-xl border border-on-surface/8 bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-[1fr_200px_auto_auto]">
           <label className="relative">
             <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
@@ -864,7 +864,7 @@ function GrTab({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
@@ -976,7 +976,7 @@ function GrTab({
       {/* Create GR Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/50 p-4 pt-8">
-          <div className="w-full max-w-4xl overflow-y-auto rounded-[2rem] bg-white shadow-2xl" style={{ maxHeight: '92vh' }}>
+          <div className="w-full max-w-4xl overflow-y-auto rounded-xl bg-white shadow-sm" style={{ maxHeight: '92vh' }}>
             <div className="sticky top-0 flex items-center justify-between border-b border-on-surface/8 bg-white px-6 py-5">
               <h2 className="text-xl font-black">Tạo phiếu nhận hàng</h2>
               <button type="button" onClick={() => setModalOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-full border border-on-surface/10 hover:bg-on-surface/5">
@@ -1244,7 +1244,7 @@ function SrTab({
 
   return (
     <>
-      <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
+      <section className="rounded-xl border border-on-surface/8 bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-[1fr_200px_auto_auto]">
           <label className="relative">
             <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
@@ -1278,7 +1278,7 @@ function SrTab({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
@@ -1378,7 +1378,7 @@ function SrTab({
       {/* Create SR Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/50 p-4 pt-8">
-          <div className="w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-white shadow-2xl" style={{ maxHeight: '90vh' }}>
+          <div className="w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-sm" style={{ maxHeight: '90vh' }}>
             <div className="sticky top-0 flex items-center justify-between border-b border-on-surface/8 bg-white px-6 py-5">
               <h2 className="text-xl font-black">Tạo phiếu trả hàng NCC</h2>
               <button type="button" onClick={() => setModalOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-full border border-on-surface/10 hover:bg-on-surface/5">

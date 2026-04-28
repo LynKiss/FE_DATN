@@ -144,7 +144,7 @@ export default function SuppliersPage() {
         </button>
       </div>
 
-      <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
+      <section className="rounded-xl border border-on-surface/8 bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
           <label className="relative">
             <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
@@ -176,7 +176,7 @@ export default function SuppliersPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[2rem] border border-on-surface/8 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-on-surface/8 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-on-surface/8 bg-surface/70 text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
@@ -256,7 +256,7 @@ export default function SuppliersPage() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
-          <div className="w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white shadow-2xl" style={{ maxHeight: '90vh' }}>
+          <div className="w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-sm" style={{ maxHeight: '90vh' }}>
             <div className="sticky top-0 flex items-center justify-between border-b border-on-surface/8 bg-white px-6 py-5">
               <h2 className="text-xl font-black text-on-surface">
                 {editingId ? 'Cập nhật nhà cung cấp' : 'Thêm nhà cung cấp mới'}

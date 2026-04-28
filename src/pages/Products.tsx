@@ -519,7 +519,7 @@ export default function Products() {
         </div>
       </div>
 
-      <div className="rounded-[2rem] border border-on-surface-variant/5 bg-white p-5 shadow-sm">
+      <div className="rounded-xl border border-on-surface-variant/5 bg-white p-5 shadow-sm">
         <div className="grid gap-3 lg:grid-cols-[1.2fr_260px_auto]">
           <label className="relative">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40" />
@@ -584,7 +584,7 @@ export default function Products() {
         <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>

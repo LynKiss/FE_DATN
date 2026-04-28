@@ -274,7 +274,7 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
         <button
           type="button"
           onClick={onOpenSidebar}
-          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-on-surface-variant/10 bg-white text-on-surface shadow-sm transition hover:border-primary/20 hover:text-primary lg:hidden"
+          className="flex h-11 w-11 items-center justify-center rounded-xl border border-on-surface-variant/10 bg-white text-on-surface shadow-sm transition hover:border-primary/20 hover:text-primary lg:hidden"
         >
           <Menu size={18} />
         </button>
@@ -320,7 +320,7 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
           ) : null}
 
           {searchOpen && (searchQuery.trim().length >= 2 || searchLoading) ? (
-            <div className="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-[34rem] overflow-hidden rounded-[1.75rem] border border-on-surface-variant/10 bg-white shadow-2xl">
+            <div className="admin-card absolute left-0 top-[calc(100%+0.75rem)] z-50 w-[34rem]">
               <div className="flex items-center justify-between border-b border-on-surface-variant/8 px-5 py-3">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-on-surface-variant/60">
                   {isVietnamese ? 'Tìm kiếm toàn hệ thống' : 'Global search'}
@@ -332,11 +332,11 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
 
               <div className="max-h-[28rem] overflow-y-auto p-3">
                 {searchError ? (
-                  <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                     {searchError}
                   </div>
                 ) : !searchLoading && flatSearchItems.length === 0 ? (
-                  <div className="rounded-2xl bg-on-surface-variant/5 px-4 py-8 text-center text-sm text-on-surface-variant">
+                  <div className="rounded-xl bg-on-surface-variant/5 px-4 py-8 text-center text-sm text-on-surface-variant">
                     {isVietnamese
                       ? `Không tìm thấy kết quả cho "${searchQuery.trim()}".`
                       : `No results for "${searchQuery.trim()}".`}
@@ -358,7 +358,7 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
                                 type="button"
                                 onMouseEnter={() => setSelectedSearchIndex(index)}
                                 onClick={() => openSearchItem(item)}
-                                className={`flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition ${
+                                className={`flex w-full items-center justify-between gap-4 rounded-xl px-4 py-3 text-left transition ${
                                   selected
                                     ? 'bg-primary/10 text-primary'
                                     : 'hover:bg-on-surface-variant/5'
@@ -429,7 +429,7 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
             </button>
 
             {notifOpen && (
-              <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-80 overflow-hidden rounded-[1.75rem] border border-on-surface-variant/10 bg-white shadow-2xl">
+              <div className="admin-card absolute right-0 top-[calc(100%+0.75rem)] z-50 w-80">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-on-surface-variant/8">
                   <p className="text-sm font-black text-on-surface">Thông báo</p>
                   <button onClick={() => void loadNotifications()} className="text-xs text-primary hover:underline">Làm mới</button>
@@ -512,7 +512,7 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
               className="inline-flex items-center gap-2 rounded-full border border-on-surface-variant/10 bg-white px-2 py-1.5 text-on-surface transition hover:border-primary/20 hover:text-primary"
               title={isVietnamese ? 'Mở menu tài khoản' : 'Open account menu'}
             >
-              <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary-fixed to-primary text-xs font-black text-primary">
+              <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary-fixed text-xs font-black text-primary">
                 {session?.user.avatarUrl ? (
                   <img src={session.user.avatarUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
@@ -526,11 +526,11 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
             </button>
 
             {accountMenuOpen ? (
-              <div className="app-elevated absolute right-0 top-[calc(100%+0.75rem)] z-50 w-80 overflow-hidden rounded-[1.75rem] border border-on-surface-variant/10 bg-white shadow-2xl">
+              <div className="admin-card absolute right-0 top-[calc(100%+0.75rem)] z-50 w-80">
                 {/* Profile header */}
-                <div className="bg-gradient-to-br from-primary/8 to-primary-container/10 px-5 py-5">
+                <div className="bg-[#f2f0eb] px-5 py-5">
                   <div className="flex items-center gap-4">
-                    <label className="group relative flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-fixed to-primary text-lg font-black text-white shadow-md">
+                    <label className="group relative flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-[#1E3932] text-lg font-black text-white shadow-sm">
                       {session?.user.avatarUrl ? (
                         <img src={session.user.avatarUrl} alt="" className="h-full w-full object-cover" />
                       ) : (
@@ -573,7 +573,7 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
                         setAccountMenuOpen(false);
                         navigate('/admin/security');
                       }}
-                      className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
+                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
                     >
                       <ShieldCheck size={18} />
                       <span>{isVietnamese ? 'Bảo mật tài khoản' : 'Account security'}</span>
@@ -585,7 +585,7 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
                         setAccountMenuOpen(false);
                         navigate('/admin/settings');
                       }}
-                      className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
+                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
                     >
                       <Settings size={18} />
                       <span>{isVietnamese ? 'Cài đặt giao diện' : 'Appearance settings'}</span>
@@ -594,7 +594,7 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
                     <button
                       type="button"
                       onClick={toggleTheme}
-                      className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
+                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-on-surface transition hover:bg-on-surface-variant/5 hover:text-primary"
                     >
                       {resolvedTheme === 'dark' ? <SunMedium size={18} /> : <MoonStar size={18} />}
                       <span>
@@ -614,7 +614,7 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
                       type="button"
                       onClick={() => void handleLogout()}
                       disabled={loggingOut}
-                      className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-black text-red-600 transition hover:bg-red-50 disabled:opacity-60"
                     >
                       <LogOut size={18} />
                       <span>

@@ -412,7 +412,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       />
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-dvh flex-col overflow-hidden bg-sidebar-bg shadow-2xl transition-all duration-300 ${collapsed ? 'lg:w-16' : 'lg:w-64'
+        className={`fixed left-0 top-0 z-50 flex h-dvh flex-col overflow-hidden bg-sidebar-bg shadow-[0_1px_3px_rgba(0,0,0,0.1),0_2px_2px_rgba(0,0,0,0.06),0_0_2px_rgba(0,0,0,0.07)] transition-all duration-300 ${collapsed ? 'lg:w-16' : 'lg:w-64'
           } w-72 max-w-[85vw] p-3 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'
           }`}
       >
@@ -442,7 +442,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white/70 transition hover:bg-white/10 hover:text-white"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/70 transition hover:bg-white/10 hover:text-white"
             >
               <X size={18} />
             </button>
@@ -486,7 +486,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
                 }
 
                 return (
-                  <div key={item.id} className="rounded-[1.5rem]">
+                  <div key={item.id} className="rounded-xl">
                     <div
                       className={`flex items-center rounded-full text-sm font-medium transition-all duration-200 ${isGroupActive || isOpen
                         ? 'bg-white/8 text-white'
@@ -583,7 +583,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
 
         {!collapsed && (
           <div className="mt-4 border-t border-white/5 pt-4">
-            <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-3">
+            <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-accent/20 bg-accent/20 font-bold text-accent text-sm">
                 {session?.user.avatarUrl ? (
                   <img src={session.user.avatarUrl} alt="" className="h-full w-full object-cover" />

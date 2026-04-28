@@ -317,7 +317,7 @@ export default function News() {
         <button
           type="button"
           onClick={openCreate}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-container px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm shadow-primary/20 transition-all hover:-translate-y-0.5"
         >
           <Plus size={18} />
           {isVietnamese ? 'Viết bài mới' : 'Write article'}
@@ -330,7 +330,7 @@ export default function News() {
         <StatCard icon={FileText} label={isVietnamese ? 'Nháp' : 'Drafts'} value={String(articles.filter((a) => a.isDraft && !a.isPublished).length)} color="amber" />
       </div>
 
-      <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-8 shadow-sm space-y-6">
+      <section className="rounded-xl border border-on-surface-variant/5 bg-white p-8 shadow-sm space-y-6">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-on-surface/10 bg-surface px-4 py-3">
             <Search size={16} className="shrink-0 text-on-surface-variant/50" />
@@ -367,7 +367,7 @@ export default function News() {
           </div>
         ) : articles.length === 0 ? (
           <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-primary/8 text-primary">
+            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/8 text-primary">
               <Newspaper size={28} />
             </div>
             <p className="font-bold text-on-surface">
@@ -524,7 +524,7 @@ export default function News() {
               type="button"
               onClick={() => void handleSave()}
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-primary-container px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
             >
               {saving ? <LoaderCircle size={16} className="animate-spin" /> : <Plus size={16} />}
               {editTarget
@@ -692,7 +692,7 @@ function StatCard({
   };
 
   return (
-    <div className="rounded-[2rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
       <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${colors[color]}`}>
         <Icon size={22} />
       </div>

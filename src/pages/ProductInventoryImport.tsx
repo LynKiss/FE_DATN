@@ -391,7 +391,7 @@ export default function ProductInventoryImport() {
         <div className="space-y-4">
           {/* Input method selector */}
           <div className="flex gap-2 flex-wrap">
-            <div className="flex items-center gap-2 rounded-[2rem] border-2 border-primary bg-white px-5 py-3 flex-1 min-w-0 shadow-lg shadow-primary/10">
+            <div className="flex items-center gap-2 rounded-xl border-2 border-primary bg-white px-5 py-3 flex-1 min-w-0 shadow-lg shadow-primary/10">
               <Barcode size={22} className="shrink-0 text-primary" />
               <input
                 ref={barcodeInputRef}
@@ -423,7 +423,7 @@ export default function ProductInventoryImport() {
             <button
               type="button"
               onClick={() => { if (cameraActive) { stopCamera(); } else { void startCamera(); } }}
-              className={`inline-flex items-center gap-2 rounded-[2rem] border-2 px-5 py-3 text-sm font-black transition ${cameraActive ? 'border-red-500 bg-red-500 text-white' : 'border-on-surface/10 bg-white text-on-surface hover:border-primary/40 hover:text-primary'}`}
+              className={`inline-flex items-center gap-2 rounded-xl border-2 px-5 py-3 text-sm font-black transition ${cameraActive ? 'border-red-500 bg-red-500 text-white' : 'border-on-surface/10 bg-white text-on-surface hover:border-primary/40 hover:text-primary'}`}
               title={isVietnamese ? 'Quét bằng camera' : 'Scan with camera'}
             >
               <Camera size={18} />
@@ -433,7 +433,7 @@ export default function ProductInventoryImport() {
             <button
               type="button"
               onClick={() => imageInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-[2rem] border-2 border-on-surface/10 bg-white px-5 py-3 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-on-surface/10 bg-white px-5 py-3 text-sm font-black text-on-surface transition hover:border-primary/40 hover:text-primary"
               title={isVietnamese ? 'Quét từ ảnh' : 'Scan from image'}
             >
               <Image size={18} />
@@ -457,7 +457,7 @@ export default function ProductInventoryImport() {
 
           {/* Live camera view */}
           {cameraActive && (
-            <div className="relative overflow-hidden rounded-[2rem] border-2 border-primary bg-black shadow-xl shadow-primary/10">
+            <div className="relative overflow-hidden rounded-xl border-2 border-primary bg-black shadow-sm shadow-primary/10">
               <video ref={videoRef} playsInline muted className="w-full max-h-72 object-contain" />
               <canvas ref={canvasRef} className="hidden" />
               {cameraScanning && (
@@ -483,7 +483,7 @@ export default function ProductInventoryImport() {
 
           {/* Scanned items list */}
           {scanItems.length > 0 && (
-            <section className="rounded-[2rem] border border-on-surface/8 bg-white p-5 shadow-sm">
+            <section className="rounded-xl border border-on-surface/8 bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className="font-black text-on-surface">
@@ -560,7 +560,7 @@ export default function ProductInventoryImport() {
                 type="button"
                 onClick={() => void handleBulkImport()}
                 disabled={bulkImporting || scanItems.length === 0}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-primary-container px-6 py-3 text-sm font-black text-white shadow-xl shadow-primary/20 disabled:opacity-60"
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-black text-white shadow-sm shadow-primary/20 disabled:opacity-60"
               >
                 {bulkImporting ? (
                   <LoaderCircle size={18} className="animate-spin" />
@@ -579,7 +579,7 @@ export default function ProductInventoryImport() {
       {/* Normal mode */}
       {!scanMode && (
         <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
             <div className="grid gap-5">
               <label className="grid gap-2">
                 <span className="text-[10px] font-black uppercase tracking-[0.24em] text-on-surface-variant/50">
@@ -629,7 +629,7 @@ export default function ProductInventoryImport() {
                   />
                 </label>
 
-                <div className="rounded-[1.5rem] border border-on-surface/10 bg-surface px-4 py-4">
+                <div className="rounded-xl border border-on-surface/10 bg-surface px-4 py-4">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-on-surface-variant/50">
                     {isVietnamese ? 'Chế độ thao tác' : 'Operation mode'}
                   </p>
@@ -655,7 +655,7 @@ export default function ProductInventoryImport() {
                 type="button"
                 onClick={() => void handleImport()}
                 disabled={saving || loading}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-primary-container px-6 py-3 text-sm font-black text-white shadow-xl shadow-primary/20 disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-black text-white shadow-sm shadow-primary/20 disabled:opacity-60"
               >
                 {saving ? (
                   <LoaderCircle size={18} className="animate-spin" />
@@ -671,7 +671,7 @@ export default function ProductInventoryImport() {
             </div>
           </section>
 
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <ScanLine size={22} />
@@ -688,7 +688,7 @@ export default function ProductInventoryImport() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-[1.75rem] border border-on-surface/10 bg-surface p-5">
+            <div className="mt-6 rounded-xl border border-on-surface/10 bg-surface p-5">
               {loading ? (
                 <div className="py-12 text-center text-sm text-on-surface-variant">
                   {isVietnamese

@@ -146,7 +146,7 @@ export default function Subcategories() {
         </button>
       </div>
 
-      <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm space-y-5">
+      <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm space-y-5">
         <div className="grid gap-4 md:grid-cols-[1fr_240px]">
           <div className="relative">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40" />

@@ -409,7 +409,7 @@ export default function Analytics() {
 
   return (
     <div className="space-y-8 pb-12">
-      <section className="overflow-hidden rounded-[2.25rem] border border-white/70 bg-[linear-gradient(135deg,rgba(27,94,32,0.96),rgba(44,121,80,0.88),rgba(214,165,29,0.76))] p-7 text-white shadow-[0_30px_80px_-42px_rgba(21,66,18,0.72)]">
+      <section className="overflow-hidden rounded-xl border border-[#1E3932] bg-[#1E3932] p-7 text-white shadow-sm">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-xs font-black uppercase tracking-[0.22em]">
@@ -480,7 +480,7 @@ export default function Analytics() {
 
       {mode === 'demand' ? (
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-[24rem_1fr]">
-          <div className="space-y-5 rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-sm">
+          <div className="space-y-5 rounded-xl border border-white/70 bg-white/85 p-5 shadow-sm">
             <PanelHeader
               icon={TrendingUp}
               title={isVietnamese ? 'Dự báo nhu cầu' : 'Demand forecasting'}
@@ -663,7 +663,7 @@ export default function Analytics() {
 
       {mode === 'reorder' ? (
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-[24rem_1fr]">
-          <div className="space-y-5 rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-sm">
+          <div className="space-y-5 rounded-xl border border-white/70 bg-white/85 p-5 shadow-sm">
             <PanelHeader
               icon={PackageCheck}
               title={isVietnamese ? 'Đề xuất nhập hàng' : 'Reorder suggestion'}
@@ -769,7 +769,7 @@ function AnalysisChoiceCard({
     <button
       type="button"
       onClick={onClick}
-      className="group overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+      className="group overflow-hidden rounded-xl border border-white/70 bg-white/85 p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-sm"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition group-hover:scale-110">
@@ -853,7 +853,7 @@ function DemandResult({
         </div>
       ) : null}
 
-      <section className="rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-sm">
+      <section className="rounded-xl border border-white/70 bg-white/85 p-5 shadow-sm">
         <PanelHeader
           icon={CalendarDays}
           title={result.product.productName}
@@ -883,7 +883,7 @@ function DemandResult({
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-sm">
+      <section className="rounded-xl border border-white/70 bg-white/85 p-5 shadow-sm">
         <PanelHeader
           icon={BrainCircuit}
           title={isVietnamese ? 'Thông tin mô hình' : 'Model details'}
@@ -961,7 +961,7 @@ function ReorderResult({
         />
       </div>
 
-      <section className="rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-sm">
+      <section className="rounded-xl border border-white/70 bg-white/85 p-5 shadow-sm">
         <PanelHeader
           icon={BarChart3}
           title={isVietnamese ? 'Tồn hiện tại vs điểm đặt hàng lại' : 'Current stock vs reorder point'}
@@ -982,7 +982,7 @@ function ReorderResult({
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-sm">
+      <section className="rounded-xl border border-white/70 bg-white/85 p-5 shadow-sm">
         <PanelHeader
           icon={AlertTriangle}
           title={isVietnamese ? 'Sản phẩm có nguy cơ hết hàng' : 'Products at risk of stockout'}
@@ -1140,7 +1140,7 @@ function EmptyResult({
   description: string;
 }) {
   return (
-    <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[2rem] border border-dashed border-primary/20 bg-white/60 p-8 text-center">
+    <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-xl border border-dashed border-primary/20 bg-white/60 p-8 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10 text-primary">
         <Icon size={28} />
       </div>
