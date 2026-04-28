@@ -168,7 +168,6 @@ export default function ClientLayout() {
   const navLinks = [
     { to: '/client', label: isVi ? 'Trang chủ' : 'Home', end: true },
     { to: '/client/products', label: isVi ? 'Sản phẩm' : 'Products' },
-    { to: '/client/vouchers', label: isVi ? 'Voucher' : 'Vouchers' },
     { to: '/client/news', label: isVi ? 'Tin tức' : 'News' },
   ];
   const supportLinks = [
@@ -348,7 +347,7 @@ export default function ClientLayout() {
             {/* Language switcher */}
             <button
               onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
-              className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-[#006241]/10 text-sm"
+              className="hidden"
               title={language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
             >
               <Globe size={15} className="absolute opacity-0 w-0" aria-hidden="true" />
@@ -437,10 +436,14 @@ export default function ClientLayout() {
                   className="flex items-center gap-2 rounded-full px-3 py-1.5 transition hover:bg-[#006241]/10"
                 >
                   <div
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white"
+                    className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full text-xs font-bold text-white"
                     style={{ background: '#006241' }}
                   >
-                    {(displayName[0] ?? 'U').toUpperCase()}
+                    {session.user.avatarUrl ? (
+                      <img src={session.user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      (displayName[0] ?? 'U').toUpperCase()
+                    )}
                   </div>
                   <span className="hidden text-sm font-semibold text-[#1E3932] lg:block">
                     {displayName}

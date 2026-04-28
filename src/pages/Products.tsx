@@ -55,6 +55,13 @@ type ProductResponse = {
   meta: { page: number; limit: number; total: number; totalPages: number };
 };
 
+type ProductImage = {
+  productImageId: string;
+  imageUrl: string;
+  isPrimary: boolean;
+  sortOrder: number;
+};
+
 type ProductFormState = {
   productName: string;
   productSlug: string;
@@ -136,6 +143,8 @@ export default function Products() {
   const [formErrors, setFormErrors] = useState<ProductFormErrors>({});
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState('');
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [imageBusyId, setImageBusyId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -325,6 +334,8 @@ export default function Products() {
     setFormErrors({});
     setSelectedImageFile(null);
     setImagePreviewUrl('');
+    setProductImages([]);
+    setImageBusyId(null);
     setProductModalOpen(false);
     setPreviewModalOpen(false);
   }
@@ -351,7 +362,12 @@ export default function Products() {
     });
     setSelectedImageFile(null);
     setImagePreviewUrl(product.primaryImageUrl ?? '');
+    setProductImages([]);
     setProductModalOpen(true);
+    void apiClient
+      .get<ProductImage[]>(`/products/${product.productId}/images`)
+      .then((images) => setProductImages(Array.isArray(images) ? images : []))
+      .catch(() => setProductImages([]));
   }
 
   function validateForm() {
@@ -376,6 +392,49 @@ export default function Products() {
   function handleImageChange(file: File | null) {
     setSelectedImageFile(file);
     setImagePreviewUrl(file ? URL.createObjectURL(file) : '');
+  }
+
+  async function uploadExtraImage(file: File | null) {
+    if (!file || !editingProductId) return;
+    setImageBusyId('upload');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('isPrimary', productImages.length === 0 ? 'true' : 'false');
+      await apiClient.postForm(`/products/${editingProductId}/images`, fd);
+      const images = await apiClient.get<ProductImage[]>(`/products/${editingProductId}/images`);
+      setProductImages(Array.isArray(images) ? images : []);
+      setReloadKey((v) => v + 1);
+    } finally {
+      setSelectedImageFile(null);
+      setImagePreviewUrl('');
+      setImageBusyId(null);
+    }
+  }
+
+  async function setPrimaryImage(imageId: string) {
+    if (!editingProductId) return;
+    setImageBusyId(imageId);
+    try {
+      await apiClient.patch(`/products/${editingProductId}/images/${imageId}/set-primary`);
+      const images = await apiClient.get<ProductImage[]>(`/products/${editingProductId}/images`);
+      setProductImages(Array.isArray(images) ? images : []);
+      setReloadKey((v) => v + 1);
+    } finally {
+      setImageBusyId(null);
+    }
+  }
+
+  async function deleteProductImage(imageId: string) {
+    if (!editingProductId) return;
+    setImageBusyId(imageId);
+    try {
+      await apiClient.delete(`/products/${editingProductId}/images/${imageId}`);
+      setProductImages((images) => images.filter((image) => image.productImageId !== imageId));
+      setReloadKey((v) => v + 1);
+    } finally {
+      setImageBusyId(null);
+    }
   }
 
   async function saveProduct() {
@@ -809,10 +868,41 @@ export default function Products() {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(event) => handleImageChange(event.target.files?.[0] ?? null)}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    handleImageChange(file);
+                    void uploadExtraImage(file);
+                  }}
                 />
               </label>
-              {imagePreviewUrl ? <img src={imagePreviewUrl} alt="" className="h-28 w-28 rounded-2xl object-cover" /> : null}
+              {selectedImageFile ? <img src={imagePreviewUrl} alt="" className="h-28 w-28 rounded-2xl object-cover" /> : null}
+              {productImages.length > 0 ? (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {productImages.map((image) => (
+                    <div key={image.productImageId} className="overflow-hidden rounded-2xl border border-on-surface/10 bg-surface">
+                      <img src={image.imageUrl} alt="" className="h-20 w-full object-cover" />
+                      <div className="flex gap-1 p-1">
+                        <button
+                          type="button"
+                          disabled={image.isPrimary || imageBusyId === image.productImageId}
+                          onClick={() => void setPrimaryImage(image.productImageId)}
+                          className="flex-1 rounded-xl bg-white px-2 py-1 text-[10px] font-bold text-primary disabled:opacity-40"
+                        >
+                          {image.isPrimary ? 'Chinh' : 'Dat chinh'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={imageBusyId === image.productImageId}
+                          onClick={() => void deleteProductImage(image.productImageId)}
+                          className="rounded-xl bg-red-50 px-2 py-1 text-[10px] font-bold text-red-500 disabled:opacity-40"
+                        >
+                          Xoa
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </Field>
 
             <label className="inline-flex items-center gap-3 rounded-2xl border border-on-surface/8 bg-surface px-4 py-3">

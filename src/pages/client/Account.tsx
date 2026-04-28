@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, KeyRound, MapPin, Package, LogOut, Save, LoaderCircle, CheckCircle2, AlertCircle, Heart } from 'lucide-react';
+import { User, KeyRound, MapPin, Package, LogOut, Save, LoaderCircle, CheckCircle2, AlertCircle, Heart, ImagePlus } from 'lucide-react';
 import { clientApi, logoutClient } from '../../lib/client-api';
 import { useClientSession } from '../../hooks/useClientSession';
 
@@ -10,16 +10,17 @@ type Profile = {
   email: string;
   fullName?: string;
   phoneNumber?: string;
-  avatar?: string;
+  avatarUrl?: string | null;
 };
 
 export default function Account() {
   const navigate = useNavigate();
-  const { session } = useClientSession();
+  const { session, setSession } = useClientSession();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
 
@@ -46,12 +47,51 @@ export default function Account() {
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      await clientApi.patch('/users/me', form);
+      const updated = await clientApi.patch<Profile>('/users/me', form);
+      setProfile(updated);
+      if (session) {
+        setSession({
+          ...session,
+          user: {
+            ...session.user,
+            fullName: updated.fullName ?? undefined,
+            phoneNumber: updated.phoneNumber ?? undefined,
+            avatarUrl: updated.avatarUrl ?? null,
+          },
+        });
+      }
       showToast('success', 'Cập nhật hồ sơ thành công');
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'Cập nhật thất bại');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (file: File | null) => {
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const data = new FormData();
+      data.append('file', file);
+      const updated = await clientApi.postForm<Profile>('/users/me/avatar', data);
+      setProfile(updated);
+      if (session) {
+        setSession({
+          ...session,
+          user: {
+            ...session.user,
+            fullName: updated.fullName ?? session.user.fullName,
+            phoneNumber: updated.phoneNumber ?? session.user.phoneNumber,
+            avatarUrl: updated.avatarUrl ?? null,
+          },
+        });
+      }
+      showToast('success', 'Da cap nhat anh dai dien');
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Tai anh that bai');
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -124,12 +164,28 @@ export default function Account() {
           <div className="space-y-3">
             {/* Avatar card */}
             <div className="client-card p-5 text-center">
-              <div
-                className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full text-xl font-black text-white"
-                style={{ background: '#1E3932' }}
-              >
-                {initials}
-              </div>
+              <label className="group relative mx-auto mb-3 block h-16 w-16 cursor-pointer overflow-hidden rounded-full">
+                {profile?.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt={profile?.fullName ?? profile?.username ?? ''} className="h-full w-full object-cover" />
+                ) : (
+                  <span
+                    className="flex h-full w-full items-center justify-center text-xl font-black text-white"
+                    style={{ background: '#1E3932' }}
+                  >
+                    {initials}
+                  </span>
+                )}
+                <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-white opacity-0 transition group-hover:opacity-100">
+                  {uploadingAvatar ? <LoaderCircle size={18} className="animate-spin" /> : <ImagePlus size={18} />}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingAvatar}
+                  onChange={(event) => void handleAvatarUpload(event.target.files?.[0] ?? null)}
+                />
+              </label>
               <p className="font-bold text-[#1E3932]">
                 {profile?.fullName ?? profile?.username}
               </p>

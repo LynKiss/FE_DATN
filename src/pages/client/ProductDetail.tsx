@@ -55,7 +55,12 @@ type RelatedProduct = {
   productId: string;
   productName: string;
   effectivePrice: string;
+  basePrice?: string;
   primaryImageUrl: string | null;
+};
+
+type RecommendationResponse = {
+  items?: RelatedProduct[];
 };
 
 type Review = {
@@ -147,10 +152,23 @@ export default function ProductDetail() {
       .get<Product>(`/products/${id}`)
       .then(async (data) => {
         setProduct(data);
+        void clientApi
+          .get<RecommendationResponse>(
+            `/intelligence/product-recommendations?productId=${encodeURIComponent(id)}&limit=8&historyDays=180`,
+          )
+          .then((r) => {
+            const items = (r.items ?? []).filter((p) => p.productId !== id);
+            if (items.length > 0) setRelated(items);
+          })
+          .catch(() => {});
         if (data.category?.categoryId) {
           void clientApi
             .get<{ meta: unknown; items: RelatedProduct[] }>(`/products?categoryId=${data.category.categoryId}&limit=5`)
-            .then((r) => setRelated((r.items ?? []).filter((p) => p.productId !== id)))
+            .then((r) => {
+              setRelated((current) =>
+                current.length > 0 ? current : (r.items ?? []).filter((p) => p.productId !== id),
+              );
+            })
             .catch(() => {});
         }
       })

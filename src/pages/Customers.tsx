@@ -3,6 +3,7 @@ import {
   ChevronRight,
   Download,
   KeyRound,
+  ImagePlus,
   LoaderCircle,
   Mail,
   Plus,
@@ -394,6 +395,7 @@ export default function Customers() {
   const [formState, setFormState] = useState<CustomerFormState>(defaultFormState);
   const [selectedAvatarTheme, setSelectedAvatarTheme] = useState<AvatarThemeId | null>(DEFAULT_AVATAR_THEME);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [formErrors, setFormErrors] = useState<CustomerFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -487,6 +489,7 @@ export default function Customers() {
     setEditingCustomerId(null);
     setFormState(defaultFormState);
     setSelectedAvatarTheme(DEFAULT_AVATAR_THEME);
+    setAvatarFile(null);
     setAvatarPickerOpen(false);
     setFormErrors({});
     setFormOpen(false);
@@ -602,6 +605,7 @@ export default function Customers() {
       isActive: Boolean(customer.isActive),
     });
     setSelectedAvatarTheme(parseGeneratedAvatarTheme(customer.avatarUrl) ?? null);
+    setAvatarFile(null);
     setAvatarPickerOpen(false);
     setFormOpen(true);
   }
@@ -684,17 +688,28 @@ export default function Customers() {
               payload,
             );
       const normalizedSavedCustomer = normalizeCustomer(savedCustomer);
+      let finalSavedCustomer = normalizedSavedCustomer;
+
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append('file', avatarFile);
+        const uploaded = await apiClient.postForm<Customer>(
+          `/users/admin/customers/${normalizedSavedCustomer._id}/avatar`,
+          formData,
+        );
+        finalSavedCustomer = normalizeCustomer(uploaded);
+      }
 
       if (formMode === 'create') {
         setPage(1);
       } else {
-        updateCustomerInList(normalizedSavedCustomer);
-        if (selectedCustomer?._id === normalizedSavedCustomer._id) {
+        updateCustomerInList(finalSavedCustomer);
+        if (selectedCustomer?._id === finalSavedCustomer._id) {
           setSelectedCustomer((current) =>
             current
               ? {
                   ...current,
-                  ...normalizedSavedCustomer,
+                  ...finalSavedCustomer,
                 }
               : current,
           );
@@ -711,7 +726,7 @@ export default function Customers() {
             : isVietnamese
               ? 'Cập nhật tài khoản thành công'
               : 'Account updated',
-        description: normalizedSavedCustomer.username,
+        description: finalSavedCustomer.username,
       });
 
       resetForm();
@@ -1335,6 +1350,19 @@ export default function Customers() {
                     <UserCog size={14} />
                     {isVietnamese ? 'Chọn avatar' : 'Choose avatar'}
                   </button>
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary/15 bg-white px-4 py-2 text-xs font-black text-primary transition hover:border-primary/30 hover:bg-primary/5">
+                    <ImagePlus size={14} />
+                    {avatarFile ? avatarFile.name : isVietnamese ? 'Tai anh that' : 'Upload image'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => {
+                        setAvatarFile(event.target.files?.[0] ?? null);
+                        setSelectedAvatarTheme(null);
+                      }}
+                    />
+                  </label>
                 </div>
               </div>
             </div>

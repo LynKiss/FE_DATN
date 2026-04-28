@@ -37,6 +37,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAdminSession } from '../hooks/useAdminSession';
 import { useLanguage } from '../i18n/language-context';
+import { apiClient } from '../lib/api';
 
 type SidebarProps = {
   open: boolean;
@@ -68,6 +69,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
   const { session } = useAdminSession();
   const { language } = useLanguage();
   const isVietnamese = language === 'vi';
+  const [hiddenItemIds, setHiddenItemIds] = useState<Set<string>>(new Set());
 
   const navItems: NavItem[] = [
     {
@@ -349,11 +351,27 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
     return perms.some((key) => userPermSet.has(key));
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    apiClient
+      .get<{ hiddenItemIds?: string[] }>('/settings/admin/sidebar')
+      .then((data) => {
+        if (!cancelled) setHiddenItemIds(new Set(data.hiddenItemIds ?? []));
+      })
+      .catch(() => {
+        if (!cancelled) setHiddenItemIds(new Set());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const filteredNavItems = navItems
     .map((item) => {
+      if (hiddenItemIds.has(item.id)) return null;
       if (item.children) {
         const visibleChildren = item.children.filter((c) =>
-          itemHasAccess(c.permissions),
+          !hiddenItemIds.has(c.id) && itemHasAccess(c.permissions),
         );
         if (visibleChildren.length === 0 && !itemHasAccess(item.permissions)) {
           return null;
@@ -566,8 +584,12 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
         {!collapsed && (
           <div className="mt-4 border-t border-white/5 pt-4">
             <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent/20 bg-accent/20 font-bold text-accent text-sm">
-                {initials || 'AD'}
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-accent/20 bg-accent/20 font-bold text-accent text-sm">
+                {session?.user.avatarUrl ? (
+                  <img src={session.user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  initials || 'AD'
+                )}
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-white">{displayName}</p>
@@ -583,9 +605,13 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
           <div className="mt-4 hidden border-t border-white/5 pt-4 lg:flex justify-center">
             <div
               title={displayName}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-accent/20 bg-accent/20 font-bold text-accent text-sm"
+              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-accent/20 bg-accent/20 font-bold text-accent text-sm"
             >
-              {initials || 'AD'}
+              {session?.user.avatarUrl ? (
+                <img src={session.user.avatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                initials || 'AD'
+              )}
             </div>
           </div>
         )}

@@ -3,6 +3,7 @@ import {
   Bell,
   ChevronDown,
   Globe,
+  ImagePlus,
   LoaderCircle,
   LogOut,
   Menu,
@@ -56,11 +57,12 @@ type AdminSearchResponse = {
 
 export default function Topbar({ onOpenSidebar }: TopbarProps) {
   const navigate = useNavigate();
-  const { session } = useAdminSession();
+  const { session, setSession } = useAdminSession();
   const { showToast } = useToast();
   const { language, setLanguage } = useLanguage();
   const { themeMode, resolvedTheme, toggleTheme } = useTheme();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -195,6 +197,28 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
     } finally {
       setLoggingOut(false);
       setAccountMenuOpen(false);
+    }
+  }
+
+  async function handleAvatarUpload(file: File | null) {
+    if (!file || !session) return;
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const updated = await apiClient.postForm<typeof session.user>('/users/me/avatar', formData);
+      setSession({
+        ...session,
+        user: {
+          ...session.user,
+          ...updated,
+        },
+      });
+      showToast({ tone: 'success', title: 'Da cap nhat anh dai dien' });
+    } catch (err) {
+      showToast({ tone: 'error', title: err instanceof Error ? err.message : 'Tai anh that bai' });
+    } finally {
+      setUploadingAvatar(false);
     }
   }
 
@@ -488,8 +512,12 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
               className="inline-flex items-center gap-2 rounded-full border border-on-surface-variant/10 bg-white px-2 py-1.5 text-on-surface transition hover:border-primary/20 hover:text-primary"
               title={isVietnamese ? 'Mở menu tài khoản' : 'Open account menu'}
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-fixed to-primary text-xs font-black text-primary">
-                {initials || 'AD'}
+              <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary-fixed to-primary text-xs font-black text-primary">
+                {session?.user.avatarUrl ? (
+                  <img src={session.user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  initials || 'AD'
+                )}
               </span>
               <ChevronDown
                 size={16}
@@ -502,9 +530,23 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
                 {/* Profile header */}
                 <div className="bg-gradient-to-br from-primary/8 to-primary-container/10 px-5 py-5">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-fixed to-primary text-lg font-black text-white shadow-md">
-                      {initials || 'AD'}
-                    </div>
+                    <label className="group relative flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-fixed to-primary text-lg font-black text-white shadow-md">
+                      {session?.user.avatarUrl ? (
+                        <img src={session.user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        initials || 'AD'
+                      )}
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition group-hover:opacity-100">
+                        {uploadingAvatar ? <LoaderCircle size={18} className="animate-spin" /> : <ImagePlus size={18} />}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingAvatar}
+                        onChange={(event) => void handleAvatarUpload(event.target.files?.[0] ?? null)}
+                      />
+                    </label>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-black text-on-surface">
                         {session?.user.username || (isVietnamese ? 'Quản trị viên' : 'Administrator')}

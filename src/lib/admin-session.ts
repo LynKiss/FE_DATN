@@ -4,6 +4,9 @@ export type AdminSession = {
     _id: string;
     username: string;
     email: string;
+    fullName?: string | null;
+    phoneNumber?: string | null;
+    avatarUrl?: string | null;
     role?: {
       _id: string;
       name: string;

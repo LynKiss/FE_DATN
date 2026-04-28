@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   Globe,
   MapPin,
+  PanelLeft,
 } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { useLanguage } from '../i18n/language-context';
@@ -39,7 +40,52 @@ export function getSocialLinks(): SocialLinks {
   return { facebook: '', youtube: '', zalo: '', instagram: '' };
 }
 
-type Section = 'general' | 'shipping' | 'social' | 'language';
+type Section = 'general' | 'shipping' | 'social' | 'language' | 'sidebar';
+
+type AdminSidebarSettings = {
+  hiddenItemIds: string[];
+};
+
+const ADMIN_SIDEBAR_ITEMS = [
+  { id: 'dashboard', label: 'Tổng quan' },
+  { id: 'analytics', label: 'Phân tích AI' },
+  { id: 'products', label: 'Sản phẩm' },
+  { id: 'products-all', label: 'Tất cả sản phẩm' },
+  { id: 'products-new', label: 'Thêm sản phẩm' },
+  { id: 'products-import', label: 'Nhập kho thủ công' },
+  { id: 'products-damage', label: 'Hàng hỏng / trả hàng' },
+  { id: 'products-lowstock', label: 'Tổng quan tồn kho' },
+  { id: 'categories', label: 'Danh mục' },
+  { id: 'subcategories', label: 'Danh mục phụ' },
+  { id: 'origins', label: 'Xuất xứ' },
+  { id: 'tags', label: 'Nhãn sản phẩm' },
+  { id: 'orders', label: 'Đơn hàng' },
+  { id: 'returns', label: 'Trả hàng' },
+  { id: 'discounts', label: 'Chương trình giảm giá' },
+  { id: 'customers', label: 'Tài khoản' },
+  { id: 'news', label: 'Bài viết' },
+  { id: 'news-comments', label: 'Bình luận' },
+  { id: 'reviews', label: 'Đánh giá sản phẩm' },
+  { id: 'payments', label: 'Thanh toán' },
+  { id: 'support-chats', label: 'Chat hỗ trợ' },
+  { id: 'rice-diagnosis', label: 'AI bệnh lúa' },
+  { id: 'suppliers', label: 'Nhà cung cấp' },
+  { id: 'procurement', label: 'Mua hàng' },
+  { id: 'pricing', label: 'Định giá bán' },
+  { id: 'warehouses', label: 'Kho hàng' },
+  { id: 'inventory-ledger', label: 'Sổ kho chi tiết' },
+  { id: 'inventory-valuation', label: 'Giá trị tồn kho' },
+  { id: 'profitability', label: 'Lợi nhuận thật' },
+  { id: 'aging-debt', label: 'Tuổi nợ NCC' },
+  { id: 'credit-limits', label: 'Hạn mức công nợ' },
+  { id: 'audit-logs', label: 'Nhật ký thao tác' },
+  { id: 'newsletter', label: 'Newsletter' },
+  { id: 'reports', label: 'Báo cáo' },
+  { id: 'permissions', label: 'Phân quyền' },
+  { id: 'interface', label: 'Giao diện' },
+  { id: 'security', label: 'Bảo mật' },
+  { id: 'settings', label: 'Cấu hình' },
+];
 
 type StoreConfig = {
   name: string;
@@ -716,6 +762,92 @@ function LanguageTab() {
   );
 }
 
+function SidebarTab() {
+  const { showToast } = useToast();
+  const [hiddenItemIds, setHiddenItemIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiClient
+      .get<AdminSidebarSettings>('/settings/admin/sidebar')
+      .then((data) => {
+        if (!cancelled) setHiddenItemIds(data.hiddenItemIds ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setHiddenItemIds([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggle = (id: string) => {
+    setHiddenItemIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    );
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const data = await apiClient.put<AdminSidebarSettings>('/settings/admin/sidebar', {
+        hiddenItemIds,
+      });
+      setHiddenItemIds(data.hiddenItemIds ?? []);
+      showToast({ tone: 'success', title: 'Da luu cau hinh sidebar' });
+    } catch (err) {
+      showToast({ tone: 'error', title: err instanceof Error ? err.message : 'Luu cau hinh that bai' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div>
+        <h2 className="text-xl font-black text-on-surface">Sidebar quan tri</h2>
+        <p className="mt-1 text-sm text-on-surface-variant">Tat cac muc khong can hien thi trong menu admin toan he thong.</p>
+      </div>
+
+      <div className="rounded-[1.75rem] border border-on-surface-variant/10 bg-white p-5">
+        {loading ? (
+          <div className="py-8 text-center text-sm text-on-surface-variant">Dang tai cau hinh...</div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {ADMIN_SIDEBAR_ITEMS.map((item) => {
+              const visible = !hiddenItemIds.includes(item.id);
+              return (
+                <label key={item.id} className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-on-surface-variant/10 bg-surface px-4 py-3">
+                  <span className="text-sm font-bold text-on-surface">{item.label}</span>
+                  <input
+                    type="checkbox"
+                    checked={visible}
+                    onChange={() => toggle(item.id)}
+                    className="h-4 w-4 accent-primary"
+                  />
+                </label>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={() => void save()}
+        disabled={saving || loading}
+        className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
+      >
+        <Save size={16} /> {saving ? 'Dang luu...' : 'Luu cau hinh sidebar'}
+      </button>
+    </div>
+  );
+}
+
 // ── Settings Hub Sections ─────────────────────────────────────────────────────
 
 type SectionConfig = {
@@ -759,6 +891,14 @@ const SECTIONS: SectionConfig[] = [
     icon: <Globe size={22} />,
     iconBg: 'bg-green-50',
     iconColor: 'text-green-600',
+  },
+  {
+    key: 'sidebar',
+    label: 'Sidebar',
+    description: 'An hien cac muc quan tri khong can dung',
+    icon: <PanelLeft size={22} />,
+    iconBg: 'bg-emerald-50',
+    iconColor: 'text-emerald-600',
   },
 ];
 
@@ -890,6 +1030,7 @@ export default function Settings() {
             {active === 'shipping' && <ShippingTab />}
             {active === 'social' && <SocialTab />}
             {active === 'language' && <LanguageTab />}
+            {active === 'sidebar' && <SidebarTab />}
           </div>
         </div>
       )}

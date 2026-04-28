@@ -80,8 +80,9 @@ export default function ProductCreate() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [formState, setFormState] = useState<ProductCreatePayload>(defaultPayload);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState('');
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -172,11 +173,13 @@ export default function ProductCreate() {
         tagIds: selectedTagIds,
       });
 
-      if (imageFile) {
-        const formData = new FormData();
-        formData.append('file', imageFile);
-        formData.append('isPrimary', 'true');
-        await apiClient.postForm(`/products/${created.productId}/images`, formData);
+      if (imageFiles.length > 0) {
+        for (const [index, file] of imageFiles.entries()) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('isPrimary', String(index === primaryImageIndex));
+          await apiClient.postForm(`/products/${created.productId}/images`, formData);
+        }
       }
 
       showToast({
@@ -343,8 +346,19 @@ export default function ProductCreate() {
               {isVietnamese ? 'Ảnh hiển thị chính trong danh sách và trang chi tiết.' : 'Main image shown in listings and detail page.'}
             </p>
             <label className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center gap-3 rounded-[1.75rem] border border-dashed border-on-surface/15 bg-surface p-4 text-center transition hover:border-primary/40">
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="max-h-48 rounded-2xl object-cover" />
+              {imagePreviews.length > 0 ? (
+                <div className="grid w-full grid-cols-2 gap-3">
+                  {imagePreviews.map((preview, index) => (
+                    <button
+                      key={preview}
+                      type="button"
+                      onClick={() => setPrimaryImageIndex(index)}
+                      className={`overflow-hidden rounded-2xl border-2 ${primaryImageIndex === index ? 'border-primary' : 'border-transparent'}`}
+                    >
+                      <img src={preview} alt="Preview" className="h-28 w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               ) : (
                 <>
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -358,15 +372,16 @@ export default function ProductCreate() {
                   </div>
                 </>
               )}
-              <input type="file" accept="image/*" className="hidden"
+              <input type="file" accept="image/*" multiple className="hidden"
                 onChange={(e) => {
-                  const file = e.target.files?.[0] ?? null;
-                  setImageFile(file);
-                  setImagePreview(file ? URL.createObjectURL(file) : '');
+                  const files = Array.from(e.target.files ?? []) as File[];
+                  setImageFiles(files);
+                  setImagePreviews(files.map((file) => URL.createObjectURL(file)));
+                  setPrimaryImageIndex(0);
                 }} />
             </label>
-            {imagePreview && (
-              <button onClick={() => { setImageFile(null); setImagePreview(''); }}
+            {imagePreviews.length > 0 && (
+              <button onClick={() => { setImageFiles([]); setImagePreviews([]); setPrimaryImageIndex(0); }}
                 className="mt-3 w-full rounded-xl border border-red-200 py-2 text-xs font-bold text-red-500 transition hover:bg-red-50">
                 {isVietnamese ? 'Xóa ảnh' : 'Remove image'}
               </button>

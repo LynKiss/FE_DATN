@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, type FormEvent, type MouseEvent } from 'react';
+import { useEffect, useState, useCallback, useRef, type FormEvent, type MouseEvent } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -50,6 +50,10 @@ type Category = { categoryId: string; categoryName: string; categorySlug: string
 type Subcategory = { subcategoryId: string; subcategoryName: string; categoryId: string };
 type Tag = { tagId: string; tagName: string };
 type Origin = { originId: string; originName: string };
+
+type RecommendationResponse = {
+  items?: Product[];
+};
 
 type ProductsResponse = {
   items: Product[];
@@ -135,14 +139,25 @@ export default function Products() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
   const [togglingWishlistId, setTogglingWishlistId] = useState<string | null>(null);
   const [categoriesExpanded, setCategoriesExpanded] = useState(true);
+  const [nextPage, setNextPage] = useState(1);
+  const [recommendations, setRecommendations] = useState<Product[]>([]);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const page = Math.max(1, nextPage - 1);
 
   const search = searchParams.get('search') ?? '';
-  const categoryId = searchParams.get('categoryId') ?? '';
+  const legacyCategoryId = searchParams.get('categoryId') ?? '';
+  const selectedCategoryIds = (searchParams.get('categoryIds') ?? legacyCategoryId)
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const categoryIdsKey = selectedCategoryIds.join(',');
   const subcategoryId = searchParams.get('subcategoryId') ?? '';
   const tagId = searchParams.get('tagId') ?? '';
   const originId = searchParams.get('originId') ?? '';
@@ -151,7 +166,6 @@ export default function Products() {
   const priceMax = searchParams.get('priceMax') ?? '';
   const ratingMin = searchParams.get('ratingMin') ?? '';
   const onSaleOnly = searchParams.get('onSale') === '1';
-  const page = parseInt(searchParams.get('page') ?? '1', 10);
 
   const [localSearch, setLocalSearch] = useState(search);
   const [localPriceMin, setLocalPriceMin] = useState(priceMin);
@@ -168,15 +182,15 @@ export default function Products() {
   }, [viewMode]);
 
   useEffect(() => {
-    if (categoryId) {
+    if (selectedCategoryIds.length === 1) {
       void clientApi
-        .get<Subcategory[]>(`/subcategories?categoryId=${categoryId}`)
+        .get<Subcategory[]>(`/subcategories?categoryId=${selectedCategoryIds[0]}`)
         .then((d) => setSubcategories(Array.isArray(d) ? d : []))
         .catch(() => setSubcategories([]));
     } else {
       setSubcategories([]);
     }
-  }, [categoryId]);
+  }, [categoryIdsKey]);
 
   useEffect(() => {
     if (session) {
@@ -187,14 +201,19 @@ export default function Products() {
     }
   }, [session]);
 
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
+  const fetchProductsPage = useCallback(async (pageToLoad: number, reset = false) => {
+    if (reset) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+    setLoadError('');
     try {
       const params = new URLSearchParams();
-      params.set('page', String(page));
+      params.set('page', String(pageToLoad));
       params.set('limit', String(PAGE_SIZE));
       if (search) params.set('search', search);
-      if (categoryId) params.set('categoryId', categoryId);
+      if (categoryIdsKey) params.set('categoryIds', categoryIdsKey);
       if (subcategoryId) params.set('subcategoryId', subcategoryId);
       if (tagId) params.set('tagId', tagId);
       if (originId) params.set('originId', originId);
@@ -220,17 +239,55 @@ export default function Products() {
           (p) => Number(p.effectivePrice) < Number(p.basePrice) - 0.01,
         );
       }
-      setProducts(items);
+      setProducts((current) => (reset ? items : [...current, ...items]));
       setTotal(data.meta?.total ?? 0);
       setTotalPages(data.meta?.totalPages ?? 1);
+      setNextPage(pageToLoad + 1);
     } catch {
-      setProducts([]);
+      if (reset) setProducts([]);
+      setLoadError('Khong the tai them san pham');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [page, search, categoryId, subcategoryId, tagId, originId, priceMin, priceMax, sort, ratingMin, onSaleOnly]);
+  }, [search, categoryIdsKey, subcategoryId, tagId, originId, priceMin, priceMax, sort, ratingMin, onSaleOnly]);
 
-  useEffect(() => { void fetchProducts(); }, [fetchProducts]);
+  useEffect(() => {
+    setNextPage(1);
+    void fetchProductsPage(1, true);
+  }, [fetchProductsPage]);
+
+  useEffect(() => {
+    let cancelled = false;
+    clientApi
+      .get<RecommendationResponse>('/intelligence/product-recommendations?limit=8&historyDays=180')
+      .then((data) => {
+        if (!cancelled) setRecommendations(Array.isArray(data.items) ? data.items : []);
+      })
+      .catch(() => {
+        if (!cancelled) setRecommendations([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || loading || loadingMore || nextPage > totalPages) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void fetchProductsPage(nextPage);
+        }
+      },
+      { rootMargin: '360px 0px' },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fetchProductsPage, loading, loadingMore, nextPage, totalPages]);
 
   const updateParam = (key: string, value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -278,7 +335,15 @@ export default function Products() {
     } catch {} finally { setTogglingWishlistId(null); }
   };
 
-  const selectedCategoryName = categories.find((c) => c.categoryId === categoryId)?.categoryName;
+  const selectedCategoryNames = selectedCategoryIds
+    .map((id) => categories.find((c) => c.categoryId === id)?.categoryName)
+    .filter(Boolean) as string[];
+  const selectedCategoryName =
+    selectedCategoryNames.length === 1
+      ? selectedCategoryNames[0]
+      : selectedCategoryNames.length > 1
+        ? `${selectedCategoryNames.length} danh mục`
+        : undefined;
   const selectedSubcategoryName = subcategories.find((s) => s.subcategoryId === subcategoryId)?.subcategoryName;
 
   const selectedTagName = tags.find((t) => t.tagId === tagId)?.tagName;
@@ -286,7 +351,7 @@ export default function Products() {
 
   const activeFilters = [
     search && { key: 'search', label: `"${search}"`, clear: () => { setLocalSearch(''); updateParam('search', ''); } },
-    categoryId && { key: 'cat', label: selectedCategoryName ?? 'Danh mục', clear: () => { updateMultiple({ categoryId: '', subcategoryId: '' }); setSubcategories([]); } },
+    selectedCategoryIds.length > 0 && { key: 'cat', label: selectedCategoryName ?? 'Danh mục', clear: () => { updateMultiple({ categoryIds: '', categoryId: '', subcategoryId: '' }); setSubcategories([]); } },
     subcategoryId && { key: 'sub', label: selectedSubcategoryName ?? 'Phân loại', clear: () => updateParam('subcategoryId', '') },
     tagId && { key: 'tag', label: `# ${selectedTagName ?? 'Tag'}`, clear: () => updateParam('tagId', '') },
     originId && { key: 'origin', label: `📍 ${selectedOriginName ?? 'Xuất xứ'}`, clear: () => updateParam('originId', '') },
@@ -335,6 +400,8 @@ export default function Products() {
       </div>
     );
   };
+
+  const loadedCount = products.length;
 
   return (
     <div className="client-surface min-h-[80vh]">
@@ -427,7 +494,7 @@ export default function Products() {
 
         <div className="flex gap-6">
           {/* Sidebar */}
-          <aside className={`${filtersOpen ? 'fixed inset-0 z-50 overflow-y-auto bg-white' : 'hidden'} w-full lg:relative lg:block lg:w-56 lg:shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto lg:[&::-webkit-scrollbar]:hidden`}>
+          <aside className={`${filtersOpen ? 'fixed inset-0 z-50 overflow-y-auto bg-white' : 'hidden'} w-full lg:relative lg:block lg:w-56 lg:shrink-0`}>
             {filtersOpen && (
               <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-5">
                 <h3 className="font-bold text-[#1E3932]">Bộ lọc</h3>
@@ -460,14 +527,25 @@ export default function Products() {
                 </button>
                 {categoriesExpanded && (
                   <div className="space-y-1">
-                    <button onClick={() => { updateMultiple({ categoryId: '', subcategoryId: '' }); setFiltersOpen(false); }}
-                      className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${!categoryId ? 'bg-[#006241] text-white' : 'text-[#1E3932] hover:bg-[#006241]/8'}`}>
+                    <button onClick={() => { updateMultiple({ categoryIds: '', categoryId: '', subcategoryId: '' }); setFiltersOpen(false); }}
+                      className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${selectedCategoryIds.length === 0 ? 'bg-[#006241] text-white' : 'text-[#1E3932] hover:bg-[#006241]/8'}`}>
                       Tất cả sản phẩm
                     </button>
                     {categories.map((cat) => (
                       <button key={cat.categoryId}
-                        onClick={() => { updateMultiple({ categoryId: cat.categoryId, subcategoryId: '' }); setFiltersOpen(false); }}
-                        className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${categoryId === cat.categoryId ? 'bg-[#006241] text-white' : 'text-[#1E3932] hover:bg-[#006241]/8'}`}>
+                        onClick={() => {
+                          const nextIds = selectedCategoryIds.includes(cat.categoryId)
+                            ? selectedCategoryIds.filter((id) => id !== cat.categoryId)
+                            : [...selectedCategoryIds, cat.categoryId];
+                          updateMultiple({ categoryIds: nextIds.join(','), categoryId: '', subcategoryId: '' });
+                        }}
+                        className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${selectedCategoryIds.includes(cat.categoryId) ? 'bg-[#006241]/10 text-[#006241]' : 'text-[#1E3932] hover:bg-[#006241]/8'}`}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCategoryIds.includes(cat.categoryId)}
+                          readOnly
+                          className="h-4 w-4 rounded border-[#006241]/30 accent-[#006241]"
+                        />
                         {cat.categoryName}
                       </button>
                     ))}
@@ -620,12 +698,42 @@ export default function Products() {
             {/* Info bar */}
             {!loading && total > 0 && (
               <p className="mb-3 text-xs text-gray-400">
-                Hiển thị <span className="font-semibold text-gray-600">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)}</span> / <span className="font-semibold text-gray-600">{total}</span> sản phẩm
+                Hiển thị <span className="font-semibold text-gray-600">{loadedCount}</span> / <span className="font-semibold text-gray-600">{total}</span> sản phẩm
               </p>
             )}
 
-            {/* Scrollable grid area */}
-            <div className="overflow-y-auto max-h-[calc(100vh-280px)] [&::-webkit-scrollbar]:hidden">
+            {recommendations.length > 0 && (
+              <div className="client-card-soft mb-5 p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <Sparkles size={16} className="text-[#006241]" />
+                  <h2 className="text-sm font-black text-[#1E3932]">AI gợi ý cho bạn</h2>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {recommendations.slice(0, 4).map((item) => (
+                    <Link
+                      key={item.productId}
+                      to={`/client/products/${item.productId}`}
+                      className="rounded-xl border border-black/5 bg-white p-2 transition hover:border-[#006241]/30"
+                    >
+                      <div className="aspect-square overflow-hidden rounded-lg bg-[#f2f0eb]">
+                        {item.primaryImageUrl ? (
+                          <img src={item.primaryImageUrl} alt={item.productName} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <Leaf size={24} className="text-[#006241]/25" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="mt-2 line-clamp-2 text-xs font-bold text-[#1E3932]">{item.productName}</p>
+                      <p className="mt-1 text-xs font-black text-[#006241]">{formatPrice(Number(item.effectivePrice ?? item.basePrice))}</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Product grid area */}
+            <div>
             {loading ? (
               <div className={
                 viewMode === 'list'
@@ -889,7 +997,25 @@ export default function Products() {
             )}
             </div>{/* end scrollable grid area */}
 
-            {renderPagination()}
+            <div ref={loadMoreRef} className="mt-8 flex min-h-10 items-center justify-center">
+              {loadingMore ? (
+                <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1E3932]">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#006241] border-t-transparent" />
+                  Đang tải thêm
+                </span>
+              ) : loadError ? (
+                <button
+                  type="button"
+                  onClick={() => void fetchProductsPage(nextPage)}
+                  className="client-pill-outline px-4 py-2 text-sm font-bold"
+                >
+                  Tải lại
+                </button>
+              ) : !loading && total > 0 && nextPage > totalPages ? (
+                <span className="text-sm font-semibold text-gray-400">Đã tải hết sản phẩm</span>
+              ) : null}
+            </div>
+            <div className="hidden">{renderPagination()}</div>
           </div>
         </div>
       </div>
