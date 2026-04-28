@@ -27,6 +27,7 @@ import { getSocialLinks } from '../pages/Settings';
 import { lazy, Suspense } from 'react';
 
 const Chatbox = lazy(() => import('../components/client/Chatbox'));
+const VoucherWalletModal = lazy(() => import('../components/client/VoucherWalletModal'));
 
 type SearchProduct = {
   productId: string;
@@ -169,6 +170,13 @@ export default function ClientLayout() {
     { to: '/client/products', label: isVi ? 'Sản phẩm' : 'Products' },
     { to: '/client/vouchers', label: isVi ? 'Voucher' : 'Vouchers' },
     { to: '/client/news', label: isVi ? 'Tin tức' : 'News' },
+  ];
+  const supportLinks = [
+    { to: '/client/support/buying-guide', label: isVi ? 'Hướng dẫn mua hàng' : 'Buying guide' },
+    { to: '/client/support/returns', label: isVi ? 'Chính sách đổi trả' : 'Returns policy' },
+    { to: '/client/support/warranty', label: isVi ? 'Chính sách bảo hành' : 'Warranty policy' },
+    { to: '/client/support/news-knowledge', label: isVi ? 'Tin tức – Kiến thức' : 'News & knowledge' },
+    { to: '/client/support/contact', label: isVi ? 'Liên hệ chúng tôi' : 'Contact us' },
   ];
 
   return (
@@ -628,15 +636,13 @@ export default function ClientLayout() {
                 Hỗ trợ
               </h3>
               <ul className="space-y-3 text-sm text-white/60">
-                {['Hướng dẫn mua hàng', 'Chính sách đổi trả', 'Chính sách bảo hành', 'Tin tức – Kiến thức', 'Liên hệ chúng tôi'].map(
-                  (item) => (
-                    <li key={item}>
-                      <a href="#" className="transition hover:text-white">
-                        {item}
-                      </a>
-                    </li>
-                  ),
-                )}
+                {supportLinks.map((item) => (
+                  <li key={item.to}>
+                    <Link to={item.to} className="transition hover:text-white">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
@@ -678,6 +684,7 @@ export default function ClientLayout() {
 
       {/* Chatbox */}
       <Suspense fallback={null}>
+        <VoucherWalletModal />
         <Chatbox />
       </Suspense>
     </div>

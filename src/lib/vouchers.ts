@@ -15,6 +15,8 @@ export type Voucher = {
   isPrivate: boolean;
   usageLimit?: number | null;
   usedCount?: number;
+  remainingUses?: number | null;
+  isSaved?: boolean;
   eligible?: boolean;
   isUsed?: boolean;
   missingAmount?: string | number;
@@ -51,6 +53,16 @@ export async function fetchVouchersForCart(query: VoucherQuery) {
   }
 
   return clientApi.get<Voucher[]>('/discounts');
+}
+
+export async function fetchSavedVouchers() {
+  return clientApi.get<Voucher[]>('/discounts/my-saved');
+}
+
+export async function saveVoucherToWallet(voucherId: string) {
+  return clientApi.post<{ saved: boolean; savedAt?: string; voucher?: Voucher }>(
+    `/discounts/${voucherId}/save`,
+  );
 }
 
 export function validateVoucherCode(
@@ -129,4 +141,27 @@ export function voucherExpiryLabel(value: string) {
     month: '2-digit',
     year: 'numeric',
   });
+}
+
+export function voucherExpiryDateTimeLabel(value: string) {
+  const time = Date.parse(value);
+  if (!Number.isFinite(time)) return 'Không rõ hạn';
+
+  return new Date(time).toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export function voucherRemainingUsesLabel(voucher: Voucher) {
+  if (voucher.remainingUses === null || voucher.remainingUses === undefined) {
+    return 'Không giới hạn lượt';
+  }
+
+  return `Còn ${Math.max(0, Number(voucher.remainingUses)).toLocaleString(
+    'vi-VN',
+  )} lượt`;
 }

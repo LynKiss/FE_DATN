@@ -18,15 +18,18 @@ import {
   fetchVouchersForCart,
   getVoucherProgress,
   money,
+  saveVoucherToWallet,
   sortVouchers,
+  voucherExpiryDateTimeLabel,
   voucherExpiryLabel,
   voucherMinOrder,
   voucherMissingAmount,
+  voucherRemainingUsesLabel,
   voucherSavings,
   voucherValueLabel,
 } from '../../lib/vouchers';
 
-type VoucherFilter = 'all' | 'ready' | 'locked';
+type VoucherFilter = 'all' | 'saved' | 'ready' | 'locked';
 
 export default function Vouchers() {
   const navigate = useNavigate();
@@ -36,6 +39,7 @@ export default function Vouchers() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<VoucherFilter>('all');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   const subtotal = Number(cart?.totalAmount ?? 0);
   const productIds = useMemo(
@@ -48,6 +52,7 @@ export default function Vouchers() {
     (voucher) => voucher.eligible && voucherSavings(voucher) > 0,
   );
   const visibleVouchers = sortedVouchers.filter((voucher) => {
+    if (filter === 'saved') return voucher.isSaved;
     if (filter === 'ready') return voucher.eligible;
     if (filter === 'locked') return !voucher.eligible;
     return true;
@@ -86,6 +91,22 @@ export default function Vouchers() {
 
   function applyVoucher(code: string) {
     void navigate(`/client/cart?voucher=${encodeURIComponent(code)}`);
+  }
+
+  async function saveVoucher(voucher: Voucher) {
+    if (!session) {
+      void navigate('/client/login');
+      return;
+    }
+
+    setSavingId(voucher.id);
+    try {
+      await saveVoucherToWallet(voucher.id);
+      const data = await fetchVouchersForCart({ orderValue: subtotal, productIds });
+      setVouchers(data);
+    } finally {
+      setSavingId(null);
+    }
   }
 
   return (
@@ -130,6 +151,7 @@ export default function Vouchers() {
           <div className="flex gap-2 overflow-x-auto pb-1">
             {[
               { key: 'all', label: 'Tất cả' },
+              { key: 'saved', label: 'Đã nhận' },
               { key: 'ready', label: 'Dùng ngay' },
               { key: 'locked', label: 'Cần mua thêm' },
             ].map((item) => (
@@ -167,7 +189,9 @@ export default function Vouchers() {
                   voucher={voucher}
                   subtotal={subtotal}
                   copied={copiedCode === voucher.code}
+                  saving={savingId === voucher.id}
                   onCopy={() => void copyCode(voucher.code)}
+                  onSave={() => void saveVoucher(voucher)}
                   onApply={() => applyVoucher(voucher.code)}
                 />
               </div>
@@ -211,13 +235,17 @@ function VoucherHuntCard({
   voucher,
   subtotal,
   copied,
+  saving,
   onCopy,
+  onSave,
   onApply,
 }: {
   voucher: Voucher;
   subtotal: number;
   copied: boolean;
+  saving: boolean;
   onCopy: () => void;
+  onSave: () => void;
   onApply: () => void;
 }) {
   const eligible = Boolean(voucher.eligible);
@@ -255,6 +283,8 @@ function VoucherHuntCard({
             value={eligible ? money(voucherSavings(voucher)) : 'Chưa đủ'}
           />
           <InfoBox label="Hạn dùng" value={voucherExpiryLabel(voucher.expiresAt)} />
+          <InfoBox label="Khung giờ hết hạn" value={voucherExpiryDateTimeLabel(voucher.expiresAt)} />
+          <InfoBox label="Số lượt" value={voucherRemainingUsesLabel(voucher)} />
         </div>
 
         <div className="mt-4">
@@ -290,6 +320,22 @@ function VoucherHuntCard({
             title="Sao chép mã"
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving || voucher.isSaved}
+            className="client-pill-outline flex min-h-11 flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-black disabled:border-[#006241]/20 disabled:bg-[#d4e9e2]/50 disabled:text-[#006241]"
+          >
+            {voucher.isSaved ? (
+              <>
+                <Check size={15} /> Đã nhận
+              </>
+            ) : saving ? (
+              'Đang nhận...'
+            ) : (
+              'Nhận'
+            )}
           </button>
           <button
             type="button"

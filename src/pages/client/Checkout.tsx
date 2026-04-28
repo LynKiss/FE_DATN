@@ -21,8 +21,10 @@ import {
   money,
   sortVouchers,
   validateVoucherCode,
+  voucherExpiryDateTimeLabel,
   voucherExpiryLabel,
   voucherMissingAmount,
+  voucherRemainingUsesLabel,
   voucherSavings,
   voucherValueLabel,
 } from '../../lib/vouchers';
@@ -652,6 +654,10 @@ function CheckoutVoucherCard({
           </div>
           <p className="mt-1 text-[10px] font-semibold text-gray-400">
             Hạn: {voucherExpiryLabel(voucher.expiresAt)}
+          </p>
+          <p className="mt-1 text-[10px] font-semibold text-gray-400">
+            {voucherExpiryDateTimeLabel(voucher.expiresAt)} · {voucherRemainingUsesLabel(voucher)}
+            {voucher.isSaved ? ' · Đã nhận' : ''}
           </p>
         </div>
       </div>
