@@ -18,6 +18,9 @@ import {
   Heart,
   Globe,
   Bell,
+  ArrowRight,
+  Sparkles,
+  Sprout,
 } from 'lucide-react';
 import { useLanguage } from '../i18n/language-context';
 import { useClientSession } from '../hooks/useClientSession';
@@ -45,12 +48,22 @@ type Notification = {
   createdAt: string | null;
 };
 
+type CategoryTab = {
+  categoryId: string;
+  categoryName: string;
+  categorySlug: string;
+  parentId: string | null;
+};
+
+type CategoryTree = CategoryTab & { children: CategoryTab[] };
+
 export default function ClientLayout() {
   const { session } = useClientSession();
   const { cart } = useCart();
   const navigate = useNavigate();
   const { language, setLanguage } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileCatOpen, setMobileCatOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,10 +72,28 @@ export default function ClientLayout() {
   const [scrolled, setScrolled] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [categoryTree, setCategoryTree] = useState<CategoryTree[]>([]);
+  const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const megaMenuCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    void clientApi
+      .get<CategoryTab[]>('/categories')
+      .then((all) => {
+        if (!Array.isArray(all)) return;
+        const parents = all.filter((c) => !c.parentId);
+        const tree: CategoryTree[] = parents.map((p) => ({
+          ...p,
+          children: all.filter((c) => c.parentId === p.categoryId),
+        }));
+        setCategoryTree(tree);
+      })
+      .catch(() => { });
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -87,12 +118,12 @@ export default function ClientLayout() {
         document.documentElement.style.setProperty('--client-accent', theme.accent);
         document.documentElement.style.setProperty('--client-bg', theme.bg);
       }
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
     if (!session) return;
-    void clientApi.get<Notification[]>('/notifications/me').then(setNotifications).catch(() => {});
+    void clientApi.get<Notification[]>('/notifications/me').then(setNotifications).catch(() => { });
   }, [session]);
 
   useEffect(() => {
@@ -129,7 +160,7 @@ export default function ClientLayout() {
           setSuggestions(data.items ?? []);
           setShowSuggestions(true);
         })
-        .catch(() => {});
+        .catch(() => { });
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -157,6 +188,15 @@ export default function ClientLayout() {
     void navigate('/client');
   };
 
+  const handleMegaMenuEnter = () => {
+    if (megaMenuCloseTimer.current) clearTimeout(megaMenuCloseTimer.current);
+    setMegaMenuOpen(true);
+  };
+
+  const handleMegaMenuLeave = () => {
+    megaMenuCloseTimer.current = setTimeout(() => setMegaMenuOpen(false), 200);
+  };
+
   const cartCount = cart?.totalItems ?? 0;
   const displayName = session?.user.fullName || session?.user.username || '';
   const socialLinks = getSocialLinks();
@@ -165,11 +205,6 @@ export default function ClientLayout() {
     to: '/client/rice-diagnosis',
     label: isVi ? 'AI Chẩn Đoán Bệnh Lúa' : 'Rice AI Diagnosis',
   };
-  const navLinks = [
-    { to: '/client', label: isVi ? 'Trang chủ' : 'Home', end: true },
-    { to: '/client/products', label: isVi ? 'Sản phẩm' : 'Products' },
-    { to: '/client/news', label: isVi ? 'Tin tức' : 'News' },
-  ];
   const supportLinks = [
     { to: '/client/support/buying-guide', label: isVi ? 'Hướng dẫn mua hàng' : 'Buying guide' },
     { to: '/client/support/returns', label: isVi ? 'Chính sách đổi trả' : 'Returns policy' },
@@ -177,6 +212,8 @@ export default function ClientLayout() {
     { to: '/client/support/news-knowledge', label: isVi ? 'Tin tức – Kiến thức' : 'News & knowledge' },
     { to: '/client/support/contact', label: isVi ? 'Liên hệ chúng tôi' : 'Contact us' },
   ];
+
+  const colCount = Math.min(categoryTree.length + 1, 5);
 
   return (
     <div className="client-surface flex min-h-screen flex-col">
@@ -202,9 +239,8 @@ export default function ClientLayout() {
 
       {/* Main navbar */}
       <header
-        className={`sticky top-0 z-50 transition-shadow duration-300 ${
-          scrolled ? 'shadow-[0_1px_3px_rgba(0,0,0,0.1),0_2px_2px_rgba(0,0,0,0.06),0_0_2px_rgba(0,0,0,0.07)]' : ''
-        }`}
+        className={`sticky top-0 z-50 transition-shadow duration-300 ${scrolled ? 'shadow-[0_1px_3px_rgba(0,0,0,0.1),0_2px_2px_rgba(0,0,0,0.06),0_0_2px_rgba(0,0,0,0.07)]' : ''
+          }`}
         style={{ background: '#f2f0eb' }}
       >
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 lg:px-6 lg:py-4">
@@ -228,29 +264,237 @@ export default function ClientLayout() {
 
           {/* Desktop nav */}
           <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex">
-            {navLinks.map((link) => (
+            {/* Trang chủ */}
+            <NavLink
+              to="/client"
+              end
+              className={({ isActive }) =>
+                `rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${isActive ? 'bg-[#006241] text-white' : 'text-[#1E3932] hover:bg-[#006241]/10'
+                }`
+              }
+            >
+              {isVi ? 'Trang chủ' : 'Home'}
+            </NavLink>
+
+            {/* Sản phẩm — Mega menu */}
+            <div
+              className="relative"
+              onMouseEnter={handleMegaMenuEnter}
+              onMouseLeave={handleMegaMenuLeave}
+            >
               <NavLink
-                key={link.to}
-                to={link.to}
-                end={link.end}
+                to="/client/products"
                 className={({ isActive }) =>
-                  `rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
-                    isActive
-                      ? 'bg-[#006241] text-white'
-                      : 'text-[#1E3932] hover:bg-[#006241]/10'
+                  `flex items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${isActive || megaMenuOpen
+                    ? 'bg-[#006241] text-white'
+                    : 'text-[#1E3932] hover:bg-[#006241]/10'
                   }`
                 }
               >
-                {link.label}
+                {isVi ? 'Danh mục' : 'Categories'}
+                <ChevronDown
+                  size={13}
+                  className={`transition-transform duration-200 ${megaMenuOpen ? 'rotate-180' : ''}`}
+                />
               </NavLink>
-            ))}
+
+              {/* Mega menu dropdown */}
+              {megaMenuOpen && (
+                <div
+                  className="absolute left-1/2 top-full z-50 mt-3 -translate-x-1/2 overflow-hidden rounded-3xl border border-black/5 bg-white shadow-[0_24px_60px_-12px_rgba(0,52,32,0.25),0_8px_20px_-6px_rgba(0,52,32,0.1)]"
+                  style={{ width: `${colCount * 200 + 260}px`, minWidth: '720px', maxWidth: '1120px' }}
+                  onMouseEnter={handleMegaMenuEnter}
+                  onMouseLeave={handleMegaMenuLeave}
+                >
+                  {/* Top gradient accent */}
+                  <div className="h-1 w-full bg-gradient-to-r from-[#006241] via-[#00a06a] to-[#006241]" />
+
+                  {/* Arrow pointer */}
+                  <div
+                    className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-black/5 bg-white"
+                    aria-hidden
+                  />
+
+                  <div className="flex">
+                    {/* Categories grid */}
+                    <div className="min-w-0 flex-1 p-8">
+                      <div
+                        className="grid gap-x-8 gap-y-5"
+                        style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+                      >
+                        {/* Cột 0: Tất cả sản phẩm */}
+                        <div className="min-w-0">
+                          <Link
+                            to="/client/products"
+                            onClick={() => setMegaMenuOpen(false)}
+                            className="group/header mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-[#006241] transition"
+                          >
+                            <Sparkles size={14} className="transition group-hover/header:rotate-12" />
+                            <span>Tất cả</span>
+                            <ArrowRight size={12} className="opacity-50 transition group-hover/header:translate-x-1 group-hover/header:opacity-100" />
+                          </Link>
+                          <div className="space-y-0.5 border-t border-black/5 pt-3">
+                            {[
+                              { to: '/client/products?sort=newest', label: 'Mới nhất', icon: '✨' },
+                              { to: '/client/products?sort=bestseller', label: 'Bán chạy nhất', icon: '🔥' },
+                              { to: '/client/products?sort=price_asc', label: 'Giá tốt nhất', icon: '💚' },
+                            ].map((item) => (
+                              <Link
+                                key={item.label}
+                                to={item.to}
+                                onClick={() => setMegaMenuOpen(false)}
+                                className="group/link flex items-center gap-2.5 rounded-xl px-3 py-2 text-[15px] text-gray-600 transition hover:bg-[#006241]/7 hover:text-[#006241]"
+                              >
+                                <span className="text-sm leading-none">{item.icon}</span>
+                                <span className="truncate font-medium transition-transform group-hover/link:translate-x-0.5">
+                                  {item.label}
+                                </span>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Một cột cho mỗi danh mục cha */}
+                        {categoryTree.slice(0, 4).map((cat) => (
+                          <div key={cat.categoryId} className="min-w-0">
+                            <Link
+                              to={`/client/products?categoryId=${cat.categoryId}`}
+                              onClick={() => setMegaMenuOpen(false)}
+                              className="group/header mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-[#1E3932] transition hover:text-[#006241]"
+                            >
+                              <Sprout size={14} className="shrink-0 text-[#006241] transition group-hover/header:rotate-12" />
+                              <span className="truncate">{cat.categoryName}</span>
+                              <ArrowRight size={12} className="shrink-0 opacity-50 transition group-hover/header:translate-x-1 group-hover/header:opacity-100" />
+                            </Link>
+                            <div className="space-y-0.5 border-t border-black/5 pt-3">
+                              {cat.children.slice(0, 7).map((child) => (
+                                <Link
+                                  key={child.categoryId}
+                                  to={`/client/products?categoryId=${child.categoryId}`}
+                                  onClick={() => setMegaMenuOpen(false)}
+                                  className="group/link block rounded-xl px-3 py-2 text-[15px] font-medium text-gray-600 transition hover:bg-[#006241]/7 hover:text-[#006241]"
+                                >
+                                  <span className="truncate transition-transform group-hover/link:translate-x-0.5 inline-block">
+                                    {child.categoryName}
+                                  </span>
+                                </Link>
+                              ))}
+                              {cat.children.length === 0 && (
+                                <span className="block px-3 py-1 text-sm italic text-gray-300">
+                                  Đang cập nhật
+                                </span>
+                              )}
+                              {cat.children.length > 7 && (
+                                <Link
+                                  to={`/client/products?categoryId=${cat.categoryId}`}
+                                  onClick={() => setMegaMenuOpen(false)}
+                                  className="block px-3 pt-1.5 text-sm font-bold text-[#006241]/70 transition hover:text-[#006241]"
+                                >
+                                  +{cat.children.length - 7} mục khác →
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Inline footer: View all */}
+                      {categoryTree.length > 4 && (
+                        <div className="mt-6 border-t border-black/5 pt-4 text-center">
+                          <Link
+                            to="/client/products"
+                            onClick={() => setMegaMenuOpen(false)}
+                            className="inline-flex items-center gap-1.5 text-sm font-bold text-[#006241] transition hover:opacity-70"
+                          >
+                            Xem tất cả {categoryTree.length} danh mục
+                            <ArrowRight size={13} />
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right agriculture info panel */}
+                    <div
+                      className="relative hidden w-[240px] shrink-0 overflow-hidden md:block"
+                      style={{
+                        background: 'linear-gradient(160deg, #0a3d1f 0%, #006241 45%, #00754A 100%)',
+                      }}
+                    >
+                      {/* Decorative circles */}
+                      <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
+                      <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/5" />
+
+                      {/* Decorative leaves */}
+                      <Leaf className="absolute -right-2 top-6 text-white/10" size={100} strokeWidth={1} />
+                      <Sprout className="absolute bottom-20 right-4 text-white/12" size={40} strokeWidth={1.2} />
+
+                      {/* Content */}
+                      <div className="relative z-10 flex h-full flex-col justify-between p-6 text-white">
+                        <div className="space-y-5">
+                          {/* Badge */}
+                          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-wider backdrop-blur">
+                            <Leaf size={10} />
+                            Nông nghiệp sạch
+                          </div>
+
+                          {/* Headline */}
+                          <div>
+                            <h3 className="text-base font-black leading-snug text-white">
+                              Vật tư<br />chất lượng cao
+                            </h3>
+                            <p className="mt-1.5 text-[11px] leading-relaxed text-white/65">
+                              Được kiểm định bởi Bộ Nông Nghiệp — đảm bảo an toàn cho cây trồng và người dùng.
+                            </p>
+                          </div>
+
+                          {/* Stats */}
+                          <div className="space-y-2">
+                            {[
+                              { num: '500+', label: 'Sản phẩm' },
+                              { num: '24h', label: 'Giao hàng nhanh' },
+                              { num: '100%', label: 'Chính hãng' },
+                            ].map((s) => (
+                              <div key={s.label} className="flex items-center gap-3">
+                                <span className="min-w-[40px] text-sm font-black text-[#a8e6c3]">{s.num}</span>
+                                <span className="text-[11px] text-white/60">{s.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <Link
+                          to="/client/products"
+                          onClick={() => setMegaMenuOpen(false)}
+                          className="group/cta inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wider text-[#006241] shadow-lg transition hover:bg-[#dff1e4]"
+                        >
+                          Khám phá ngay
+                          <ArrowRight size={12} className="transition group-hover/cta:translate-x-0.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Tin tức */}
+            <NavLink
+              to="/client/news"
+              className={({ isActive }) =>
+                `rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${isActive ? 'bg-[#006241] text-white' : 'text-[#1E3932] hover:bg-[#006241]/10'
+                }`
+              }
+            >
+              {isVi ? 'Tin tức' : 'News'}
+            </NavLink>
+
+            {/* AI Diagnosis */}
             <NavLink
               to={aiDiagnosisLink.to}
               className={({ isActive }) =>
-                `rounded-full border px-4 py-2 text-sm font-black transition-all motion-reduce:animate-none ${
-                  isActive
-                    ? 'border-[#006241] bg-[#006241] text-white'
-                    : 'animate-pulse border-[#006241]/25 bg-[#edf3ee] text-[#006241] hover:border-[#006241] hover:bg-[#dff1e4]'
+                `rounded-full border px-4 py-2 text-sm font-black transition-all motion-reduce:animate-none ${isActive
+                  ? 'border-[#006241] bg-[#006241] text-white'
+                  : 'animate-pulse border-[#006241]/25 bg-[#edf3ee] text-[#006241] hover:border-[#006241] hover:bg-[#dff1e4]'
                 }`
               }
             >
@@ -501,7 +745,7 @@ export default function ClientLayout() {
               </Link>
             )}
 
-            {/* Mobile menu */}
+            {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-[#006241]/10 lg:hidden"
@@ -516,29 +760,80 @@ export default function ClientLayout() {
         {mobileOpen && (
           <div className="border-t border-black/8 bg-white px-4 pb-4 pt-2 lg:hidden">
             <nav className="flex flex-col gap-1">
-              {navLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  end={link.end}
-                  onClick={() => setMobileOpen(false)}
-                  className={({ isActive }) =>
-                    `rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                      isActive ? 'bg-[#006241] text-white' : 'text-[#1E3932]'
-                    }`
-                  }
+              <NavLink
+                to="/client"
+                end
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  `rounded-xl px-4 py-2.5 text-sm font-semibold transition ${isActive ? 'bg-[#006241] text-white' : 'text-[#1E3932]'
+                  }`
+                }
+              >
+                {isVi ? 'Trang chủ' : 'Home'}
+              </NavLink>
+
+              {/* Sản phẩm collapsible in mobile */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setMobileCatOpen(!mobileCatOpen)}
+                  className="flex w-full items-center justify-between rounded-xl px-4 py-2.5 text-sm font-semibold text-[#1E3932] transition active:bg-[#006241]/10"
                 >
-                  {link.label}
-                </NavLink>
-              ))}
+                  {isVi ? 'Danh mục' : 'Categories'}
+                  <ChevronDown size={15} className={`transition-transform ${mobileCatOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {mobileCatOpen && (
+                  <div className="ml-4 mt-1 space-y-0.5 rounded-xl border border-black/5 bg-gray-50/80 p-2">
+                    <Link
+                      to="/client/products"
+                      onClick={() => { setMobileOpen(false); setMobileCatOpen(false); }}
+                      className="block rounded-lg px-3 py-2 text-sm font-bold text-[#006241]"
+                    >
+                      Tất cả sản phẩm
+                    </Link>
+                    {categoryTree.map((cat) => (
+                      <div key={cat.categoryId}>
+                        <Link
+                          to={`/client/products?categoryId=${cat.categoryId}`}
+                          onClick={() => { setMobileOpen(false); setMobileCatOpen(false); }}
+                          className="block rounded-lg px-3 py-1.5 text-sm font-semibold text-[#1E3932]"
+                        >
+                          {cat.categoryName}
+                        </Link>
+                        {cat.children.map((child) => (
+                          <Link
+                            key={child.categoryId}
+                            to={`/client/products?categoryId=${child.categoryId}`}
+                            onClick={() => { setMobileOpen(false); setMobileCatOpen(false); }}
+                            className="block rounded-lg px-5 py-1 text-sm text-gray-500"
+                          >
+                            {child.categoryName}
+                          </Link>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <NavLink
+                to="/client/news"
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  `rounded-xl px-4 py-2.5 text-sm font-semibold transition ${isActive ? 'bg-[#006241] text-white' : 'text-[#1E3932]'
+                  }`
+                }
+              >
+                {isVi ? 'Tin tức' : 'News'}
+              </NavLink>
+
               <NavLink
                 to={aiDiagnosisLink.to}
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) =>
-                  `rounded-xl px-4 py-2.5 text-sm font-black transition motion-reduce:animate-none ${
-                    isActive
-                      ? 'bg-[#006241] text-white'
-                      : 'animate-pulse border border-[#006241]/20 bg-[#edf3ee] text-[#006241]'
+                  `rounded-xl px-4 py-2.5 text-sm font-black transition motion-reduce:animate-none ${isActive
+                    ? 'bg-[#006241] text-white'
+                    : 'animate-pulse border border-[#006241]/20 bg-[#edf3ee] text-[#006241]'
                   }`
                 }
               >
@@ -547,8 +842,9 @@ export default function ClientLayout() {
                   {aiDiagnosisLink.label}
                 </span>
               </NavLink>
+
               {!session ? (
-                <div className="mt-2 flex gap-2 pt-2 border-t border-black/5">
+                <div className="mt-2 flex gap-2 border-t border-black/5 pt-2">
                   <Link
                     to="/client/login"
                     onClick={() => setMobileOpen(false)}
@@ -559,7 +855,7 @@ export default function ClientLayout() {
                   <Link
                     to="/client/register"
                     onClick={() => setMobileOpen(false)}
-                    className="flex-1 rounded-full py-2.5 text-center text-sm font-bold border border-[#006241] text-[#006241]"
+                    className="flex-1 rounded-full border border-[#006241] py-2.5 text-center text-sm font-bold text-[#006241]"
                   >
                     Đăng ký
                   </Link>

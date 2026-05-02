@@ -50,6 +50,7 @@ const AuditLogsPage = lazy(() => import('../features/admin/audit-logs/page'));
 // Client pages
 const ClientHomePage = lazy(() => import('../features/client/home/page'));
 const ClientProductsPage = lazy(() => import('../features/client/products/page'));
+const ClientCategoriesPage = lazy(() => import('../pages/client/Categories'));
 const ClientProductDetailPage = lazy(() => import('../features/client/product-detail/page'));
 const ClientCartPage = lazy(() => import('../features/client/cart/page'));
 const ClientVouchersPage = lazy(() => import('../features/client/vouchers/page'));
@@ -146,6 +147,8 @@ export const router = createBrowserRouter([
           { index: true, element: clientSuspense(<ClientHomePage />) },
           { path: 'products', element: clientSuspense(<ClientProductsPage />) },
           { path: 'products/:id', element: clientSuspense(<ClientProductDetailPage />) },
+          { path: 'categories', element: clientSuspense(<ClientCategoriesPage />) },
+          { path: 'categories/:categoryId', element: clientSuspense(<ClientCategoriesPage />) },
           { path: 'cart', element: clientSuspense(<ClientCartPage />) },
           { path: 'vouchers', element: clientSuspense(<ClientVouchersPage />) },
           { path: 'checkout', element: clientSuspense(<ClientCheckoutPage />) },

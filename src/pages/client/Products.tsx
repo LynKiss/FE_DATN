@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, type FormEvent, type MouseEvent } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo, type FormEvent, type MouseEvent, type ReactNode } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -13,15 +13,13 @@ import {
   Star,
   LayoutGrid,
   List,
-  Truck,
-  ShieldCheck,
-  RotateCcw,
   Tag as TagIcon,
   Globe,
   Flame,
   Eye,
   Sparkles,
   Award,
+  Check,
 } from 'lucide-react';
 import { clientApi } from '../../lib/client-api';
 import { useCart } from '../../hooks/useCart';
@@ -46,7 +44,7 @@ type Product = {
   appliedDiscount?: { id: string; type: string; value: number; name?: string } | null;
 };
 
-type Category = { categoryId: string; categoryName: string; categorySlug: string };
+type Category = { categoryId: string; categoryName: string; categorySlug: string; parentId?: string | null };
 type Subcategory = { subcategoryId: string; subcategoryName: string; categoryId: string };
 type Tag = { tagId: string; tagName: string };
 type Origin = { originId: string; originName: string };
@@ -85,11 +83,46 @@ const SORT_OPTIONS = [
 
 const PAGE_SIZE = 12;
 
-const TRUST_BADGES = [
-  { icon: Truck, title: 'Miễn phí vận chuyển', desc: 'Đơn từ 500.000đ' },
-  { icon: ShieldCheck, title: 'Hàng chính hãng 100%', desc: 'Có giấy chứng nhận' },
-  { icon: RotateCcw, title: 'Đổi trả 7 ngày', desc: 'Nếu lỗi nhà sản xuất' },
+const CAT_BG = [
+  '#004d2e', '#0a3d24', '#163d2c', '#1a4d35', '#0d4232', '#1E3932',
 ];
+
+const PRICE_RANGES = [
+  { label: 'Dưới 50.000đ',           min: '',        max: '50000' },
+  { label: '50.000đ – 200.000đ',     min: '50000',   max: '200000' },
+  { label: '200.000đ – 500.000đ',    min: '200000',  max: '500000' },
+  { label: '500.000đ – 1.000.000đ',  min: '500000',  max: '1000000' },
+  { label: 'Trên 1.000.000đ',        min: '1000000', max: '' },
+];
+
+function FilterSection({
+  label,
+  expanded,
+  onToggle,
+  children,
+}: {
+  label: string;
+  expanded: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="border-b border-gray-100 last:border-0">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between py-3"
+      >
+        <span className="text-[13px] font-medium text-gray-600">{label}</span>
+        <ChevronRight
+          size={14}
+          className={`text-gray-400 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}
+        />
+      </button>
+      {expanded && <div className="pb-3">{children}</div>}
+    </div>
+  );
+}
 
 function isNewProduct(createdAt?: string) {
   if (!createdAt) return false;
@@ -145,7 +178,11 @@ export default function Products() {
   const [addingId, setAddingId] = useState<string | null>(null);
   const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
   const [togglingWishlistId, setTogglingWishlistId] = useState<string | null>(null);
-  const [categoriesExpanded, setCategoriesExpanded] = useState(true);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    () => new Set(['category', 'price']),
+  );
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+  const [collapsedChildSections, setCollapsedChildSections] = useState<Set<string>>(new Set());
   const [nextPage, setNextPage] = useState(1);
   const [recommendations, setRecommendations] = useState<Product[]>([]);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -166,6 +203,7 @@ export default function Products() {
   const priceMax = searchParams.get('priceMax') ?? '';
   const ratingMin = searchParams.get('ratingMin') ?? '';
   const onSaleOnly = searchParams.get('onSale') === '1';
+  const unit = searchParams.get('unit') ?? '';
 
   const [localSearch, setLocalSearch] = useState(search);
   const [localPriceMin, setLocalPriceMin] = useState(priceMin);
@@ -239,6 +277,9 @@ export default function Products() {
           (p) => Number(p.effectivePrice) < Number(p.basePrice) - 0.01,
         );
       }
+      if (unit) {
+        items = items.filter((p) => p.unit === unit);
+      }
       setProducts((current) => (reset ? items : [...current, ...items]));
       setTotal(data.meta?.total ?? 0);
       setTotalPages(data.meta?.totalPages ?? 1);
@@ -250,7 +291,7 @@ export default function Products() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [search, categoryIdsKey, subcategoryId, tagId, originId, priceMin, priceMax, sort, ratingMin, onSaleOnly]);
+  }, [search, categoryIdsKey, subcategoryId, tagId, originId, priceMin, priceMax, sort, ratingMin, onSaleOnly, unit]);
 
   useEffect(() => {
     setNextPage(1);
@@ -357,6 +398,7 @@ export default function Products() {
     originId && { key: 'origin', label: `📍 ${selectedOriginName ?? 'Xuất xứ'}`, clear: () => updateParam('originId', '') },
     ratingMin && { key: 'rating', label: `${ratingMin}★ trở lên`, clear: () => updateParam('ratingMin', '') },
     onSaleOnly && { key: 'sale', label: '🔥 Đang giảm giá', clear: () => updateParam('onSale', '') },
+    unit && { key: 'unit', label: `Đơn vị: ${unit}`, clear: () => updateParam('unit', '') },
     (priceMin || priceMax) && {
       key: 'price',
       label: priceMin && priceMax ? `${formatPrice(Number(priceMin))} – ${formatPrice(Number(priceMax))}` : priceMin ? `Từ ${formatPrice(Number(priceMin))}` : `Đến ${formatPrice(Number(priceMax))}`,
@@ -403,25 +445,88 @@ export default function Products() {
 
   const loadedCount = products.length;
 
+  const hasActiveFilters = !!(search || tagId || originId || onSaleOnly || ratingMin || priceMin || priceMax || unit);
+
+  const parentCats = useMemo(() => categories.filter((c) => !c.parentId), [categories]);
+  const childrenOf = useCallback(
+    (parentId: string) => categories.filter((c) => c.parentId === parentId),
+    [categories],
+  );
+  const productUnits = useMemo(() => {
+    const seen = new Set<string>();
+    const list: string[] = [];
+    for (const p of products) {
+      if (p.unit && !seen.has(p.unit)) { seen.add(p.unit); list.push(p.unit); }
+    }
+    return list;
+  }, [products]);
+
+  const toggleSection = (key: string) =>
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
   return (
     <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
-        {/* Trust badges banner */}
-        <div className="client-card-soft mb-6 grid grid-cols-3 gap-3 p-3 sm:gap-4 sm:p-4">
-          {TRUST_BADGES.map((b) => (
-            <div key={b.title} className="flex items-center gap-2 sm:gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#006241]/8 sm:h-11 sm:w-11">
-                <b.icon size={18} style={{ color: '#006241' }} />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-xs font-black text-[#1E3932] sm:text-sm">
-                  {b.title}
-                </p>
-                <p className="truncate text-[10px] text-gray-500 sm:text-xs">{b.desc}</p>
-              </div>
+
+        {/* Product recommendations — ẩn khi filter tích cực */}
+        {!hasActiveFilters && recommendations.length > 0 && (
+          <section className="mb-8">
+            <div className="mb-4 flex items-center gap-2">
+              <Sparkles size={16} className="text-[#006241]" />
+              <h2 className="text-base font-black" style={{ color: '#1E3932' }}>Gợi ý cho bạn</h2>
             </div>
-          ))}
-        </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {recommendations.slice(0, 4).map((item) => {
+                const discPct = calcDiscountPct(Number(item.basePrice), Number(item.effectivePrice));
+                return (
+                  <Link
+                    key={item.productId}
+                    to={`/client/products/${item.productId}`}
+                    className="group overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition-shadow duration-300 hover:shadow-[0_4px_16px_rgba(0,98,65,0.12)]"
+                  >
+                    <div className="relative aspect-square overflow-hidden bg-[#f2f0eb]">
+                      {item.primaryImageUrl ? (
+                        <img
+                          src={item.primaryImageUrl}
+                          alt={item.productName}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <Leaf size={32} className="text-[#006241]/25" />
+                        </div>
+                      )}
+                      {discPct > 0 && (
+                        <div className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white">
+                          -{discPct}%
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <p className="line-clamp-2 text-sm font-bold text-[#1E3932] transition group-hover:text-[#006241]">
+                        {item.productName}
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <span className="text-sm font-black text-[#006241]">
+                          {formatPrice(Number(item.effectivePrice ?? item.basePrice))}
+                        </span>
+                        {discPct > 0 && (
+                          <span className="text-xs text-gray-400 line-through">
+                            {formatPrice(Number(item.basePrice))}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Page header */}
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -494,161 +599,247 @@ export default function Products() {
 
         <div className="flex gap-6">
           {/* Sidebar */}
-          <aside className={`${filtersOpen ? 'fixed inset-0 z-50 overflow-y-auto bg-white' : 'hidden'} w-full lg:relative lg:block lg:w-56 lg:shrink-0`}>
+          <aside className={`${filtersOpen ? 'fixed inset-0 z-50 overflow-y-auto bg-white px-5 pt-0' : 'hidden'} w-full lg:relative lg:block lg:w-52 lg:shrink-0`}>
             {filtersOpen && (
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-5">
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white py-4">
                 <h3 className="font-bold text-[#1E3932]">Bộ lọc</h3>
                 <button onClick={() => setFiltersOpen(false)}><X size={20} /></button>
               </div>
             )}
 
-            <div className={`space-y-6 ${filtersOpen ? 'p-5' : 'client-card p-5'}`}>
-              {/* Desktop search */}
-              <div className="hidden lg:block">
-                <form onSubmit={handleSearch} className="relative">
-                  <input value={localSearch} onChange={(e) => setLocalSearch(e.target.value)} placeholder="Tìm sản phẩm..."
-                    className="client-input w-full py-2.5 pl-4 pr-10 text-sm" />
-                  <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-[#006241]"><Search size={16} /></button>
-                </form>
-              </div>
-
-              {/* Category */}
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setCategoriesExpanded((v) => !v)}
-                  className="mb-3 flex w-full items-center justify-between"
-                >
-                  <p className="text-[11px] font-black uppercase tracking-wider text-gray-400">Danh mục</p>
-                  <ChevronRight
-                    size={14}
-                    className={`text-gray-400 transition-transform ${categoriesExpanded ? 'rotate-90' : ''}`}
-                  />
-                </button>
-                {categoriesExpanded && (
-                  <div className="space-y-1">
-                    <button onClick={() => { updateMultiple({ categoryIds: '', categoryId: '', subcategoryId: '' }); setFiltersOpen(false); }}
-                      className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${selectedCategoryIds.length === 0 ? 'bg-[#006241] text-white' : 'text-[#1E3932] hover:bg-[#006241]/8'}`}>
-                      Tất cả sản phẩm
-                    </button>
-                    {categories.map((cat) => (
-                      <button key={cat.categoryId}
-                        onClick={() => {
-                          const nextIds = selectedCategoryIds.includes(cat.categoryId)
-                            ? selectedCategoryIds.filter((id) => id !== cat.categoryId)
-                            : [...selectedCategoryIds, cat.categoryId];
-                          updateMultiple({ categoryIds: nextIds.join(','), categoryId: '', subcategoryId: '' });
-                        }}
-                        className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${selectedCategoryIds.includes(cat.categoryId) ? 'bg-[#006241]/10 text-[#006241]' : 'text-[#1E3932] hover:bg-[#006241]/8'}`}>
-                        <input
-                          type="checkbox"
-                          checked={selectedCategoryIds.includes(cat.categoryId)}
-                          readOnly
-                          className="h-4 w-4 rounded border-[#006241]/30 accent-[#006241]"
-                        />
-                        {cat.categoryName}
-                      </button>
-                    ))}
-                  </div>
+            {/* Sidebar content */}
+            <div className="pt-1">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <span className="text-[15px] font-bold text-gray-900">Bộ lọc</span>
+                {!loading && total > 0 && (
+                  <span className="text-[13px] text-gray-400">{total} kết quả</span>
                 )}
               </div>
 
-              {/* Subcategory */}
-              {subcategories.length > 0 && (
-                <div>
-                  <p className="mb-3 text-[11px] font-black uppercase tracking-wider text-gray-400">Phân loại</p>
-                  <div className="space-y-1">
-                    <button onClick={() => updateParam('subcategoryId', '')}
-                      className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${!subcategoryId ? 'font-bold text-[#006241]' : 'text-gray-500 hover:text-[#1E3932]'}`}>
-                      Tất cả
-                    </button>
-                    {subcategories.map((sub) => (
-                      <button key={sub.subcategoryId}
-                        onClick={() => { updateParam('subcategoryId', sub.subcategoryId); setFiltersOpen(false); }}
-                        className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${subcategoryId === sub.subcategoryId ? 'font-bold text-[#006241]' : 'text-gray-500 hover:text-[#1E3932]'}`}>
-                        {sub.subcategoryName}
+              {/* Section: Danh mục cha */}
+              <FilterSection
+                label="Danh mục cha"
+                expanded={expandedSections.has('category')}
+                onToggle={() => toggleSection('category')}
+              >
+                <div className="space-y-1">
+                  <button
+                    onClick={() => { updateMultiple({ categoryIds: '', categoryId: '', subcategoryId: '' }); setFiltersOpen(false); }}
+                    className="flex w-full items-center gap-3 py-2"
+                  >
+                    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${selectedCategoryIds.length === 0 ? 'border-[#006241] bg-[#006241]' : 'border-gray-300 bg-white'}`}>
+                      {selectedCategoryIds.length === 0 && <span className="h-2 w-2 rounded-full bg-white" />}
+                    </span>
+                    <span className={`text-[14px] ${selectedCategoryIds.length === 0 ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>Tất cả</span>
+                  </button>
+                  {parentCats.map((parent) => {
+                    const children = childrenOf(parent.categoryId);
+                    const childIds = children.map((c) => c.categoryId);
+                    const isParentSelected = selectedCategoryIds.includes(parent.categoryId);
+                    const hasSelectedChild = children.some((c) => selectedCategoryIds.includes(c.categoryId));
+                    const isActive = isParentSelected || hasSelectedChild;
+                    return (
+                      <button
+                        key={parent.categoryId}
+                        onClick={() => {
+                          if (isActive) {
+                            updateMultiple({ categoryIds: '', categoryId: '', subcategoryId: '' });
+                          } else {
+                            updateMultiple({ categoryIds: parent.categoryId, categoryId: '', subcategoryId: '' });
+                          }
+                        }}
+                        className="flex w-full items-center gap-3 py-2"
+                      >
+                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${isActive ? 'border-[#006241] bg-[#006241]' : 'border-gray-300 bg-white'}`}>
+                          {isActive && <span className="h-2 w-2 rounded-full bg-white" />}
+                        </span>
+                        <span className={`text-[14px] ${isActive ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>{parent.categoryName}</span>
+                        {childIds.length > 0 && <span className="ml-auto text-[11px] text-gray-400">{childIds.length}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </FilterSection>
+
+              {/* Section: Danh mục con — hiển thị khi parent được chọn HOẶC có child được chọn */}
+              {parentCats.map((parent) => {
+                const children = childrenOf(parent.categoryId);
+                if (children.length === 0) return null;
+                const isParentSelected = selectedCategoryIds.includes(parent.categoryId);
+                const hasSelectedChild = children.some((c) => selectedCategoryIds.includes(c.categoryId));
+                const noFilter = selectedCategoryIds.length === 0;
+                if (!noFilter && !isParentSelected && !hasSelectedChild) return null;
+                return (
+                  <div key={parent.categoryId}>
+                    <FilterSection
+                      label={parent.categoryName}
+                      expanded={!collapsedChildSections.has(parent.categoryId)}
+                      onToggle={() => setCollapsedChildSections((prev: Set<string>) => {
+                        const next = new Set(prev);
+                        next.has(parent.categoryId) ? next.delete(parent.categoryId) : next.add(parent.categoryId);
+                        return next;
+                      })}
+                    >
+                      <div className="space-y-1">
+                        {children.map((child) => {
+                          const isChildSelected = selectedCategoryIds.includes(child.categoryId);
+                          return (
+                            <button
+                              key={child.categoryId}
+                              onClick={() => {
+                                updateMultiple({
+                                  categoryIds: isChildSelected ? parent.categoryId : child.categoryId,
+                                  categoryId: '',
+                                  subcategoryId: '',
+                                });
+                                setFiltersOpen(false);
+                              }}
+                              className="flex w-full items-center gap-3 py-2"
+                            >
+                              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${isChildSelected ? 'border-[#006241] bg-[#006241]' : 'border-gray-300 bg-white'}`}>
+                                {isChildSelected && <span className="h-2 w-2 rounded-full bg-white" />}
+                              </span>
+                              <span className={`text-[14px] ${isChildSelected ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>{child.categoryName}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </FilterSection>
+                  </div>
+                );
+              })}
+
+
+              {/* Section: Đơn vị */}
+              {productUnits.length > 0 && (
+                <FilterSection
+                  label="Đơn vị"
+                  expanded={expandedSections.has('unit')}
+                  onToggle={() => toggleSection('unit')}
+                >
+                  <div className="space-y-0.5">
+                    {productUnits.map((u) => (
+                      <button
+                        key={u}
+                        onClick={() => { updateParam('unit', unit === u ? '' : u); setFiltersOpen(false); }}
+                        className="flex w-full items-center gap-3 py-1.5"
+                      >
+                        <span className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition ${unit === u ? 'border-[#006241] bg-[#006241]' : 'border-gray-300 bg-white'}`}>
+                          {unit === u && <span className="h-[7px] w-[7px] rounded-full bg-white" />}
+                        </span>
+                        <span className="text-[14px] text-gray-800">{u}</span>
                       </button>
                     ))}
                   </div>
-                </div>
+                </FilterSection>
               )}
 
-              {/* Price range */}
-              <div>
-                <p className="mb-3 text-[11px] font-black uppercase tracking-wider text-gray-400">Khoảng giá (VND)</p>
-                <div className="space-y-2">
-                  <input
-                    type="number" placeholder="Giá tối thiểu" value={localPriceMin}
-                    onChange={(e) => setLocalPriceMin(e.target.value)}
-                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-3 py-2 text-sm outline-none focus:border-[#006241]"
-                  />
-                  <input
-                    type="number" placeholder="Giá tối đa" value={localPriceMax}
-                    onChange={(e) => setLocalPriceMax(e.target.value)}
-                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-3 py-2 text-sm outline-none focus:border-[#006241]"
-                  />
-                  <button onClick={() => { handleApplyPrice(); setFiltersOpen(false); }}
-                    className="w-full rounded-xl py-2 text-sm font-bold text-white transition active:scale-95"
-                    style={{ background: '#006241' }}>
-                    Áp dụng
-                  </button>
-                </div>
-              </div>
-
-              {/* Origins */}
-              {origins.length > 0 && (
-                <div>
-                  <p className="mb-3 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-gray-400">
-                    <Globe size={11} />
-                    Xuất xứ
-                  </p>
-                  <div className="space-y-1 max-h-40 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-300">
-                    {origins.map((o) => (
+              {/* Section: Khoảng giá */}
+              <FilterSection
+                label="Khoảng giá"
+                expanded={expandedSections.has('price')}
+                onToggle={() => toggleSection('price')}
+              >
+                <div className="space-y-0.5">
+                  {PRICE_RANGES.map((range) => {
+                    const isSelected = priceMin === range.min && priceMax === range.max;
+                    return (
                       <button
-                        key={o.originId}
+                        key={range.label}
                         onClick={() => {
-                          updateParam('originId', originId === o.originId ? '' : o.originId);
+                          if (isSelected) {
+                            setLocalPriceMin(''); setLocalPriceMax('');
+                            updateMultiple({ priceMin: '', priceMax: '' });
+                          } else {
+                            setLocalPriceMin(range.min); setLocalPriceMax(range.max);
+                            updateMultiple({ priceMin: range.min, priceMax: range.max });
+                          }
                           setFiltersOpen(false);
                         }}
-                        className={`w-full rounded-xl px-3 py-1.5 text-left text-xs transition ${
-                          originId === o.originId
-                            ? 'bg-[#006241]/10 font-bold text-[#006241]'
-                            : 'text-gray-500 hover:bg-[#006241]/5 hover:text-[#1E3932]'
-                        }`}
+                        className="flex w-full items-center gap-3 py-1.5"
                       >
-                        {o.originName}
+                        <span className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition ${isSelected ? 'border-[#006241] bg-[#006241]' : 'border-gray-300 bg-white'}`}>
+                          {isSelected && <span className="h-[7px] w-[7px] rounded-full bg-white" />}
+                        </span>
+                        <span className="text-[14px] text-gray-800">{range.label}</span>
                       </button>
-                    ))}
+                    );
+                  })}
+                  {/* Custom range */}
+                  <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number" placeholder="Từ" value={localPriceMin}
+                        onChange={(e) => setLocalPriceMin(e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] outline-none transition focus:border-[#006241]/50"
+                      />
+                      <span className="shrink-0 text-gray-300">–</span>
+                      <input
+                        type="number" placeholder="Đến" value={localPriceMax}
+                        onChange={(e) => setLocalPriceMax(e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] outline-none transition focus:border-[#006241]/50"
+                      />
+                    </div>
+                    <button
+                      onClick={() => { handleApplyPrice(); setFiltersOpen(false); }}
+                      className="w-full rounded-lg border border-gray-800 py-2 text-[13px] font-semibold text-gray-800 transition hover:bg-gray-800 hover:text-white"
+                    >
+                      Áp dụng
+                    </button>
                   </div>
                 </div>
+              </FilterSection>
+
+              {/* Section: Xuất xứ */}
+              {origins.length > 0 && (
+                <FilterSection
+                  label="Xuất xứ"
+                  expanded={expandedSections.has('origin')}
+                  onToggle={() => toggleSection('origin')}
+                >
+                  <div className="max-h-48 space-y-0.5 overflow-y-auto">
+                    {origins.map((o) => {
+                      const isSel = originId === o.originId;
+                      return (
+                        <button
+                          key={o.originId}
+                          onClick={() => { updateParam('originId', isSel ? '' : o.originId); setFiltersOpen(false); }}
+                          className="flex w-full items-center gap-3 py-1.5"
+                        >
+                          <span className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition ${isSel ? 'border-[#006241] bg-[#006241]' : 'border-gray-300 bg-white'}`}>
+                            {isSel && <span className="h-[7px] w-[7px] rounded-full bg-white" />}
+                          </span>
+                          <span className="text-[14px] text-gray-800">{o.originName}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </FilterSection>
               )}
 
-              {/* Tags */}
+              {/* Section: Nhãn */}
               {tags.length > 0 && (
-                <div>
-                  <p className="mb-3 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-gray-400">
-                    <TagIcon size={11} />
-                    Nhãn
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
+                <FilterSection
+                  label="Nhãn"
+                  expanded={expandedSections.has('tag')}
+                  onToggle={() => toggleSection('tag')}
+                >
+                  <div className="space-y-0.5">
                     {tags.map((t) => (
                       <button
                         key={t.tagId}
-                        onClick={() => {
-                          updateParam('tagId', tagId === t.tagId ? '' : t.tagId);
-                          setFiltersOpen(false);
-                        }}
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
-                          tagId === t.tagId
-                            ? 'bg-[#006241] text-white'
-                            : 'bg-[#006241]/8 text-[#006241] hover:bg-[#006241]/15'
-                        }`}
+                        onClick={() => { updateParam('tagId', tagId === t.tagId ? '' : t.tagId); setFiltersOpen(false); }}
+                        className="flex w-full items-center gap-3 py-1.5"
                       >
-                        #{t.tagName}
+                        <span className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition ${tagId === t.tagId ? 'border-[#006241] bg-[#006241]' : 'border-gray-300 bg-white'}`}>
+                          {tagId === t.tagId && <span className="h-[7px] w-[7px] rounded-full bg-white" />}
+                        </span>
+                        <span className="text-[14px] text-gray-800">#{t.tagName}</span>
                       </button>
                     ))}
                   </div>
-                </div>
+                </FilterSection>
               )}
             </div>
           </aside>
@@ -702,35 +893,6 @@ export default function Products() {
               </p>
             )}
 
-            {recommendations.length > 0 && (
-              <div className="client-card-soft mb-5 p-4">
-                <div className="mb-3 flex items-center gap-2">
-                  <Sparkles size={16} className="text-[#006241]" />
-                  <h2 className="text-sm font-black text-[#1E3932]">AI gợi ý cho bạn</h2>
-                </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {recommendations.slice(0, 4).map((item) => (
-                    <Link
-                      key={item.productId}
-                      to={`/client/products/${item.productId}`}
-                      className="rounded-xl border border-black/5 bg-white p-2 transition hover:border-[#006241]/30"
-                    >
-                      <div className="aspect-square overflow-hidden rounded-lg bg-[#f2f0eb]">
-                        {item.primaryImageUrl ? (
-                          <img src={item.primaryImageUrl} alt={item.productName} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <Leaf size={24} className="text-[#006241]/25" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="mt-2 line-clamp-2 text-xs font-bold text-[#1E3932]">{item.productName}</p>
-                      <p className="mt-1 text-xs font-black text-[#006241]">{formatPrice(Number(item.effectivePrice ?? item.basePrice))}</p>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Product grid area */}
             <div>
