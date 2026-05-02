@@ -19,6 +19,7 @@ import {
 import { apiClient } from '../lib/api';
 import { useLanguage } from '../i18n/language-context';
 import { useToast } from '../hooks/useToast';
+import { useAdminSession } from '../hooks/useAdminSession';
 
 export const VIETNAM_PROVINCES = [
   'An Giang','Bà Rịa - Vũng Tàu','Bắc Giang','Bắc Kạn','Bạc Liêu','Bắc Ninh','Bến Tre','Bình Định','Bình Dương','Bình Phước',
@@ -86,6 +87,49 @@ const ADMIN_SIDEBAR_ITEMS = [
   { id: 'security', label: 'Bảo mật' },
   { id: 'settings', label: 'Cấu hình' },
 ];
+
+// Mirrors the permissions defined in Sidebar.tsx navItems.
+// undefined = public (everyone can see); array = at least one perm required.
+const SIDEBAR_ITEM_PERMISSIONS: Record<string, string[] | undefined> = {
+  'dashboard': undefined,
+  'analytics': ['manage_inventory'],
+  'products': ['manage_products'],
+  'products-all': ['manage_products'],
+  'products-new': ['manage_products'],
+  'products-import': ['manage_inventory'],
+  'products-damage': ['manage_inventory'],
+  'products-lowstock': ['manage_inventory'],
+  'categories': ['manage_products'],
+  'subcategories': ['manage_products'],
+  'origins': ['manage_products'],
+  'tags': ['manage_products'],
+  'orders': ['manage_orders'],
+  'returns': ['manage_orders'],
+  'discounts': ['manage_discounts'],
+  'customers': ['manage_users'],
+  'news': ['manage_news'],
+  'news-comments': ['manage_news'],
+  'reviews': ['manage_reviews'],
+  'payments': ['manage_orders'],
+  'support-chats': ['manage_support'],
+  'rice-diagnosis': ['manage_ai_diagnosis'],
+  'suppliers': ['manage_products'],
+  'procurement': ['manage_products'],
+  'pricing': ['manage_products'],
+  'warehouses': ['manage_inventory'],
+  'inventory-ledger': ['manage_inventory'],
+  'inventory-valuation': ['manage_reports'],
+  'profitability': ['manage_reports'],
+  'aging-debt': ['manage_reports'],
+  'credit-limits': ['manage_users'],
+  'audit-logs': ['manage_permissions'],
+  'newsletter': ['manage_news'],
+  'reports': ['manage_reports'],
+  'permissions': ['manage_permissions'],
+  'interface': ['manage_interface'],
+  'security': ['manage_settings'],
+  'settings': ['manage_settings'],
+};
 
 type StoreConfig = {
   name: string;
@@ -764,6 +808,7 @@ function LanguageTab() {
 
 function SidebarTab() {
   const { showToast } = useToast();
+  const { session } = useAdminSession();
   const [hiddenItemIds, setHiddenItemIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -786,6 +831,17 @@ function SidebarTab() {
     };
   }, []);
 
+  const userPermSet = new Set((session?.user.permissions ?? []).map((p) => p.key));
+
+  const itemHasAccess = (perms?: string[]): boolean => {
+    if (!perms || perms.length === 0) return true;
+    return perms.some((key) => userPermSet.has(key));
+  };
+
+  const accessibleItems = ADMIN_SIDEBAR_ITEMS.filter((item) =>
+    itemHasAccess(SIDEBAR_ITEM_PERMISSIONS[item.id]),
+  );
+
   const toggle = (id: string) => {
     setHiddenItemIds((current) =>
       current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
@@ -799,9 +855,9 @@ function SidebarTab() {
         hiddenItemIds,
       });
       setHiddenItemIds(data.hiddenItemIds ?? []);
-      showToast({ tone: 'success', title: 'Da luu cau hinh sidebar' });
+      showToast({ tone: 'success', title: 'Đã lưu cấu hình sidebar' });
     } catch (err) {
-      showToast({ tone: 'error', title: err instanceof Error ? err.message : 'Luu cau hinh that bai' });
+      showToast({ tone: 'error', title: err instanceof Error ? err.message : 'Lưu cấu hình thất bại' });
     } finally {
       setSaving(false);
     }
@@ -810,16 +866,16 @@ function SidebarTab() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-black text-on-surface">Sidebar quan tri</h2>
-        <p className="mt-1 text-sm text-on-surface-variant">Tat cac muc khong can hien thi trong menu admin toan he thong.</p>
+        <h2 className="text-xl font-black text-on-surface">Sidebar quản trị</h2>
+        <p className="mt-1 text-sm text-on-surface-variant">Tắt các mục không cần hiển thị trong menu admin.</p>
       </div>
 
       <div className="rounded-xl border border-on-surface-variant/10 bg-white p-5">
         {loading ? (
-          <div className="py-8 text-center text-sm text-on-surface-variant">Dang tai cau hinh...</div>
+          <div className="py-8 text-center text-sm text-on-surface-variant">Đang tải cấu hình...</div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {ADMIN_SIDEBAR_ITEMS.map((item) => {
+            {accessibleItems.map((item) => {
               const visible = !hiddenItemIds.includes(item.id);
               return (
                 <label key={item.id} className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-on-surface-variant/10 bg-surface px-4 py-3">
@@ -842,7 +898,7 @@ function SidebarTab() {
         disabled={saving || loading}
         className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
       >
-        <Save size={16} /> {saving ? 'Dang luu...' : 'Luu cau hinh sidebar'}
+        <Save size={16} /> {saving ? 'Đang lưu...' : 'Lưu cấu hình sidebar'}
       </button>
     </div>
   );

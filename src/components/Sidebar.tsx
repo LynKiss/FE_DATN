@@ -36,8 +36,9 @@ import {
 import { NavLink, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAdminSession } from '../hooks/useAdminSession';
+import { useSuperAdminSession } from '../hooks/useSuperAdminSession';
 import { useLanguage } from '../i18n/language-context';
-import { apiClient } from '../lib/api';
+import { apiClient, refreshAdminSession } from '../lib/api';
 
 type SidebarProps = {
   open: boolean;
@@ -67,6 +68,7 @@ type NavItem = {
 export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: SidebarProps) {
   const location = useLocation();
   const { session } = useAdminSession();
+  const { session: superSession } = useSuperAdminSession();
   const { language } = useLanguage();
   const isVietnamese = language === 'vi';
   const [hiddenItemIds, setHiddenItemIds] = useState<Set<string>>(new Set());
@@ -335,21 +337,33 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       path: '/admin/settings',
       permissions: ['manage_settings'],
     },
+    {
+      id: 'super-admin',
+      label: 'Super Admin',
+      icon: KeyRound,
+      path: '/admin/super-admin',
+      permissions: ['super_admin'],
+    },
   ];
 
   // Filter sidebar items theo permissions của user.
-  // ADMIN có 'manage_permissions' → hiện tất cả.
-  // STAFF / VIEWER chỉ thấy các mục có ÍT NHẤT 1 permission khớp.
+  // Mỗi item phải có ít nhất 1 permission khớp trong session.
+  // Không có bypass "admin thấy tất cả" để super admin có thể giới hạn từng quyền.
   const userPermSet = new Set(
     (session?.user.permissions ?? []).map((p) => p.key),
   );
-  const isAdmin = userPermSet.has('manage_permissions');
+  const isSuperAdmin = Boolean(superSession);
 
   const itemHasAccess = (perms?: string[]): boolean => {
     if (!perms || perms.length === 0) return true; // public item
-    if (isAdmin) return true; // admin always has access
+    if (perms.includes('super_admin')) return isSuperAdmin;
     return perms.some((key) => userPermSet.has(key));
   };
+
+  // Refresh session on mount so sidebar permissions always reflect latest DB state.
+  useEffect(() => {
+    void refreshAdminSession().catch(() => {/* ignore — user stays logged in with existing session */});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

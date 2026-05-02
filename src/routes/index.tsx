@@ -46,6 +46,7 @@ const ProfitabilityPage = lazy(() => import('../features/admin/profitability/pag
 const AgingDebtPage = lazy(() => import('../features/admin/aging-debt/page'));
 const CreditLimitsPage = lazy(() => import('../features/admin/credit-limits/page'));
 const AuditLogsPage = lazy(() => import('../features/admin/audit-logs/page'));
+const SuperAdminConfigPage = lazy(() => import('../pages/SuperAdminConfig'));
 
 // Client pages
 const ClientHomePage = lazy(() => import('../features/client/home/page'));
@@ -69,6 +70,7 @@ const ClientAddressesPage = lazy(() => import('../features/client/addresses/page
 const ClientRiceDiagnosisPage = lazy(() => import('../features/client/rice-diagnosis/page'));
 
 const LoginPage = lazy(() => import('../pages/Login'));
+const SuperAdminLoginPage = lazy(() => import('../pages/SuperAdminLogin'));
 
 const withSuspense = (element: ReactNode) => (
   <Suspense fallback={<div className="p-6 text-sm text-on-surface-variant">Loading...</div>}>{element}</Suspense>
@@ -136,6 +138,7 @@ export const router = createBrowserRouter([
               { path: 'aging-debt', element: withSuspense(<AgingDebtPage />) },
               { path: 'credit-limits', element: withSuspense(<CreditLimitsPage />) },
               { path: 'audit-logs', element: withSuspense(<AuditLogsPage />) },
+              { path: 'super-admin', element: withSuspense(<SuperAdminConfigPage />) },
             ],
           },
         ],
@@ -167,6 +170,7 @@ export const router = createBrowserRouter([
         ],
       },
       { path: 'login', element: withSuspense(<LoginPage />) },
+      { path: 'super-admin/login', element: withSuspense(<SuperAdminLoginPage />) },
     ],
   },
 ]);
