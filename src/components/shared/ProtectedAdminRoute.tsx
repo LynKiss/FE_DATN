@@ -8,6 +8,10 @@ export default function ProtectedAdminRoute() {
   const location = useLocation();
 
   if (!session && !superSession) {
+    if (location.pathname.startsWith('/admin/super-admin')) {
+      return <Navigate to="/super-admin/login" replace state={{ from: location.pathname }} />;
+    }
+
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 

@@ -209,7 +209,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }: 
       label: isVietnamese ? 'Thanh toán' : 'Payments',
       icon: CreditCard,
       path: '/admin/payments',
-      permissions: ['manage_orders'],
+      permissions: ['manage_payments'],
     },
     {
       id: 'support-chats',
