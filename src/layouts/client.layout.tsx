@@ -44,6 +44,7 @@ type Notification = {
   id: string | null;
   title: string;
   message: string;
+  channel: string;
   metadata: { orderId?: string; type?: string } | null;
   createdAt: string | null;
 };
@@ -123,7 +124,9 @@ export default function ClientLayout() {
 
   useEffect(() => {
     if (!session) return;
-    void clientApi.get<Notification[]>('/notifications/me').then(setNotifications).catch(() => { });
+    void clientApi.get<Notification[]>('/notifications/me')
+      .then((data) => setNotifications(data.filter((n) => n.channel === 'SYSTEM')))
+      .catch(() => { });
   }, [session]);
 
   useEffect(() => {
@@ -625,20 +628,35 @@ export default function ClientLayout() {
                           <p className="text-xs text-gray-400">Chưa có thông báo</p>
                         </div>
                       ) : (
-                        notifications.slice(0, 20).map((n, idx) => (
-                          <div
-                            key={n.id ?? idx}
-                            className="border-b border-black/5 px-4 py-3 last:border-0"
-                          >
-                            <p className="text-xs font-semibold text-[#1E3932]">{n.title}</p>
-                            <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">{n.message}</p>
-                            {n.createdAt && (
-                              <p className="mt-1 text-[10px] text-gray-400">
-                                {new Date(n.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                            )}
-                          </div>
-                        ))
+                        notifications.slice(0, 20).map((n, idx) => {
+                          const orderId = n.metadata?.orderId;
+                          const inner = (
+                            <>
+                              <p className="text-xs font-semibold text-[#1E3932]">{n.title}</p>
+                              <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">{n.message}</p>
+                              {n.createdAt && (
+                                <p className="mt-1 text-[10px] text-gray-400">
+                                  {new Date(n.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              )}
+                            </>
+                          );
+                          const cls = 'block w-full border-b border-black/5 px-4 py-3 last:border-0 text-left';
+                          return orderId ? (
+                            <Link
+                              key={n.id ?? idx}
+                              to={`/client/orders/${orderId}`}
+                              className={`${cls} transition hover:bg-[#006241]/5`}
+                              onClick={() => setNotifOpen(false)}
+                            >
+                              {inner}
+                            </Link>
+                          ) : (
+                            <div key={n.id ?? idx} className={cls}>
+                              {inner}
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   </div>

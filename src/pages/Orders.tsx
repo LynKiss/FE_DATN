@@ -53,6 +53,8 @@ type OrderHistory = {
   createdAt: string;
 };
 
+type OrderStats = Partial<Record<OrderStatus, number>>;
+
 type OrderSummary = {
   id: string;
   status: OrderStatus;
@@ -192,9 +194,12 @@ export default function Orders() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+  const [activeTab, setActiveTab] = useState<'detail' | 'tracking'>('detail');
   const [nextStatus, setNextStatus] = useState<OrderStatus>('pending');
   const [statusNote, setStatusNote] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const [stats, setStats] = useState<OrderStats>({});
 
   const [tracking, setTracking] = useState<OrderTracking | null>(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
@@ -275,7 +280,7 @@ export default function Orders() {
             loadError instanceof Error
               ? loadError.message
               : isVietnamese
-                ? 'Khong tai duoc danh sach don hang'
+                ? 'Không tải được danh sách đơn hàng'
                 : 'Unable to load orders',
           );
         }
@@ -304,6 +309,10 @@ export default function Orders() {
   useEffect(() => {
     setPage(1);
   }, [search, status]);
+
+  useEffect(() => {
+    void apiClient.get<OrderStats>('/orders/admin/stats').then(setStats).catch(() => { });
+  }, [reloadKey]);
 
   useEffect(() => {
     if (!detailOpen || !selectedOrder) {
@@ -385,6 +394,7 @@ export default function Orders() {
   async function openOrderDetail(orderId: string) {
     setDetailOpen(true);
     setDetailLoading(true);
+    setActiveTab('detail');
     setTracking(null);
     setManualForm(EMPTY_MANUAL_FORM);
     setLiveForm(EMPTY_LIVE_FORM);
@@ -422,6 +432,8 @@ export default function Orders() {
 
       setSelectedOrder(updated);
       setStatusNote('');
+      const newAllowed = getAllowedNextStatuses(updated.status);
+      setNextStatus(newAllowed[0] ?? updated.status);
       setOrders((current) =>
         current.map((order) =>
           order.id === updated.id
@@ -591,7 +603,7 @@ export default function Orders() {
         </h1>
         <p className="mt-1 text-sm text-on-surface-variant">
           {isVietnamese
-            ? 'Theo doi don hang, thanh toan va tracking giao hang realtime trong mot man hinh.'
+            ? 'Theo dõi đơn hàng, thanh toán và tracking giao hàng realtime trong một màn hình.'
             : 'Track orders, payment status, and live delivery tracking in one screen.'}
         </p>
       </div>
@@ -608,8 +620,8 @@ export default function Orders() {
               onChange={(event) => setSearch(event.target.value)}
               placeholder={
                 isVietnamese
-                  ? 'Tim theo ma don, khach hang, so dien thoai'
-                  : 'Search by order, customer, phone'
+                  ? 'Tìm theo mã đơn, khách hàng, số điện thoại...'
+                  : 'Search by order ID, customer, phone'
               }
               className="w-full rounded-xl border border-on-surface/10 bg-surface py-3 pl-11 pr-4 text-sm outline-none"
             />
@@ -667,29 +679,31 @@ export default function Orders() {
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-3 gap-3 md:grid-cols-5 lg:grid-cols-9">
         {[
-          { status: 'backordered', label: isVietnamese ? 'Chờ hàng' : 'Backordered', color: 'text-rose-600', bg: 'bg-rose-50' },
-          { status: 'pending', label: isVietnamese ? 'Chờ xử lý' : 'Pending', color: 'text-amber-600', bg: 'bg-amber-50' },
-          { status: 'confirmed', label: isVietnamese ? 'Đã xác nhận' : 'Confirmed', color: 'text-sky-600', bg: 'bg-sky-50' },
-          { status: 'processing', label: isVietnamese ? 'Đang xử lý' : 'Processing', color: 'text-violet-600', bg: 'bg-violet-50' },
-          { status: 'shipping', label: isVietnamese ? 'Đang giao' : 'Shipping', color: 'text-blue-600', bg: 'bg-blue-50' },
-          { status: 'delivered', label: isVietnamese ? 'Đã giao' : 'Delivered', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-        ].map(({ status: nextStatusLabel, label, color, bg }) => {
-          const count = orders.filter((order) => order.status === nextStatusLabel).length;
+          { status: 'backordered', label: isVietnamese ? 'Chờ hàng' : 'Backordered', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
+          { status: 'pending', label: isVietnamese ? 'Chờ xử lý' : 'Pending', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+          { status: 'confirmed', label: isVietnamese ? 'Xác nhận' : 'Confirmed', color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200' },
+          { status: 'processing', label: isVietnamese ? 'Xử lý' : 'Processing', color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
+          { status: 'shipping', label: isVietnamese ? 'Đang giao' : 'Shipping', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
+          { status: 'delivered', label: isVietnamese ? 'Đã giao' : 'Delivered', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+          { status: 'partial_delivered', label: isVietnamese ? 'Giao 1 phần' : 'Partial', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
+          { status: 'cancelled', label: isVietnamese ? 'Đã hủy' : 'Cancelled', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
+          { status: 'returned', label: isVietnamese ? 'Hoàn trả' : 'Returned', color: 'text-zinc-600', bg: 'bg-zinc-50', border: 'border-zinc-200' },
+        ].map(({ status: s, label, color, bg, border }) => {
+          const count = stats[s as OrderStatus] ?? 0;
+          const isActive = status === s;
           return (
             <button
-              key={nextStatusLabel}
+              key={s}
               type="button"
-              onClick={() => setStatus(nextStatusLabel as OrderStatus)}
-              className={`group rounded-xl border p-4 text-left shadow-sm transition hover:scale-[1.02] ${
-                status === nextStatusLabel
-                  ? 'border-primary bg-primary/5'
-                  : `border-on-surface/8 ${bg}`
+              onClick={() => setStatus(s as OrderStatus)}
+              className={`rounded-xl border p-3 text-left transition hover:scale-[1.02] ${
+                isActive ? 'border-primary bg-primary/5 shadow-md' : `${border} ${bg}`
               }`}
             >
-              <p className={`text-3xl font-black ${color}`}>{count}</p>
-              <p className="mt-1 text-xs font-semibold text-on-surface-variant">
+              <p className={`text-2xl font-black ${color}`}>{count}</p>
+              <p className="mt-1 text-[11px] font-semibold text-on-surface-variant leading-tight">
                 {label}
               </p>
             </button>
@@ -738,7 +752,14 @@ export default function Orders() {
               ) : (
                 orders.map((order) => (
                   <tr key={order.id} className="hover:bg-surface/40">
-                    <td className="px-4 py-4 font-semibold text-primary">{order.id}</td>
+                    <td className="px-4 py-4 font-mono">
+                      <span
+                        className="cursor-default font-semibold text-primary"
+                        title={order.id}
+                      >
+                        #{order.id.slice(0, 8).toUpperCase()}
+                      </span>
+                    </td>
                     <td className="px-4 py-4">
                       <p className="font-semibold text-on-surface">{order.fullName}</p>
                       <p className="text-xs text-on-surface-variant">{order.address}</p>
@@ -804,7 +825,7 @@ export default function Orders() {
         size="xl"
         footer={
           selectedOrder ? (
-            <div className="flex flex-wrap items-center justify-end gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <a
                 href={`/admin/invoices/${selectedOrder.id}/print`}
                 target="_blank"
@@ -813,46 +834,56 @@ export default function Orders() {
               >
                 🖨 {isVietnamese ? 'In hóa đơn' : 'Print invoice'}
               </a>
-              {getAllowedNextStatuses(selectedOrder.status).length === 0 ? (
-                <span className="rounded-xl border border-on-surface/10 bg-surface/60 px-4 py-2.5 text-sm italic text-on-surface-variant/60">
-                  {isVietnamese ? 'Đơn hàng đã kết thúc' : 'Order is finalized'}
-                </span>
-              ) : (
-                <select
-                  value={nextStatus}
-                  onChange={(event) => setNextStatus(event.target.value as OrderStatus)}
-                  className="rounded-xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none"
-                >
-                  {getAllowedNextStatuses(selectedOrder.status).map((item) => (
-                    <option key={item} value={item}>
-                      {getStatusLabel(item, isVietnamese)}
-                    </option>
-                  ))}
-                </select>
+
+              {activeTab === 'detail' && (
+                <div className="flex flex-wrap items-center gap-3">
+                  {getAllowedNextStatuses(selectedOrder.status).length === 0 ? (
+                    <span className="rounded-xl border border-on-surface/10 bg-surface/60 px-4 py-2.5 text-sm italic text-on-surface-variant/60">
+                      {isVietnamese ? 'Đơn hàng đã kết thúc' : 'Order is finalized'}
+                    </span>
+                  ) : (
+                    <>
+                      <select
+                        value={nextStatus}
+                        onChange={(event) => setNextStatus(event.target.value as OrderStatus)}
+                        className="rounded-xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none"
+                      >
+                        {getAllowedNextStatuses(selectedOrder.status).map((item) => (
+                          <option key={item} value={item}>
+                            {getStatusLabel(item, isVietnamese)}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        value={statusNote}
+                        onChange={(event) => setStatusNote(event.target.value)}
+                        placeholder={isVietnamese ? 'Ghi chú cập nhật' : 'Status note'}
+                        className="w-48 rounded-xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleUpdateStatus()}
+                        disabled={updatingStatus}
+                        className="admin-pill admin-pill-primary px-5 py-2.5 text-sm font-black disabled:opacity-60"
+                      >
+                        {updatingStatus ? (
+                          <>
+                            <LoaderCircle size={14} className="animate-spin" />
+                            {isVietnamese ? 'Đang cập nhật...' : 'Updating...'}
+                          </>
+                        ) : isVietnamese ? 'Cập nhật trạng thái' : 'Update status'}
+                      </button>
+                    </>
+                  )}
+                </div>
               )}
-              {getAllowedNextStatuses(selectedOrder.status).length > 0 && (
-                <>
-                  <input
-                    value={statusNote}
-                    onChange={(event) => setStatusNote(event.target.value)}
-                    placeholder={isVietnamese ? 'Ghi chú cập nhật' : 'Status note'}
-                    className="w-full rounded-xl border border-on-surface/10 bg-surface px-4 py-2.5 text-sm outline-none sm:w-64"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void handleUpdateStatus()}
-                    disabled={updatingStatus}
-                    className="admin-pill admin-pill-primary px-5 py-2.5 text-sm font-black disabled:opacity-60"
-                  >
-                    {updatingStatus
-                      ? isVietnamese
-                        ? 'Dang cap nhat...'
-                        : 'Updating...'
-                      : isVietnamese
-                        ? 'Cap nhat trang thai'
-                        : 'Update status'}
-                  </button>
-                </>
+
+              {activeTab === 'tracking' && (
+                <span className="text-sm text-on-surface-variant/60 italic">
+                  {tracking
+                    ? `${TRACKING_MODE_LABELS[tracking.mode]} — ${TRACKING_SOURCE_LABELS[tracking.activeSource]}`
+                    : isVietnamese ? 'Chưa có tín hiệu tracking' : 'No tracking signal'}
+                </span>
               )}
             </div>
           ) : undefined
@@ -863,14 +894,40 @@ export default function Orders() {
             <LoaderCircle size={18} className="mx-auto animate-spin" />
           </div>
         ) : selectedOrder ? (
-          <div className="space-y-6">
+          <div className="space-y-5">
+            {/* Tab bar */}
+            <div className="flex gap-1 rounded-xl border border-on-surface/8 bg-surface/60 p-1">
+              {([
+                { key: 'detail', label: isVietnamese ? '📋 Chi tiết & trạng thái' : '📋 Detail & status' },
+                { key: 'tracking', label: isVietnamese ? '🗺 Tracking giao hàng' : '🗺 Delivery tracking' },
+              ] as const).map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition ${
+                    activeTab === tab.key
+                      ? 'bg-white shadow-sm text-primary'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {activeTab === 'detail' && (
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <DetailCard label={isVietnamese ? 'Mã đơn' : 'Order ID'} value={selectedOrder.id} />
+                  <DetailCard
+                    label={isVietnamese ? 'Mã đơn' : 'Order ID'}
+                    value={`#${selectedOrder.id.slice(0, 8).toUpperCase()}`}
+                    subValue={selectedOrder.id}
+                  />
                   <DetailCard
                     label={isVietnamese ? 'Phương thức thanh toán' : 'Payment method'}
-                    value={selectedOrder.paymentMethod || '-'}
+                    value={getPaymentMethodLabel(selectedOrder.paymentMethod)}
                   />
                   <DetailCard
                     label={isVietnamese ? 'Khách hàng' : 'Customer'}
@@ -965,8 +1022,8 @@ export default function Orders() {
                             <p className="font-semibold text-on-surface">
                               {(item.oldStatus
                                 ? getStatusLabel(item.oldStatus, isVietnamese)
-                                : '-') +
-                                ' -> ' +
+                                : '—') +
+                                ' → ' +
                                 getStatusLabel(item.newStatus, isVietnamese)}
                             </p>
                             <span className="text-xs text-on-surface-variant">
@@ -974,10 +1031,13 @@ export default function Orders() {
                             </span>
                           </div>
                           <p className="mt-1 text-xs text-on-surface-variant">
-                            {item.changedBy || 'system'}
+                            {isVietnamese ? 'Bởi: ' : 'By: '}
+                            <span className="font-medium text-on-surface">
+                              {item.changedBy || 'Hệ thống'}
+                            </span>
                           </p>
-                          {item.note ? (
-                            <p className="mt-2 text-sm text-on-surface">{item.note}</p>
+                          {normalizeHistoryNote(item.note) ? (
+                            <p className="mt-2 text-sm text-on-surface">{normalizeHistoryNote(item.note)}</p>
                           ) : null}
                         </div>
                       ))
@@ -986,7 +1046,9 @@ export default function Orders() {
                 </div>
               </div>
             </div>
+            )}
 
+            {activeTab === 'tracking' && (
             <section className="rounded-xl border border-on-surface/8 bg-surface/50 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -996,10 +1058,9 @@ export default function Orders() {
                   </h3>
                   <p className="mt-2 text-sm text-on-surface-variant">
                     {tracking
-                      ? `${TRACKING_MODE_LABELS[tracking.mode]} - ${TRACKING_SOURCE_LABELS[tracking.activeSource]
-                      }`
+                      ? `${TRACKING_MODE_LABELS[tracking.mode]} — ${TRACKING_SOURCE_LABELS[tracking.activeSource]}`
                       : isVietnamese
-                        ? 'Chua co du lieu tracking'
+                        ? 'Chưa có dữ liệu tracking'
                         : 'No tracking data yet'}
                   </p>
                 </div>
@@ -1052,54 +1113,44 @@ export default function Orders() {
                               <MapPin size={28} className="text-primary/40" />
                               <p className="text-sm">
                                 {isVietnamese
-                                  ? 'Chua co toa do de hien thi'
+                                  ? 'Chưa có tọa độ để hiển thị'
                                   : 'No coordinates available'}
                               </p>
                             </div>
                           )}
                         </div>
-                        <div className="grid grid-cols-2 gap-3 border-t border-on-surface/8 px-4 py-3 text-sm sm:grid-cols-4">
+                        <div className="grid grid-cols-3 gap-3 border-t border-on-surface/8 px-4 py-3 text-sm">
                           <InfoPill
-                            label={isVietnamese ? 'Lat' : 'Lat'}
+                            label="Latitude"
                             value={activeMapPoint ? String(activeMapPoint.latitude) : '-'}
                           />
                           <InfoPill
-                            label={isVietnamese ? 'Lng' : 'Lng'}
+                            label="Longitude"
                             value={activeMapPoint ? String(activeMapPoint.longitude) : '-'}
                           />
                           <InfoPill
-                            label={isVietnamese ? 'Cập nhật' : 'Updated'}
+                            label={isVietnamese ? 'Cập nhật lúc' : 'Updated at'}
                             value={activeMapPoint ? formatTrackingTime(activeMapPoint.updatedAt) : '-'}
-                          />
-                          <InfoPill
-                            label={isVietnamese ? 'GPS fresh' : 'GPS fresh'}
-                            value={tracking?.gpsSignalFresh ? 'Yes' : 'No'}
                           />
                         </div>
                       </div>
 
                       <div className="grid gap-3 sm:grid-cols-3">
-                        <button
-                          type="button"
-                          onClick={() => seedManualFrom('active')}
-                          className="rounded-xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
-                        >
-                          {isVietnamese ? 'Lấy vị trí đang hiển thị' : 'Use active point'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => seedManualFrom('gps')}
-                          className="rounded-xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
-                        >
-                          {isVietnamese ? 'Lấy từ GPS' : 'Use GPS point'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => seedManualFrom('manual')}
-                          className="rounded-xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
-                        >
-                          {isVietnamese ? 'Lấy từ demo hiện tại' : 'Use manual point'}
-                        </button>
+                        {([
+                          { source: 'active' as const, label: isVietnamese ? 'Lấy vị trí đang hiển thị' : 'Use active point', hasData: !!tracking?.activeLocation },
+                          { source: 'gps' as const, label: isVietnamese ? 'Lấy từ GPS' : 'Use GPS point', hasData: !!tracking?.gpsLocation },
+                          { source: 'manual' as const, label: isVietnamese ? 'Lấy từ demo hiện tại' : 'Use manual point', hasData: !!tracking?.manualLocation },
+                        ]).map(({ source, label, hasData }) => (
+                          <button
+                            key={source}
+                            type="button"
+                            onClick={() => seedManualFrom(source)}
+                            disabled={!hasData}
+                            className="rounded-xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-semibold text-on-surface-variant transition hover:border-primary/30 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {label}
+                          </button>
+                        ))}
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -1115,7 +1166,7 @@ export default function Orders() {
                             onClick={() => nudgeManual(item.lat, item.lng)}
                             className="rounded-xl border border-on-surface/10 bg-white px-4 py-3 text-sm font-bold text-on-surface transition hover:border-primary/30 hover:text-primary"
                           >
-                            {isVietnamese ? `Dich ${item.label}` : `Move ${item.label}`}
+                            {isVietnamese ? `Dịch ${item.label}` : `Move ${item.label}`}
                           </button>
                         ))}
                       </div>
@@ -1266,11 +1317,41 @@ export default function Orders() {
                 </>
               )}
             </section>
+            )}
           </div>
         ) : null}
       </Modal>
     </div>
   );
+}
+
+function normalizeHistoryNote(note: string | null): string | null {
+  if (!note) return null;
+  const map: Record<string, string> = {
+    'Order created': 'Đơn hàng đã được tạo',
+    'Order created (backordered — chờ nhập kho)': 'Đơn hàng được tạo (đang chờ nhập kho)',
+    'Order status updated by admin': 'Cập nhật trạng thái bởi admin',
+    'Order cancelled by user': 'Khách hàng đã hủy đơn',
+    'Backorder cancelled': 'Đã hủy đơn chờ hàng',
+    'Auto-cancel by reconciliation (unpaid > 30min)': 'Tự động hủy do chưa thanh toán sau 30 phút',
+    'Auto-cancelled by reconciliation cron (unpaid > 30 min)': 'Tự động hủy do chưa thanh toán sau 30 phút',
+    'Guest order created': 'Đơn hàng khách vãng lai đã được tạo',
+    'Guest order checkout': 'Khách vãng lai đặt hàng',
+  };
+  return map[note] ?? note;
+}
+
+function getPaymentMethodLabel(method: string | undefined | null): string {
+  const map: Record<string, string> = {
+    cod: 'COD (thanh toán khi nhận)',
+    momo: 'Ví MoMo',
+    vnpay: 'VNPay',
+    zalopay: 'ZaloPay',
+    bank_transfer: 'Chuyển khoản ngân hàng',
+    credit_card: 'Thẻ tín dụng',
+  };
+  if (!method) return '-';
+  return map[method.toLowerCase()] ?? method.toUpperCase();
 }
 
 function getStatusLabel(status: OrderStatus, isVietnamese: boolean) {
@@ -1362,13 +1443,16 @@ function Badge({ children, tone }: { children: string; tone: BadgeTone }) {
   );
 }
 
-function DetailCard({ label, value }: { label: string; value: string }) {
+function DetailCard({ label, value, subValue }: { label: string; value: string; subValue?: string }) {
   return (
     <div className="rounded-xl bg-surface px-4 py-3">
       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-on-surface-variant/60">
         {label}
       </p>
       <p className="mt-2 text-sm font-semibold text-on-surface">{value}</p>
+      {subValue && (
+        <p className="mt-0.5 break-all font-mono text-[10px] text-on-surface-variant/50">{subValue}</p>
+      )}
     </div>
   );
 }

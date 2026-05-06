@@ -1,5 +1,17 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
-import { EyeOff, Eye, Trash2, LoaderCircle, Search, Star, RefreshCw } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  EyeOff,
+  Eye,
+  ImageIcon,
+  Trash2,
+  LoaderCircle,
+  Search,
+  Star,
+  RefreshCw,
+  X,
+} from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { apiClient } from '../lib/api';
 import { useLanguage } from '../i18n/language-context';
@@ -13,6 +25,7 @@ type ReviewItem = {
   content: string;
   rating: number | null;
   status: ReviewStatus;
+  imageUrls: string[];
   likeCount: number;
   dislikeCount: number;
   createdAt: string;
@@ -35,6 +48,8 @@ type ReviewStats = {
 };
 
 type FilterStatus = 'all' | ReviewStatus;
+
+// ── Sub-components ──────────────────────────────────────────────────────────
 
 function StarRating({ rating }: { rating: number | null }) {
   if (rating === null) return <span className="text-xs text-on-surface-variant/50">—</span>;
@@ -65,6 +80,121 @@ function StatusBadge({ status }: { status: ReviewStatus }) {
   );
 }
 
+function ImageThumbnails({
+  urls,
+  onOpen,
+}: {
+  urls: string[];
+  onOpen: (index: number) => void;
+}) {
+  if (urls.length === 0) return null;
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1">
+      {urls.map((url, i) => (
+        <button
+          key={url}
+          type="button"
+          onClick={() => onOpen(i)}
+          className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-on-surface/10 transition hover:scale-105 hover:border-primary/40 hover:shadow"
+          title="Xem ảnh"
+        >
+          <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
+        </button>
+      ))}
+      {urls.length > 1 && (
+        <span className="flex h-10 items-center px-1 text-[10px] font-bold text-on-surface-variant/60">
+          {urls.length} ảnh
+        </span>
+      )}
+    </div>
+  );
+}
+
+type LightboxState = { images: string[]; index: number };
+
+function Lightbox({
+  state,
+  onClose,
+  onPrev,
+  onNext,
+}: {
+  state: LightboxState;
+  onClose: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  const { images, index } = state;
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') onPrev();
+      if (e.key === 'ArrowRight') onNext();
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose, onPrev, onNext]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      {/* Nav prev */}
+      {images.length > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onPrev(); }}
+          className="absolute left-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
+        >
+          <ChevronLeft size={22} />
+        </button>
+      )}
+
+      {/* Image */}
+      <div
+        className="relative mx-16 flex max-h-[88vh] max-w-[88vw] items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          src={images[index]}
+          alt={`Ảnh ${index + 1}`}
+          className="max-h-[88vh] max-w-full rounded-2xl object-contain shadow-2xl"
+        />
+      </div>
+
+      {/* Nav next */}
+      {images.length > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onNext(); }}
+          className="absolute right-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
+        >
+          <ChevronRight size={22} />
+        </button>
+      )}
+
+      {/* Counter */}
+      {images.length > 1 && (
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+          {index + 1} / {images.length}
+        </div>
+      )}
+
+      {/* Close */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
+      >
+        <X size={18} />
+      </button>
+    </div>
+  );
+}
+
+// ── Main page ───────────────────────────────────────────────────────────────
+
 export default function Reviews() {
   const { language } = useLanguage();
   const isVietnamese = language === 'vi';
@@ -84,7 +214,10 @@ export default function Reviews() {
     (searchParams.get('status') as FilterStatus) ?? 'all',
   );
   const [filterRating, setFilterRating] = useState<string>(searchParams.get('rating') ?? '');
+  const [filterHasImages, setFilterHasImages] = useState(searchParams.get('hasImages') === 'true');
   const [page, setPage] = useState(Number(searchParams.get('page') ?? '1'));
+
+  const [lightbox, setLightbox] = useState<LightboxState | null>(null);
 
   const LIMIT = 12;
 
@@ -103,14 +236,15 @@ export default function Reviews() {
     if (search.trim()) next.set('search', search.trim());
     if (filterStatus !== 'all') next.set('status', filterStatus);
     if (filterRating) next.set('rating', filterRating);
+    if (filterHasImages) next.set('hasImages', 'true');
     if (page > 1) next.set('page', String(page));
     setSearchParams(next, { replace: true });
-  }, [search, filterStatus, filterRating, page, setSearchParams]);
+  }, [search, filterStatus, filterRating, filterHasImages, page, setSearchParams]);
 
   // Reset page on filter change
   useEffect(() => {
     setPage(1);
-  }, [search, filterStatus, filterRating]);
+  }, [search, filterStatus, filterRating, filterHasImages]);
 
   // Load stats
   useEffect(() => {
@@ -118,18 +252,10 @@ export default function Reviews() {
     setStatsLoading(true);
     void apiClient
       .get<ReviewStats>('/reviews/admin/stats')
-      .then((data) => {
-        if (!cancelled) setStats(data);
-      })
-      .catch(() => {
-        /* stats are non-critical */
-      })
-      .finally(() => {
-        if (!cancelled) setStatsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .then((data) => { if (!cancelled) setStats(data); })
+      .catch(() => { /* non-critical */ })
+      .finally(() => { if (!cancelled) setStatsLoading(false); });
+    return () => { cancelled = true; };
   }, [reloadKey]);
 
   // Load reviews
@@ -142,6 +268,7 @@ export default function Reviews() {
     if (filterStatus !== 'all') q.set('status', filterStatus);
     if (filterRating) q.set('rating', filterRating);
     if (search.trim()) q.set('search', search.trim());
+    if (filterHasImages) q.set('hasImages', 'true');
 
     void apiClient
       .get<ReviewsResponse>(`/reviews/admin?${q.toString()}`)
@@ -152,22 +279,13 @@ export default function Reviews() {
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Không tải được danh sách đánh giá',
-          );
-        }
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : 'Không tải được danh sách đánh giá');
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      .finally(() => { if (!cancelled) setLoading(false); });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [search, filterStatus, filterRating, page, reloadKey]);
+    return () => { cancelled = true; };
+  }, [search, filterStatus, filterRating, filterHasImages, page, reloadKey]);
 
   async function handleHide(commentId: string) {
     try {
@@ -175,11 +293,7 @@ export default function Reviews() {
       showToast({ tone: 'success', title: 'Đã ẩn đánh giá' });
       setReloadKey((k) => k + 1);
     } catch (err) {
-      showToast({
-        tone: 'error',
-        title: 'Ẩn thất bại',
-        description: err instanceof Error ? err.message : '',
-      });
+      showToast({ tone: 'error', title: 'Ẩn thất bại', description: err instanceof Error ? err.message : '' });
     }
   }
 
@@ -189,11 +303,7 @@ export default function Reviews() {
       showToast({ tone: 'success', title: 'Đã hiển thị đánh giá' });
       setReloadKey((k) => k + 1);
     } catch (err) {
-      showToast({
-        tone: 'error',
-        title: 'Thao tác thất bại',
-        description: err instanceof Error ? err.message : '',
-      });
+      showToast({ tone: 'error', title: 'Thao tác thất bại', description: err instanceof Error ? err.message : '' });
     }
   }
 
@@ -204,21 +314,35 @@ export default function Reviews() {
       showToast({ tone: 'success', title: 'Đã xóa đánh giá' });
       setReloadKey((k) => k + 1);
     } catch (err) {
-      showToast({
-        tone: 'error',
-        title: 'Xóa thất bại',
-        description: err instanceof Error ? err.message : '',
-      });
+      showToast({ tone: 'error', title: 'Xóa thất bại', description: err instanceof Error ? err.message : '' });
     }
+  }
+
+  function openLightbox(images: string[], index: number) {
+    setLightbox({ images, index });
+  }
+
+  function closeLightbox() {
+    setLightbox(null);
+  }
+
+  function lightboxPrev() {
+    setLightbox((prev) => prev ? { ...prev, index: (prev.index - 1 + prev.images.length) % prev.images.length } : null);
+  }
+
+  function lightboxNext() {
+    setLightbox((prev) => prev ? { ...prev, index: (prev.index + 1) % prev.images.length } : null);
   }
 
   return (
     <div className="space-y-6 pb-12">
+      {lightbox && (
+        <Lightbox state={lightbox} onClose={closeLightbox} onPrev={lightboxPrev} onNext={lightboxNext} />
+      )}
+
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-black tracking-tight text-primary">
-          Quản lý đánh giá
-        </h1>
+        <h1 className="text-4xl font-black tracking-tight text-primary">Quản lý đánh giá</h1>
         <p className="mt-1 text-sm text-on-surface-variant">
           Kiểm duyệt đánh giá sản phẩm từ khách hàng, ẩn hoặc xóa nội dung không phù hợp.
         </p>
@@ -228,10 +352,7 @@ export default function Reviews() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {statsLoading || !stats ? (
           Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-on-surface/8 bg-white p-4 text-center shadow-sm"
-            >
+            <div key={i} className="rounded-2xl border border-on-surface/8 bg-white p-4 text-center shadow-sm">
               <div className="mx-auto h-7 w-12 animate-pulse rounded-lg bg-surface" />
               <div className="mx-auto mt-2 h-3 w-16 animate-pulse rounded bg-surface" />
             </div>
@@ -242,11 +363,7 @@ export default function Reviews() {
             <StatCard label="Hiển thị" value={stats.totalVisible} accent="emerald" />
             <StatCard label="Đang ẩn" value={stats.totalHidden} accent="amber" />
             <StatCard label="Đã xóa" value={stats.totalDeleted} accent="red" />
-            <StatCard
-              label="Điểm TB"
-              value={stats.averageRating.toFixed(1)}
-              icon={<Star size={13} className="fill-amber-400 text-amber-400" />}
-            />
+            <StatCard label="Điểm TB" value={stats.averageRating.toFixed(1)} icon={<Star size={13} className="fill-amber-400 text-amber-400" />} />
             <StatCard label="Hôm nay" value={stats.reviewsToday} />
           </>
         )}
@@ -254,12 +371,9 @@ export default function Reviews() {
 
       {/* Filter bar */}
       <section className="rounded-xl border border-on-surface/8 bg-white p-5 shadow-sm">
-        <div className="grid gap-3 sm:grid-cols-[1fr_180px_160px_auto]">
+        <div className="grid gap-3 sm:grid-cols-[1fr_160px_140px_auto_auto]">
           <label className="relative">
-            <Search
-              size={16}
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50"
-            />
+            <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -286,11 +400,23 @@ export default function Reviews() {
           >
             <option value="">Tất cả sao</option>
             {[5, 4, 3, 2, 1].map((r) => (
-              <option key={r} value={String(r)}>
-                {r} sao
-              </option>
+              <option key={r} value={String(r)}>{r} sao</option>
             ))}
           </select>
+
+          <button
+            type="button"
+            onClick={() => setFilterHasImages((v) => !v)}
+            title="Chỉ hiện đánh giá có ảnh"
+            className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+              filterHasImages
+                ? 'border-primary bg-primary text-white'
+                : 'border-on-surface/10 bg-surface text-on-surface-variant hover:border-primary/30 hover:text-primary'
+            }`}
+          >
+            <ImageIcon size={15} />
+            Có ảnh
+          </button>
 
           <button
             type="button"
@@ -305,9 +431,7 @@ export default function Reviews() {
       </section>
 
       {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
-          {error}
-        </div>
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">{error}</div>
       ) : null}
 
       {/* Table */}
@@ -318,7 +442,7 @@ export default function Reviews() {
               <tr>
                 <th className="px-4 py-4">Sản phẩm</th>
                 <th className="px-4 py-4">Người dùng</th>
-                <th className="px-4 py-4">Nội dung</th>
+                <th className="px-4 py-4">Nội dung & Ảnh</th>
                 <th className="px-4 py-4 text-center">Rating</th>
                 <th className="px-4 py-4 text-center">Lượt thích</th>
                 <th className="px-4 py-4">Trạng thái</th>
@@ -346,7 +470,7 @@ export default function Reviews() {
               ) : (
                 reviews.map((review) => (
                   <tr key={review.commentId} className="hover:bg-surface/40">
-                    <td className="px-4 py-4 max-w-[180px]">
+                    <td className="px-4 py-4 max-w-[160px]">
                       <p className="truncate font-semibold text-on-surface">
                         {review.product.productName ?? '—'}
                       </p>
@@ -354,8 +478,12 @@ export default function Reviews() {
                     <td className="px-4 py-4 whitespace-nowrap text-on-surface-variant">
                       {review.user.username ?? '—'}
                     </td>
-                    <td className="px-4 py-4 max-w-[260px]">
+                    <td className="px-4 py-4 max-w-[280px]">
                       <p className="line-clamp-2 text-on-surface">{review.content}</p>
+                      <ImageThumbnails
+                        urls={review.imageUrls}
+                        onOpen={(i) => openLightbox(review.imageUrls, i)}
+                      />
                     </td>
                     <td className="px-4 py-4 text-center">
                       <StarRating rating={review.rating} />
@@ -419,10 +547,7 @@ export default function Reviews() {
             totalPages={meta.totalPages}
             isVietnamese={isVietnamese}
             onPageChange={setPage}
-            onLimitChange={(next) => {
-              setPage(1);
-              void next; // limit is fixed at 12, no-op
-            }}
+            onLimitChange={(next) => { setPage(1); void next; }}
             pageSizeOptions={[12]}
           />
         </div>
@@ -443,13 +568,10 @@ function StatCard({
   icon?: ReactNode;
 }) {
   const colorCls =
-    accent === 'emerald'
-      ? 'text-emerald-600'
-      : accent === 'amber'
-        ? 'text-amber-600'
-        : accent === 'red'
-          ? 'text-red-600'
-          : 'text-primary';
+    accent === 'emerald' ? 'text-emerald-600'
+    : accent === 'amber' ? 'text-amber-600'
+    : accent === 'red' ? 'text-red-600'
+    : 'text-primary';
 
   return (
     <div className="rounded-2xl border border-on-surface/8 bg-white p-4 text-center shadow-sm">

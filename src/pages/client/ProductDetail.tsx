@@ -16,6 +16,8 @@ import {
   LoaderCircle,
   ThumbsUp,
   ThumbsDown,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { clientApi } from '../../lib/client-api';
 import { useCart } from '../../hooks/useCart';
@@ -151,10 +153,27 @@ export default function ProductDetail() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMsg, setReviewMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [alreadyReviewed, setAlreadyReviewed] = useState(false);
-  // Track voted reviews in state: reviewId -> 'like' | 'dislike' | null
-  const [reviewVotes, setReviewVotes] = useState<Record<string, 'like' | 'dislike' | null>>({});
+  // Track voted reviews — persisted in localStorage so votes survive page reload
+  const [reviewVotes, setReviewVotes] = useState<Record<string, 'like' | 'dislike' | null>>(() => {
+    if (!id) return {};
+    try {
+      const raw = localStorage.getItem(`review_votes_${id}`);
+      return raw ? (JSON.parse(raw) as Record<string, 'like' | 'dislike' | null>) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (!id) return;
+    try {
+      localStorage.setItem(`review_votes_${id}`, JSON.stringify(reviewVotes));
+    } catch {}
+  }, [id, reviewVotes]);
   // Local counts override from API responses
   const [reviewCounts, setReviewCounts] = useState<Record<string, { likeCount: number; dislikeCount: number }>>({});
+  const [deleteReviewId, setDeleteReviewId] = useState<string | null>(null);
+  const [deletingReview, setDeletingReview] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -330,6 +349,34 @@ export default function ProductDetail() {
 
   const handleRemoveReviewImage = (url: string) => {
     setReviewForm((f) => ({ ...f, imageUrls: f.imageUrls.filter((u) => u !== url) }));
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    setDeletingReview(true);
+    try {
+      await clientApi.delete(`/reviews/${reviewId}`);
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      // Update product rating display optimistically
+      setProduct((prev) => {
+        if (!prev) return prev;
+        const remaining = reviews.filter((r) => r.id !== reviewId);
+        const newCount = remaining.length;
+        const newAvg =
+          newCount === 0
+            ? 0
+            : remaining.reduce((s, r) => s + r.rating, 0) / newCount;
+        return {
+          ...prev,
+          ratingCount: newCount,
+          ratingAverage: newAvg.toFixed(2),
+        };
+      });
+      setDeleteReviewId(null);
+      if (alreadyReviewed) setAlreadyReviewed(false);
+    } catch {
+      setDeleteReviewId(null);
+    }
+    setDeletingReview(false);
   };
 
   const handleReviewVote = async (reviewId: string, voteType: 'like' | 'dislike') => {
@@ -966,7 +1013,10 @@ export default function ProductDetail() {
                   </div>
                 ) : (
                   <div className="space-y-5">
-                    {visibleReviews.map((r) => (
+                    {visibleReviews.map((r) => {
+                      const isOwn = session?.user._id === r.userId;
+                      const confirmingDelete = deleteReviewId === r.id;
+                      return (
                       <div key={r.id} className="border-b border-black/5 pb-5">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2.5">
@@ -983,8 +1033,49 @@ export default function ProductDetail() {
                               </p>
                             </div>
                           </div>
-                          <StarRating value={r.rating} />
+                          <div className="flex items-center gap-2">
+                            <StarRating value={r.rating} />
+                            {isOwn && !confirmingDelete && (
+                              <button
+                                type="button"
+                                title="Xóa đánh giá của bạn"
+                                onClick={() => setDeleteReviewId(r.id)}
+                                className="ml-1 rounded-full p-1 text-gray-300 transition hover:bg-red-50 hover:text-red-400"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Inline delete confirmation */}
+                        {confirmingDelete && (
+                          <div className="mt-3 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                            <AlertTriangle size={15} className="shrink-0 text-red-400" />
+                            <p className="flex-1 text-xs text-red-600">
+                              Xóa đánh giá này? Thao tác không thể hoàn tác và điểm sản phẩm sẽ được cập nhật lại.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteReviewId(null)}
+                              className="rounded-full border border-black/10 px-3 py-1 text-xs text-gray-500 hover:bg-white"
+                            >
+                              Hủy
+                            </button>
+                            <button
+                              type="button"
+                              disabled={deletingReview}
+                              onClick={() => { void handleDeleteReview(r.id); }}
+                              className="inline-flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
+                            >
+                              {deletingReview
+                                ? <LoaderCircle size={11} className="animate-spin" />
+                                : <Trash2 size={11} />}
+                              Xóa
+                            </button>
+                          </div>
+                        )}
+
                         <p className="mt-3 text-sm leading-relaxed text-gray-600">{r.content}</p>
                         {r.imageUrls && r.imageUrls.length > 0 && (
                           <div className="mt-3 flex flex-wrap gap-2">
@@ -1041,7 +1132,8 @@ export default function ProductDetail() {
                           </button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
