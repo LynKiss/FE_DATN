@@ -171,6 +171,8 @@ export const router = createBrowserRouter([
       },
       { path: 'login', element: withSuspense(<LoginPage />) },
       { path: 'super-admin/login', element: withSuspense(<SuperAdminLoginPage />) },
+      { path: 'central-super/login', element: <Navigate to="/super-admin/login" replace /> },
+      { path: 'central-super/config', element: <Navigate to="/admin/super-admin" replace /> },
     ],
   },
 ]);

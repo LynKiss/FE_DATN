@@ -17,20 +17,21 @@ type ThemeContextValue = {
 };
 
 const STORAGE_KEY = 'fe_admin_theme';
+const DEFAULT_THEME: ThemeMode = 'light';
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     if (typeof window === 'undefined') {
-      return 'system';
+      return DEFAULT_THEME;
     }
 
     const storedTheme = window.localStorage.getItem(STORAGE_KEY);
-    if (storedTheme === 'system' || storedTheme === 'light' || storedTheme === 'dark') {
+    if (storedTheme === 'light' || storedTheme === 'dark') {
       return storedTheme;
     }
 
-    return 'system';
+    return DEFAULT_THEME;
   });
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') {

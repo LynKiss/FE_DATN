@@ -240,7 +240,7 @@ export default function Permissions() {
                 </ul>
               </div>
               <Link
-                to="/central-super/config"
+                to="/admin/super-admin"
                 className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
               >
                 <KeyRound size={14} />
@@ -299,7 +299,7 @@ export default function Permissions() {
         <div className="flex items-center gap-3">
           {/* Link to individual overrides */}
           <Link
-            to="/central-super/config"
+            to="/admin/super-admin"
             className="inline-flex items-center gap-2 rounded-xl border border-on-surface/15 bg-surface px-4 py-2.5 text-sm font-bold text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
           >
             <KeyRound size={14} />

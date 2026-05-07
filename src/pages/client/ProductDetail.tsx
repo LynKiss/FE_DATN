@@ -22,6 +22,7 @@ import {
 import { clientApi } from '../../lib/client-api';
 import { useCart } from '../../hooks/useCart';
 import { useClientSession } from '../../hooks/useClientSession';
+import { useToast } from '../../hooks/useToast';
 
 type ProductImage = { imageId: string; imageUrl: string; isPrimary: boolean; sortOrder: number };
 
@@ -126,6 +127,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { session } = useClientSession();
   const { addItem } = useCart();
+  const { showToast } = useToast();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<RelatedProduct[]>([]);
@@ -259,6 +261,8 @@ export default function ProductDetail() {
       await addItem(id!, quantity);
       setAddedMsg(true);
       setTimeout(() => setAddedMsg(false), 2500);
+    } catch {
+      showToast({ tone: 'error', title: 'Không thể thêm vào giỏ hàng, vui lòng thử lại' });
     } finally {
       setAdding(false);
     }
@@ -266,8 +270,12 @@ export default function ProductDetail() {
 
   const handleBuyNow = async () => {
     if (!session) { void navigate('/client/login'); return; }
-    await addItem(id!, quantity);
-    void navigate('/client/cart');
+    try {
+      await addItem(id!, quantity);
+      void navigate('/client/cart');
+    } catch {
+      showToast({ tone: 'error', title: 'Không thể thêm vào giỏ hàng, vui lòng thử lại' });
+    }
   };
 
   const handleWishlist = async () => {
@@ -585,9 +593,13 @@ export default function ProductDetail() {
               )}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Tình trạng</span>
-                {product.quantityAvailable > 0 ? (
+                {product.quantityAvailable > 10 ? (
                   <span className="font-semibold text-[#006241]">
                     Còn hàng ({product.quantityAvailable} {product.unit ?? 'sản phẩm'})
+                  </span>
+                ) : product.quantityAvailable > 0 ? (
+                  <span className="font-semibold text-amber-600">
+                    Sắp hết hàng (còn {product.quantityAvailable} {product.unit ?? 'sản phẩm'})
                   </span>
                 ) : (
                   <span className="font-semibold text-[#c82014]">Hết hàng</span>
@@ -611,15 +623,33 @@ export default function ProductDetail() {
               <p className="mb-2 text-sm font-semibold text-[#1E3932]">Số lượng</p>
               <div className="flex items-center gap-3">
                 <button
+                  type="button"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-[#1E3932] transition hover:border-[#006241]"
+                  disabled={quantity <= 1}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-[#1E3932] transition hover:border-[#006241] disabled:opacity-40"
                 >
                   <Minus size={16} />
                 </button>
-                <span className="w-12 text-center text-lg font-bold text-[#1E3932]">{quantity}</span>
+                <input
+                  key={quantity}
+                  type="number"
+                  min={1}
+                  max={product.quantityAvailable || 1}
+                  defaultValue={quantity}
+                  onBlur={(e: { currentTarget: HTMLInputElement }) => {
+                    const v = parseInt(e.currentTarget.value, 10);
+                    const max = product.quantityAvailable > 0 ? product.quantityAvailable : Infinity;
+                    setQuantity(isNaN(v) || v < 1 ? 1 : Math.min(max, v));
+                  }}
+                  onKeyDown={(e: { key: string; currentTarget: HTMLInputElement }) => {
+                    if (e.key === 'Enter') e.currentTarget.blur();
+                  }}
+                  className="w-14 border-0 bg-transparent text-center text-lg font-bold text-[#1E3932] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
                 <button
+                  type="button"
                   onClick={() => setQuantity((q) => Math.min(product.quantityAvailable, q + 1))}
-                  disabled={quantity >= product.quantityAvailable}
+                  disabled={product.quantityAvailable > 0 && quantity >= product.quantityAvailable}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-[#1E3932] transition hover:border-[#006241] disabled:opacity-40"
                 >
                   <Plus size={16} />
@@ -629,22 +659,32 @@ export default function ProductDetail() {
 
             {/* Actions */}
             <div className="mt-5 flex gap-3">
+              {product.quantityAvailable === 0 ? (
+                <div className="flex flex-1 items-center justify-center gap-2 rounded-full border border-gray-200 bg-gray-100 py-3.5 text-sm font-bold text-gray-400">
+                  <ShoppingCart size={18} /> Hết hàng
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void handleAddToCart()}
+                    disabled={adding}
+                    className="client-pill-outline flex flex-1 items-center justify-center gap-2 py-3.5 text-sm font-bold disabled:opacity-50"
+                  >
+                    <ShoppingCart size={18} />
+                    {adding ? 'Đang thêm...' : addedMsg ? '✓ Đã thêm!' : 'Thêm vào giỏ'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleBuyNow()}
+                    className="client-pill-primary flex flex-1 items-center justify-center py-3.5 text-sm font-bold"
+                  >
+                    Mua ngay
+                  </button>
+                </>
+              )}
               <button
-                onClick={() => void handleAddToCart()}
-                disabled={adding || product.quantityAvailable === 0}
-                className="client-pill-outline flex flex-1 items-center justify-center gap-2 py-3.5 text-sm font-bold disabled:opacity-50"
-              >
-                <ShoppingCart size={18} />
-                {adding ? 'Đang thêm...' : addedMsg ? '✓ Đã thêm!' : 'Thêm vào giỏ'}
-              </button>
-              <button
-                onClick={() => void handleBuyNow()}
-                disabled={product.quantityAvailable === 0}
-                className="client-pill-primary flex flex-1 items-center justify-center py-3.5 text-sm font-bold disabled:opacity-50"
-              >
-                Mua ngay
-              </button>
-              <button
+                type="button"
                 onClick={() => void handleWishlist()}
                 className={`flex h-12 w-12 items-center justify-center rounded-full border transition ${
                   wishlisted

@@ -285,9 +285,23 @@ export default function Cart() {
                         >
                           <Minus size={13} />
                         </button>
-                        <span className="w-8 text-center text-sm font-bold text-[#1E3932]">
-                          {item.quantity}
-                        </span>
+                        <input
+                          key={item.quantity}
+                          type="number"
+                          min={1}
+                          max={item.availableQuantity ?? undefined}
+                          defaultValue={item.quantity}
+                          onBlur={(e: { currentTarget: HTMLInputElement }) => {
+                            const v = parseInt(e.currentTarget.value, 10);
+                            const max = item.availableQuantity ?? Infinity;
+                            const clamped = isNaN(v) || v < 1 ? 1 : Math.min(max, v);
+                            if (clamped !== item.quantity) void handleQuantityChange(item.id, clamped);
+                          }}
+                          onKeyDown={(e: { key: string; currentTarget: HTMLInputElement }) => {
+                            if (e.key === 'Enter') e.currentTarget.blur();
+                          }}
+                          className="w-10 border-0 bg-transparent text-center text-sm font-bold text-[#1E3932] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        />
                         <button
                           onClick={() =>
                             void handleQuantityChange(item.id, item.quantity + 1)
