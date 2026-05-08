@@ -23,6 +23,11 @@ type Origin = {
   originName: string;
 };
 
+type Tag = {
+  tagId: string;
+  tagName: string;
+};
+
 type ProductCreatePayload = {
   productId: string;
   productName: string;
@@ -72,9 +77,12 @@ export default function ProductCreate() {
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [origins, setOrigins] = useState<Origin[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [formState, setFormState] = useState<ProductCreatePayload>(defaultPayload);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState('');
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -83,13 +91,15 @@ export default function ProductCreate() {
 
     async function loadData() {
       try {
-        const [cats, origs] = await Promise.all([
+        const [cats, origs, tagsData] = await Promise.all([
           apiClient.get<CategoryNode[]>('/categories/admin/tree'),
           apiClient.get<Origin[]>('/origins').catch(() => [] as Origin[]),
+          apiClient.get<Tag[]>('/tags').catch(() => [] as Tag[]),
         ]);
         if (!cancelled) {
           setCategories(cats);
           setOrigins(Array.isArray(origs) ? origs : []);
+          setTags(Array.isArray(tagsData) ? tagsData : []);
         }
       } catch (error) {
         if (!cancelled) {
@@ -160,13 +170,16 @@ export default function ProductCreate() {
         quantityPerBox: formState.quantityPerBox ? Number(formState.quantityPerBox) : undefined,
         barcode: formState.barcode.trim() || undefined,
         boxBarcode: formState.boxBarcode.trim() || undefined,
+        tagIds: selectedTagIds,
       });
 
-      if (imageFile) {
-        const formData = new FormData();
-        formData.append('file', imageFile);
-        formData.append('isPrimary', 'true');
-        await apiClient.postForm(`/products/${created.productId}/images`, formData);
+      if (imageFiles.length > 0) {
+        for (const [index, file] of imageFiles.entries()) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('isPrimary', String(index === primaryImageIndex));
+          await apiClient.postForm(`/products/${created.productId}/images`, formData);
+        }
       }
 
       showToast({
@@ -203,7 +216,7 @@ export default function ProductCreate() {
           </p>
         </div>
         <button type="button" onClick={() => void handleSubmit()} disabled={saving || loading}
-          className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-primary-container px-6 py-3 text-sm font-black text-white shadow-xl shadow-primary/20 disabled:opacity-60">
+          className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-black text-white shadow-sm shadow-primary/20 disabled:opacity-60">
           {saving ? <LoaderCircle size={18} className="animate-spin" /> : <Save size={18} />}
           <span>{isVietnamese ? 'Lưu sản phẩm' : 'Save product'}</span>
         </button>
@@ -212,7 +225,7 @@ export default function ProductCreate() {
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         {/* Left: main info */}
         <div className="space-y-6">
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm sm:p-8">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm sm:p-8">
             <p className="mb-5 text-[11px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
               {isVietnamese ? 'Thông tin cơ bản' : 'Basic information'}
             </p>
@@ -295,6 +308,24 @@ export default function ProductCreate() {
                 </div>
               </div>
 
+              {/* Tags */}
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">Nhãn sản phẩm</label>
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((tag) => {
+                    const selected = selectedTagIds.includes(tag.tagId);
+                    return (
+                      <button key={tag.tagId} type="button"
+                        onClick={() => setSelectedTagIds(prev => selected ? prev.filter(id => id !== tag.tagId) : [...prev, tag.tagId])}
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold border-2 transition ${selected ? 'border-amber-500 bg-amber-500 text-white' : 'border-gray-200 bg-white text-gray-600 hover:border-amber-300'}`}>
+                        # {tag.tagName}
+                      </button>
+                    );
+                  })}
+                  {tags.length === 0 && <p className="text-xs text-gray-400">Chưa có nhãn nào</p>}
+                </div>
+              </div>
+
               {/* Description */}
               <RichTextEditor label={isVietnamese ? 'Nội dung mô tả' : 'Description'}
                 value={formState.description}
@@ -307,16 +338,27 @@ export default function ProductCreate() {
         {/* Right: image + hints */}
         <aside className="space-y-6">
           {/* Primary image upload */}
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
             <p className="mb-1 text-[10px] font-black uppercase tracking-[0.24em] text-on-surface-variant/50">
               {isVietnamese ? 'Ảnh đại diện' : 'Primary image'}
             </p>
             <p className="mb-4 text-xs text-on-surface-variant/60">
               {isVietnamese ? 'Ảnh hiển thị chính trong danh sách và trang chi tiết.' : 'Main image shown in listings and detail page.'}
             </p>
-            <label className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center gap-3 rounded-[1.75rem] border border-dashed border-on-surface/15 bg-surface p-4 text-center transition hover:border-primary/40">
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="max-h-48 rounded-2xl object-cover" />
+            <label className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-on-surface/15 bg-surface p-4 text-center transition hover:border-primary/40">
+              {imagePreviews.length > 0 ? (
+                <div className="grid w-full grid-cols-2 gap-3">
+                  {imagePreviews.map((preview, index) => (
+                    <button
+                      key={preview}
+                      type="button"
+                      onClick={() => setPrimaryImageIndex(index)}
+                      className={`overflow-hidden rounded-2xl border-2 ${primaryImageIndex === index ? 'border-primary' : 'border-transparent'}`}
+                    >
+                      <img src={preview} alt="Preview" className="h-28 w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               ) : (
                 <>
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -330,15 +372,16 @@ export default function ProductCreate() {
                   </div>
                 </>
               )}
-              <input type="file" accept="image/*" className="hidden"
+              <input type="file" accept="image/*" multiple className="hidden"
                 onChange={(e) => {
-                  const file = e.target.files?.[0] ?? null;
-                  setImageFile(file);
-                  setImagePreview(file ? URL.createObjectURL(file) : '');
+                  const files = Array.from(e.target.files ?? []) as File[];
+                  setImageFiles(files);
+                  setImagePreviews(files.map((file) => URL.createObjectURL(file)));
+                  setPrimaryImageIndex(0);
                 }} />
             </label>
-            {imagePreview && (
-              <button onClick={() => { setImageFile(null); setImagePreview(''); }}
+            {imagePreviews.length > 0 && (
+              <button onClick={() => { setImageFiles([]); setImagePreviews([]); setPrimaryImageIndex(0); }}
                 className="mt-3 w-full rounded-xl border border-red-200 py-2 text-xs font-bold text-red-500 transition hover:bg-red-50">
                 {isVietnamese ? 'Xóa ảnh' : 'Remove image'}
               </button>
@@ -347,7 +390,7 @@ export default function ProductCreate() {
 
           {/* Price guidance */}
           {formState.productPriceSale && formState.productPrice && (
-            <section className="rounded-[2.5rem] border border-amber-100 bg-amber-50 p-5">
+            <section className="rounded-xl border border-amber-100 bg-amber-50 p-5">
               <p className="text-xs font-black uppercase tracking-wider text-amber-700">Xem trước giảm giá</p>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-sm">
@@ -369,7 +412,7 @@ export default function ProductCreate() {
           )}
 
           {/* Hints */}
-          <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <PackagePlus size={22} />

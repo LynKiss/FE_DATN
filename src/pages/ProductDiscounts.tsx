@@ -326,7 +326,7 @@ export default function ProductDiscounts() {
         </button>
       </div>
 
-      <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+      <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -502,6 +502,7 @@ export default function ProductDiscounts() {
               <input
                 type="number"
                 min="0"
+                max={form.discountType === 'percent' ? 100 : undefined}
                 value={form.discountValue}
                 onChange={(e) => setForm((p) => ({ ...p, discountValue: e.target.value }))}
                 className="input-base"

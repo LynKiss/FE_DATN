@@ -71,14 +71,14 @@ export default function Wishlist() {
 
   if (loading) {
     return (
-      <div style={{ background: '#f2f0eb', minHeight: '60vh' }} className="flex items-center justify-center">
+      <div className="client-surface flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#006241] border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-5xl px-4 py-10 lg:px-6">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -96,14 +96,13 @@ export default function Wishlist() {
         </div>
 
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-white py-20 text-center">
+          <div className="client-card flex flex-col items-center justify-center py-20 text-center">
             <Heart size={52} className="mb-4 text-pink-200" />
             <h2 className="font-black text-[#1E3932]">Chưa có sản phẩm yêu thích</h2>
             <p className="mt-1 text-sm text-gray-500">Lưu sản phẩm bạn thích để xem lại sau</p>
             <Link
               to="/client/products"
-              className="mt-5 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white"
-              style={{ background: '#00754A' }}
+              className="client-pill-primary mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold"
             >
               <Leaf size={16} /> Khám phá sản phẩm
             </Link>
@@ -122,13 +121,13 @@ export default function Wishlist() {
                 return (
                   <div
                     key={productId}
-                    className="group relative overflow-hidden rounded-2xl bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                    className="client-card-soft group relative overflow-hidden transition-all"
                   >
                     {/* Remove button */}
                     <button
                       onClick={() => void handleRemove(productId)}
                       disabled={removingId === productId}
-                      className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-gray-400 shadow-sm transition hover:bg-red-50 hover:text-red-500 disabled:opacity-40"
+                      className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-gray-400 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-40"
                     >
                       <Trash2 size={13} />
                     </button>
@@ -190,7 +189,7 @@ export default function Wishlist() {
                         <button
                           onClick={() => void handleAddToCart(productId)}
                           disabled={addingCart === productId || product.quantityAvailable === 0}
-                          className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-[#006241] py-2 text-xs font-bold text-[#006241] transition hover:bg-[#006241] hover:text-white disabled:opacity-40 active:scale-95"
+                          className="client-pill-outline flex flex-1 items-center justify-center gap-1.5 py-2 text-xs font-bold disabled:opacity-40"
                         >
                           <ShoppingCart size={13} />
                           {addingCart === productId ? 'Đang thêm...' : 'Thêm vào giỏ'}

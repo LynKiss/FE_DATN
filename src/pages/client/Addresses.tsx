@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   MapPin,
@@ -16,6 +16,10 @@ import {
 } from 'lucide-react';
 import { clientApi } from '../../lib/client-api';
 import { useClientSession } from '../../hooks/useClientSession';
+
+type Province = { code: number; name: string };
+type District = { code: number; name: string };
+type Ward = { code: number; name: string };
 
 type Address = {
   id: string;
@@ -67,6 +71,15 @@ export default function Addresses() {
 
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
 
+  // Cascading address data
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
+  const provincesCache = useRef<Province[] | null>(null);
+
   useEffect(() => {
     if (!session) {
       void navigate('/client/login');
@@ -92,10 +105,64 @@ export default function Addresses() {
     setTimeout(() => setToast(null), 3500);
   }
 
+  async function fetchProvinces() {
+    if (provincesCache.current) {
+      setProvinces(provincesCache.current);
+      return;
+    }
+    setLoadingProvinces(true);
+    try {
+      const res = await fetch('https://provinces.open-api.vn/api/?depth=1');
+      const data = (await res.json()) as Province[];
+      provincesCache.current = data;
+      setProvinces(data);
+    } catch {
+      setProvinces([]);
+    } finally {
+      setLoadingProvinces(false);
+    }
+  }
+
+  async function fetchDistricts(provinceCode: number) {
+    setLoadingDistricts(true);
+    setDistricts([]);
+    setWards([]);
+    try {
+      const res = await fetch(
+        `https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`,
+      );
+      const data = (await res.json()) as { name: string; districts: District[] };
+      setDistricts(data.districts ?? []);
+    } catch {
+      setDistricts([]);
+    } finally {
+      setLoadingDistricts(false);
+    }
+  }
+
+  async function fetchWards(districtCode: number) {
+    setLoadingWards(true);
+    setWards([]);
+    try {
+      const res = await fetch(
+        `https://provinces.open-api.vn/api/d/${districtCode}?depth=2`,
+      );
+      const data = (await res.json()) as { name: string; wards: Ward[] };
+      setWards(data.wards ?? []);
+    } catch {
+      setWards([]);
+    } finally {
+      setLoadingWards(false);
+    }
+  }
+
   function openCreate() {
     setEditTarget(null);
     setForm({ ...defaultForm, isDefault: addresses.length === 0 });
     setFormErrors({});
+    setDistricts([]);
+    setWards([]);
+    void fetchProvinces();
     setFormOpen(true);
   }
 
@@ -111,6 +178,9 @@ export default function Addresses() {
       isDefault: addr.isDefault,
     });
     setFormErrors({});
+    setDistricts([]);
+    setWards([]);
+    void fetchProvinces();
     setFormOpen(true);
   }
 
@@ -188,7 +258,7 @@ export default function Addresses() {
   }
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-3xl px-4 py-10 lg:px-6">
         {/* Back */}
         <Link
@@ -211,8 +281,7 @@ export default function Addresses() {
           </div>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-white active:scale-95"
-            style={{ background: '#00754A' }}
+            className="client-pill-primary flex items-center gap-2 px-5 py-3 text-sm font-bold"
           >
             <Plus size={15} />
             Thêm địa chỉ
@@ -235,7 +304,7 @@ export default function Addresses() {
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#006241] border-t-transparent" />
           </div>
         ) : addresses.length === 0 ? (
-          <div className="rounded-2xl bg-white p-12 text-center shadow-sm">
+          <div className="client-card p-12 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: '#d4e9e2' }}>
               <MapPin size={28} style={{ color: '#006241' }} />
             </div>
@@ -243,8 +312,7 @@ export default function Addresses() {
             <p className="mt-1 text-sm text-gray-400">Thêm địa chỉ để đặt hàng nhanh hơn</p>
             <button
               onClick={openCreate}
-              className="mt-5 flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white mx-auto"
-              style={{ background: '#00754A' }}
+              className="client-pill-primary mx-auto mt-5 flex items-center gap-2 px-6 py-3 text-sm font-bold"
             >
               <Plus size={15} /> Thêm địa chỉ đầu tiên
             </button>
@@ -254,7 +322,7 @@ export default function Addresses() {
             {addresses.map((addr) => (
               <div
                 key={addr.id}
-                className={`rounded-2xl bg-white p-5 shadow-sm border-2 transition ${
+                className={`client-card border-2 p-5 transition ${
                   addr.isDefault ? 'border-[#006241]' : 'border-transparent'
                 }`}
               >
@@ -325,7 +393,7 @@ export default function Addresses() {
       {/* Add/Edit Modal */}
       {formOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+          <div className="client-card w-full max-w-lg">
             <div className="border-b border-black/5 px-6 pt-6 pb-4">
               <h2 className="text-lg font-black text-[#1E3932]">
                 {editTarget ? 'Chỉnh sửa địa chỉ' : 'Thêm địa chỉ mới'}
@@ -386,38 +454,76 @@ export default function Addresses() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-gray-500">
-                    Phường / Xã
-                  </label>
-                  <input
-                    value={form.ward}
-                    onChange={(e) => setForm((f) => ({ ...f, ward: e.target.value }))}
-                    placeholder="Phường 1"
-                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-gray-500">
-                    Quận / Huyện
-                  </label>
-                  <input
-                    value={form.district}
-                    onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))}
-                    placeholder="Quận 1"
-                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
-                  />
-                </div>
+                {/* Province */}
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-gray-500">
                     Tỉnh / Thành phố
                   </label>
-                  <input
+                  <select
                     value={form.province}
-                    onChange={(e) => setForm((f) => ({ ...f, province: e.target.value }))}
-                    placeholder="TP. HCM"
-                    className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
-                  />
+                    disabled={loadingProvinces}
+                    onChange={(e) => {
+                      const selectedName = e.target.value;
+                      setForm((f) => ({ ...f, province: selectedName, district: '', ward: '' }));
+                      const found = provinces.find((p) => p.name === selectedName);
+                      if (found) void fetchDistricts(found.code);
+                      else { setDistricts([]); setWards([]); }
+                    }}
+                    className="client-input w-full px-4 py-2.5 text-sm disabled:opacity-60"
+                  >
+                    <option value="">
+                      {loadingProvinces ? 'Đang tải...' : '-- Chọn tỉnh/thành phố --'}
+                    </option>
+                    {provinces.map((p) => (
+                      <option key={p.code} value={p.name}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* District */}
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500">
+                    Quận / Huyện
+                  </label>
+                  <select
+                    value={form.district}
+                    disabled={!form.province || loadingDistricts}
+                    onChange={(e) => {
+                      const selectedName = e.target.value;
+                      setForm((f) => ({ ...f, district: selectedName, ward: '' }));
+                      const found = districts.find((d) => d.name === selectedName);
+                      if (found) void fetchWards(found.code);
+                      else setWards([]);
+                    }}
+                    className="client-input w-full px-4 py-2.5 text-sm disabled:opacity-60"
+                  >
+                    <option value="">
+                      {loadingDistricts ? 'Đang tải...' : !form.province ? '-- Chọn tỉnh trước --' : '-- Chọn quận/huyện --'}
+                    </option>
+                    {districts.map((d) => (
+                      <option key={d.code} value={d.name}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Ward */}
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500">
+                    Phường / Xã
+                  </label>
+                  <select
+                    value={form.ward}
+                    disabled={!form.district || loadingWards}
+                    onChange={(e) => setForm((f) => ({ ...f, ward: e.target.value }))}
+                    className="client-input w-full px-4 py-2.5 text-sm disabled:opacity-60"
+                  >
+                    <option value="">
+                      {loadingWards ? 'Đang tải...' : !form.district ? '-- Chọn quận trước --' : '-- Chọn phường/xã --'}
+                    </option>
+                    {wards.map((w) => (
+                      <option key={w.code} value={w.name}>{w.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -441,15 +547,14 @@ export default function Addresses() {
             <div className="flex justify-end gap-3 border-t border-black/5 px-6 py-4">
               <button
                 onClick={() => setFormOpen(false)}
-                className="rounded-full border border-black/10 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                className="client-pill-dark-outline px-5 py-2.5 text-sm font-semibold"
               >
                 Hủy
               </button>
               <button
                 onClick={() => void handleSave()}
                 disabled={saving}
-                className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white disabled:opacity-60 active:scale-95"
-                style={{ background: '#00754A' }}
+                className="client-pill-primary flex items-center gap-2 px-6 py-2.5 text-sm font-bold disabled:opacity-60"
               >
                 {saving ? <LoaderCircle size={14} className="animate-spin" /> : null}
                 {saving ? 'Đang lưu...' : editTarget ? 'Lưu thay đổi' : 'Thêm địa chỉ'}
@@ -462,7 +567,7 @@ export default function Addresses() {
       {/* Delete confirm */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl">
+          <div className="client-card w-full max-w-sm">
             <div className="p-6">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
                 <Trash2 size={20} className="text-red-500" />
@@ -475,7 +580,7 @@ export default function Addresses() {
             <div className="flex justify-end gap-3 border-t border-black/5 px-6 py-4">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="rounded-full border border-black/10 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                className="client-pill-dark-outline px-5 py-2.5 text-sm font-semibold"
               >
                 Hủy
               </button>

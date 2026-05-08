@@ -534,7 +534,7 @@ export default function Categories() {
         <button
           type="button"
           onClick={openCreateModal}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-container px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm shadow-primary/20 transition-all hover:-translate-y-0.5"
         >
           <Plus size={18} />
           {isVietnamese ? 'Thêm danh mục' : 'Add category'}
@@ -570,12 +570,12 @@ export default function Categories() {
       </div>
 
       {error ? (
-        <div className="rounded-[2rem] border border-red-200 bg-red-50 px-6 py-5 text-sm text-red-700">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-6 py-5 text-sm text-red-700">
           {error}
         </div>
       ) : null}
 
-      <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-8 shadow-sm">
+      <section className="rounded-xl border border-on-surface-variant/5 bg-white p-8 shadow-sm">
         <div className="mb-6 flex items-center gap-3 rounded-2xl border border-on-surface/10 bg-surface px-4 py-3">
           <Search size={16} className="shrink-0 text-on-surface-variant/50" />
           <input
@@ -598,7 +598,7 @@ export default function Categories() {
 
         {dragState ? (
           <div
-            className={`mb-6 rounded-[1.5rem] border-2 border-dashed px-5 py-4 transition ${
+            className={`mb-6 rounded-xl border-2 border-dashed px-5 py-4 transition ${
               dropTarget === 'root'
                 ? 'border-primary bg-primary/5'
                 : 'border-on-surface-variant/15 bg-surface'
@@ -631,7 +631,7 @@ export default function Categories() {
           </div>
         ) : categories.length === 0 ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-primary/8 text-primary">
+            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/8 text-primary">
               <FolderTree size={28} />
             </div>
             <div>
@@ -650,7 +650,7 @@ export default function Categories() {
             {isVietnamese ? `Không tìm thấy kết quả cho "${searchQuery}".` : `No results for "${searchQuery}".`}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-[2rem] border border-on-surface-variant/6">
+          <div className="overflow-hidden rounded-xl border border-on-surface-variant/6">
             <div className="hidden grid-cols-[52px_minmax(0,1.8fr)_minmax(0,1fr)_150px_160px_112px] gap-4 bg-surface px-5 py-4 text-[11px] font-black uppercase tracking-[0.24em] text-on-surface-variant/55 md:grid">
               <div />
               <div>{isVietnamese ? 'Danh mục' : 'Category'}</div>
@@ -714,7 +714,7 @@ export default function Categories() {
                 type="button"
                 onClick={() => void saveCategory()}
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-primary-container px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
               >
                 {submitting ? <LoaderCircle size={16} className="animate-spin" /> : <Plus size={16} />}
                 {editingId
@@ -738,7 +738,7 @@ export default function Categories() {
               <button
                 type="button"
                 onClick={requestPreview}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-primary-container px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5"
               >
                 <Plus size={16} />
                 {isVietnamese ? 'Xem trước nội dung' : 'Preview content'}
@@ -938,7 +938,7 @@ function StatCard({
   value: string;
 }) {
   return (
-    <div className="rounded-[2rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
         <Icon size={22} />
       </div>
@@ -1300,11 +1300,11 @@ function PreviewPanel({
 }) {
   return (
     <div className="space-y-5">
-      <div className="rounded-[1.5rem] border border-on-surface/10 bg-surface px-5 py-4">
+      <div className="rounded-xl border border-on-surface/10 bg-surface px-5 py-4">
         <h4 className="text-lg font-black text-primary">{title}</h4>
         <p className="mt-1 text-sm text-on-surface-variant">{subtitle}</p>
       </div>
-      <div className="rounded-[1.5rem] border border-on-surface/10 bg-white px-5 py-4">
+      <div className="rounded-xl border border-on-surface/10 bg-white px-5 py-4">
         {html.trim() ? (
           <div
             className="prose prose-sm max-w-none text-on-surface"

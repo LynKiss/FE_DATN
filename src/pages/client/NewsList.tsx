@@ -17,6 +17,7 @@ type NewsResponse = {
   items?: NewsItem[];
   total?: number;
   totalPages?: number;
+  meta?: { total: number; page: number; limit: number; totalPages: number };
 };
 
 const PAGE_SIZE = 9;
@@ -37,11 +38,10 @@ export default function NewsList() {
     const params = new URLSearchParams();
     params.set('page', String(page));
     params.set('limit', String(PAGE_SIZE));
-    params.set('status', 'published');
     if (search) params.set('search', search);
 
     void clientApi
-      .get<NewsResponse | NewsItem[]>(`/news?${params.toString()}`)
+      .get<NewsResponse | NewsItem[]>(`/news/public/list?${params.toString()}`)
       .then((data) => {
         if (Array.isArray(data)) {
           setArticles(data);
@@ -49,8 +49,8 @@ export default function NewsList() {
           setTotalPages(1);
         } else {
           setArticles(data.items ?? []);
-          setTotal(data.total ?? 0);
-          setTotalPages(data.totalPages ?? 1);
+          setTotal(data.meta?.total ?? data.total ?? 0);
+          setTotalPages(data.meta?.totalPages ?? data.totalPages ?? 1);
         }
       })
       .catch(() => setArticles([]))
@@ -71,7 +71,7 @@ export default function NewsList() {
   };
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       {/* Hero */}
       <section style={{ background: '#1E3932' }} className="py-14">
         <div className="mx-auto max-w-4xl px-6 text-center">
@@ -91,8 +91,7 @@ export default function NewsList() {
             />
             <button
               type="submit"
-              className="flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-white"
-              style={{ background: '#00754A' }}
+              className="client-pill-primary flex items-center gap-2 px-5 py-3 text-sm font-bold"
             >
               <Search size={16} />
             </button>
@@ -110,7 +109,7 @@ export default function NewsList() {
         {loading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-80 animate-pulse rounded-2xl bg-white" />
+              <div key={i} className="client-card h-80 animate-pulse" />
             ))}
           </div>
         ) : articles.length === 0 ? (
@@ -127,7 +126,7 @@ export default function NewsList() {
             {page === 1 && articles[0] && (
               <Link
                 to={`/client/news/${articles[0].slug}`}
-                className="group mb-8 grid overflow-hidden rounded-2xl bg-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-xl md:grid-cols-2"
+                className="client-card group mb-8 grid overflow-hidden transition-all md:grid-cols-2"
               >
                 <div className="overflow-hidden bg-[#d4e9e2]">
                   {articles[0].titleImageUrl ? (
@@ -172,7 +171,7 @@ export default function NewsList() {
                 <Link
                   key={article._id}
                   to={`/client/news/${article.slug}`}
-                  className="group overflow-hidden rounded-2xl bg-white transition-all hover:-translate-y-1 hover:shadow-xl"
+                  className="client-card group overflow-hidden transition-all"
                 >
                   <div className="overflow-hidden bg-[#d4e9e2]">
                     {article.titleImageUrl ? (

@@ -3,6 +3,7 @@ import {
   ChevronRight,
   Download,
   KeyRound,
+  ImagePlus,
   LoaderCircle,
   Mail,
   Plus,
@@ -394,6 +395,7 @@ export default function Customers() {
   const [formState, setFormState] = useState<CustomerFormState>(defaultFormState);
   const [selectedAvatarTheme, setSelectedAvatarTheme] = useState<AvatarThemeId | null>(DEFAULT_AVATAR_THEME);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [formErrors, setFormErrors] = useState<CustomerFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -443,7 +445,7 @@ export default function Customers() {
             loadError instanceof Error
               ? loadError.message
               : isVietnamese
-                ? 'Khong tai duoc danh sach tai khoan'
+                ? 'Không tải được danh sách tài khoản'
                 : 'Unable to load accounts',
           );
         }
@@ -487,6 +489,7 @@ export default function Customers() {
     setEditingCustomerId(null);
     setFormState(defaultFormState);
     setSelectedAvatarTheme(DEFAULT_AVATAR_THEME);
+    setAvatarFile(null);
     setAvatarPickerOpen(false);
     setFormErrors({});
     setFormOpen(false);
@@ -509,7 +512,7 @@ export default function Customers() {
 
     if (resetPasswordValue.trim().length < 6) {
       setResetPasswordError(
-        isVietnamese ? 'Mat khau moi toi thieu 6 ky tu' : 'New password must be at least 6 characters',
+        isVietnamese ? 'Mật khẩu mới tối thiểu 6 ký tự' : 'New password must be at least 6 characters',
       );
       return;
     }
@@ -522,7 +525,7 @@ export default function Customers() {
       });
       showToast({
         tone: 'success',
-        title: isVietnamese ? 'Da reset mat khau' : 'Password reset',
+        title: isVietnamese ? 'Đã reset mật khẩu' : 'Password reset',
         description: selectedCustomer.username,
       });
       setResetPasswordOpen(false);
@@ -533,7 +536,7 @@ export default function Customers() {
         resetError instanceof Error
           ? resetError.message
           : isVietnamese
-            ? 'Khong reset duoc mat khau'
+            ? 'Không reset được mật khẩu'
             : 'Unable to reset password';
       setResetPasswordError(message);
     } finally {
@@ -557,7 +560,7 @@ export default function Customers() {
       }));
       showToast({
         tone: 'success',
-        title: isVietnamese ? 'Da xoa tai khoan' : 'Account deleted',
+        title: isVietnamese ? 'Đã xóa tài khoản' : 'Account deleted',
         description: selectedCustomer.username,
       });
       setDeleteOpen(false);
@@ -567,11 +570,11 @@ export default function Customers() {
         deleteError instanceof Error
           ? deleteError.message
           : isVietnamese
-            ? 'Khong xoa duoc tai khoan'
+            ? 'Không xóa được tài khoản'
             : 'Unable to delete account';
       showToast({
         tone: 'error',
-        title: isVietnamese ? 'Xoa tai khoan that bai' : 'Delete failed',
+        title: isVietnamese ? 'Xóa tài khoản thất bại' : 'Delete failed',
         description: message,
       });
     } finally {
@@ -602,6 +605,7 @@ export default function Customers() {
       isActive: Boolean(customer.isActive),
     });
     setSelectedAvatarTheme(parseGeneratedAvatarTheme(customer.avatarUrl) ?? null);
+    setAvatarFile(null);
     setAvatarPickerOpen(false);
     setFormOpen(true);
   }
@@ -619,11 +623,11 @@ export default function Customers() {
         detailError instanceof Error
           ? detailError.message
           : isVietnamese
-            ? 'Khong tai duoc chi tiet tai khoan'
+            ? 'Không tải được chi tiết tài khoản'
             : 'Unable to load account detail';
       showToast({
         tone: 'error',
-        title: isVietnamese ? 'Tai tai khoan that bai' : 'Unable to load account',
+        title: isVietnamese ? 'Tải tài khoản thất bại' : 'Unable to load account',
         description: message,
       });
       setDetailOpen(false);
@@ -636,19 +640,19 @@ export default function Customers() {
     const nextErrors: CustomerFormErrors = {};
 
     if (!formState.username.trim()) {
-      nextErrors.username = isVietnamese ? 'Ten tai khoan la bat buoc' : 'Username is required';
+      nextErrors.username = isVietnamese ? 'Tên tài khoản là bắt buộc' : 'Username is required';
     }
 
     if (!formState.email.trim()) {
-      nextErrors.email = isVietnamese ? 'Email la bat buoc' : 'Email is required';
+      nextErrors.email = isVietnamese ? 'Email là bắt buộc' : 'Email is required';
     } else if (!/^\S+@\S+\.\S+$/.test(formState.email.trim())) {
-      nextErrors.email = isVietnamese ? 'Email khong hop le' : 'Invalid email';
+      nextErrors.email = isVietnamese ? 'Email không hợp lệ' : 'Invalid email';
     }
 
     if (formMode === 'create' && !formState.password.trim()) {
-      nextErrors.password = isVietnamese ? 'Mat khau la bat buoc' : 'Password is required';
+      nextErrors.password = isVietnamese ? 'Mật khẩu là bắt buộc' : 'Password is required';
     } else if (formState.password.trim() && formState.password.trim().length < 6) {
-      nextErrors.password = isVietnamese ? 'Mat khau toi thieu 6 ky tu' : 'Password must be at least 6 characters';
+      nextErrors.password = isVietnamese ? 'Mật khẩu tối thiểu 6 ký tự' : 'Password must be at least 6 characters';
     }
 
     setFormErrors(nextErrors);
@@ -684,17 +688,28 @@ export default function Customers() {
               payload,
             );
       const normalizedSavedCustomer = normalizeCustomer(savedCustomer);
+      let finalSavedCustomer = normalizedSavedCustomer;
+
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append('file', avatarFile);
+        const uploaded = await apiClient.postForm<Customer>(
+          `/users/admin/customers/${normalizedSavedCustomer._id}/avatar`,
+          formData,
+        );
+        finalSavedCustomer = normalizeCustomer(uploaded);
+      }
 
       if (formMode === 'create') {
         setPage(1);
       } else {
-        updateCustomerInList(normalizedSavedCustomer);
-        if (selectedCustomer?._id === normalizedSavedCustomer._id) {
+        updateCustomerInList(finalSavedCustomer);
+        if (selectedCustomer?._id === finalSavedCustomer._id) {
           setSelectedCustomer((current) =>
             current
               ? {
                   ...current,
-                  ...normalizedSavedCustomer,
+                  ...finalSavedCustomer,
                 }
               : current,
           );
@@ -706,12 +721,12 @@ export default function Customers() {
         title:
           formMode === 'create'
             ? isVietnamese
-              ? 'Tao tai khoan thanh cong'
+              ? 'Tạo tài khoản thành công'
               : 'Account created'
             : isVietnamese
-              ? 'Cap nhat tai khoan thanh cong'
+              ? 'Cập nhật tài khoản thành công'
               : 'Account updated',
-        description: normalizedSavedCustomer.username,
+        description: finalSavedCustomer.username,
       });
 
       resetForm();
@@ -725,11 +740,11 @@ export default function Customers() {
         submitError instanceof Error
           ? submitError.message
           : isVietnamese
-            ? 'Khong luu duoc tai khoan'
+            ? 'Không lưu được tài khoản'
             : 'Unable to save account';
       showToast({
         tone: 'error',
-        title: isVietnamese ? 'Luu tai khoan that bai' : 'Save failed',
+        title: isVietnamese ? 'Lưu tài khoản thất bại' : 'Save failed',
         description: message,
       });
     } finally {
@@ -765,10 +780,10 @@ export default function Customers() {
         tone: 'success',
         title: normalizedUpdatedCustomer.isActive
           ? isVietnamese
-            ? 'Da kich hoat tai khoan'
+            ? 'Đã kích hoạt tài khoản'
             : 'Account activated'
           : isVietnamese
-            ? 'Da khoa tai khoan'
+            ? 'Đã khóa tài khoản'
             : 'Account disabled',
         description: normalizedUpdatedCustomer.username,
       });
@@ -777,11 +792,11 @@ export default function Customers() {
         statusError instanceof Error
           ? statusError.message
           : isVietnamese
-            ? 'Khong cap nhat duoc trang thai'
+            ? 'Không cập nhật được trạng thái'
             : 'Unable to update status';
       showToast({
         tone: 'error',
-        title: isVietnamese ? 'Cap nhat trang thai that bai' : 'Status update failed',
+        title: isVietnamese ? 'Cập nhật trạng thái thất bại' : 'Status update failed',
         description: message,
       });
     } finally {
@@ -820,7 +835,7 @@ export default function Customers() {
       <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
         <div>
           <h2 className="font-headline text-[2.75rem] font-black leading-tight tracking-tight text-primary">
-            {isVietnamese ? 'Khach hang va tai khoan' : 'Customers and Accounts'}
+            {isVietnamese ? 'Khách hàng và tài khoản' : 'Customers and Accounts'}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
             {isVietnamese
@@ -835,58 +850,58 @@ export default function Customers() {
             className="flex items-center gap-2 rounded-xl border border-primary/10 bg-white px-6 py-3 text-sm font-bold text-primary transition-all hover:border-primary/20"
           >
             <Download size={18} />
-            <span>{isVietnamese ? 'Xuat du lieu' : 'Export'}</span>
+            <span>{isVietnamese ? 'Xuất dữ liệu' : 'Export'}</span>
           </button>
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-container px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:shadow-2xl"
+            className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm shadow-primary/20 transition-all hover:shadow-sm"
           >
             <Plus size={18} />
-            <span>{isVietnamese ? 'Them tai khoan' : 'Add account'}</span>
+            <span>{isVietnamese ? 'Thêm tài khoản' : 'Add account'}</span>
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <KpiCard
-          title={isVietnamese ? 'Tong tai khoan' : 'Total accounts'}
+          title={isVietnamese ? 'Tổng tài khoản' : 'Total accounts'}
           value={String(customersMeta.total)}
           growth={isVietnamese ? '+truc tiep' : '+live'}
         />
         <KpiCard
-          title={isVietnamese ? 'Nguoi dung hoat dong' : 'Active users'}
+          title={isVietnamese ? 'Người dùng hoạt động' : 'Active users'}
           value={String(stats.activeUsers)}
           growth={isVietnamese ? '+dong bo' : '+synced'}
         />
         <KpiCard
           title={isVietnamese ? 'Admin / Nhan su' : 'Admin / Staff'}
           value={`${stats.admins} / ${stats.staff}`}
-          highlight={isVietnamese ? 'Phan tach vai tro' : 'Role split'}
+          highlight={isVietnamese ? 'Phân tách vai trò' : 'Role split'}
         />
       </div>
 
-      <div className="flex flex-col overflow-hidden rounded-[2.5rem] border border-on-surface-variant/5 bg-white shadow-sm">
+      <div className="flex flex-col overflow-hidden rounded-xl border border-on-surface-variant/5 bg-white shadow-sm">
         <div className="flex flex-col gap-4 border-b border-on-surface-variant/5 bg-white/50 p-6 backdrop-blur-sm">
           <div className="flex flex-wrap gap-3">
             <FilterChip
               active={roleFilter === 'all'}
-              label={isVietnamese ? 'Tat ca vai tro' : 'All roles'}
+              label={isVietnamese ? 'Tất cả vai trò' : 'All roles'}
               onClick={() => setRoleFilter('all')}
             />
             <FilterChip
               active={roleFilter === 'admin'}
-              label={isVietnamese ? 'Quan tri' : 'Admin'}
+              label={isVietnamese ? 'Quản trị' : 'Admin'}
               onClick={() => setRoleFilter('admin')}
             />
             <FilterChip
               active={roleFilter === 'staff'}
-              label={isVietnamese ? 'Nhan su' : 'Staff'}
+              label={isVietnamese ? 'Nhân sự' : 'Staff'}
               onClick={() => setRoleFilter('staff')}
             />
             <FilterChip
               active={roleFilter === 'customer'}
-              label={isVietnamese ? 'Khach hang' : 'Customer'}
+              label={isVietnamese ? 'Khách hàng' : 'Customer'}
               onClick={() => setRoleFilter('customer')}
             />
           </div>
@@ -906,17 +921,17 @@ export default function Customers() {
             <div className="flex rounded-full bg-on-surface-variant/5 p-1">
               <StatusTab
                 active={statusFilter === 'all'}
-                label={isVietnamese ? 'Tat ca' : 'All'}
+                label={isVietnamese ? 'Tất cả' : 'All'}
                 onClick={() => setStatusFilter('all')}
               />
               <StatusTab
                 active={statusFilter === 'active'}
-                label={isVietnamese ? 'Hoat dong' : 'Active'}
+                label={isVietnamese ? 'Hoạt động' : 'Active'}
                 onClick={() => setStatusFilter('active')}
               />
               <StatusTab
                 active={statusFilter === 'inactive'}
-                label={isVietnamese ? 'Tam khoa' : 'Inactive'}
+                label={isVietnamese ? 'Tạm khóa' : 'Inactive'}
                 onClick={() => setStatusFilter('inactive')}
               />
             </div>
@@ -934,16 +949,16 @@ export default function Customers() {
             <thead>
               <tr className="bg-on-surface-variant/[0.02]">
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40">
-                  {isVietnamese ? 'Tai khoan' : 'Account'}
+                  {isVietnamese ? 'Tài khoản' : 'Account'}
                 </th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40">
                   Email
                 </th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40">
-                  {isVietnamese ? 'Vai tro' : 'Role'}
+                  {isVietnamese ? 'Vai trò' : 'Role'}
                 </th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40">
-                  {isVietnamese ? 'Trang thai' : 'Status'}
+                  {isVietnamese ? 'Trạng thái' : 'Status'}
                 </th>
                 <th className="px-8 py-6"></th>
               </tr>
@@ -962,7 +977,7 @@ export default function Customers() {
                       <Users2 className="text-primary/60" size={28} />
                       <div>
                         <p className="font-black text-primary">
-                          {isVietnamese ? 'Khong co tai khoan phu hop' : 'No matching accounts'}
+                          {isVietnamese ? 'Không có tài khoản phù hợp' : 'No matching accounts'}
                         </p>
                         <p className="mt-1 text-sm text-on-surface-variant">
                           {isVietnamese
@@ -1040,7 +1055,7 @@ export default function Customers() {
         open={detailOpen}
         onClose={closeDetailModal}
         size="lg"
-        title={isVietnamese ? 'Chi tiet tai khoan' : 'Account detail'}
+        title={isVietnamese ? 'Chi tiết tài khoản' : 'Account detail'}
         footer={
           selectedCustomer ? (
             <>
@@ -1050,7 +1065,7 @@ export default function Customers() {
                 className="inline-flex items-center gap-2 rounded-2xl border border-on-surface/10 px-5 py-3 text-sm font-bold text-on-surface"
               >
                 <UserCog size={16} />
-                {isVietnamese ? 'Chinh sua tai khoan' : 'Edit account'}
+                {isVietnamese ? 'Chỉnh sửa tài khoản' : 'Edit account'}
               </button>
               <button
                 type="button"
@@ -1061,10 +1076,10 @@ export default function Customers() {
                 {statusUpdating ? <LoaderCircle size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
                 {selectedCustomer.isActive
                   ? isVietnamese
-                    ? 'Khoa tai khoan'
+                    ? 'Khóa tài khoản'
                     : 'Disable account'
                   : isVietnamese
-                    ? 'Kich hoat tai khoan'
+                    ? 'Kích hoạt tài khoản'
                     : 'Activate account'}
               </button>
               <button
@@ -1073,7 +1088,7 @@ export default function Customers() {
                 className="inline-flex items-center gap-2 rounded-2xl border border-on-surface/10 px-5 py-3 text-sm font-bold text-on-surface"
               >
                 <KeyRound size={16} />
-                {isVietnamese ? 'Reset mat khau' : 'Reset password'}
+                {isVietnamese ? 'Reset mật khẩu' : 'Reset password'}
               </button>
               <button
                 type="button"
@@ -1081,7 +1096,7 @@ export default function Customers() {
                 className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white"
               >
                 <Trash2 size={16} />
-                {isVietnamese ? 'Xoa tai khoan' : 'Delete account'}
+                {isVietnamese ? 'Xóa tài khoản' : 'Delete account'}
               </button>
             </>
           ) : undefined
@@ -1093,7 +1108,7 @@ export default function Customers() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="flex items-center gap-4 rounded-[1.5rem] border border-on-surface/10 bg-surface px-5 py-4">
+            <div className="flex items-center gap-4 rounded-xl border border-on-surface/10 bg-surface px-5 py-4">
               <UserAvatar
                 name={selectedCustomer.username}
                 avatarUrl={selectedCustomer.avatarUrl}
@@ -1113,19 +1128,19 @@ export default function Customers() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <DetailCard
-                label={isVietnamese ? 'Ma tai khoan' : 'Account ID'}
+                label={isVietnamese ? 'Mã tài khoản' : 'Account ID'}
                 value={selectedCustomer._id}
               />
               <DetailCard
-                label={isVietnamese ? 'Cap nhat lan cuoi' : 'Last updated'}
+                label={isVietnamese ? 'Cập nhật lần cuối' : 'Last updated'}
                 value={formatDate(selectedCustomer.updatedAt ?? selectedCustomer.createdAt, language)}
               />
               <DetailCard
-                label={isVietnamese ? 'Dia chi giao hang' : 'Shipping addresses'}
+                label={isVietnamese ? 'Địa chỉ giao hàng' : 'Shipping addresses'}
                 value={String(selectedCustomer.statistics.addressesCount)}
               />
               <DetailCard
-                label={isVietnamese ? 'Tong don hang' : 'Total orders'}
+                label={isVietnamese ? 'Tổng đơn hàng' : 'Total orders'}
                 value={String(selectedCustomer.statistics.ordersCount)}
               />
             </div>
@@ -1141,7 +1156,7 @@ export default function Customers() {
           setResetPasswordError(null);
         }}
         size="md"
-        title={isVietnamese ? 'Reset mat khau' : 'Reset password'}
+        title={isVietnamese ? 'Reset mật khẩu' : 'Reset password'}
         description={
           selectedCustomer
             ? isVietnamese
@@ -1160,7 +1175,7 @@ export default function Customers() {
               }}
               className="rounded-2xl border border-on-surface/10 px-5 py-3 text-sm font-bold text-on-surface-variant"
             >
-              {isVietnamese ? 'Dong' : 'Close'}
+              {isVietnamese ? 'Đóng' : 'Close'}
             </button>
             <button
               type="button"
@@ -1169,12 +1184,12 @@ export default function Customers() {
               className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-white"
             >
               {resettingPassword ? <LoaderCircle size={16} className="animate-spin" /> : <KeyRound size={16} />}
-              {isVietnamese ? 'Xac nhan reset' : 'Confirm reset'}
+              {isVietnamese ? 'Xác nhận reset' : 'Confirm reset'}
             </button>
           </>
         }
       >
-        <FieldLabel label={isVietnamese ? 'Mat khau moi' : 'New password'}>
+        <FieldLabel label={isVietnamese ? 'Mật khẩu mới' : 'New password'}>
           <input
             type="password"
             value={resetPasswordValue}
@@ -1192,11 +1207,11 @@ export default function Customers() {
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         size="md"
-        title={isVietnamese ? 'Xac nhan xoa tai khoan' : 'Confirm account deletion'}
+        title={isVietnamese ? 'Xác nhận xóa tài khoản' : 'Confirm account deletion'}
         description={
           selectedCustomer
             ? isVietnamese
-              ? `Tai khoan ${selectedCustomer.username} se bi xoa vinh vien neu khong co du lieu giao dich rang buoc.`
+              ? `Tài khoản ${selectedCustomer.username} sẽ bị xóa vĩnh viễn nếu không có dữ liệu giao dịch ràng buộc.`
               : `The account ${selectedCustomer.username} will be permanently deleted if it has no blocking transaction history.`
             : undefined
         }
@@ -1207,7 +1222,7 @@ export default function Customers() {
               onClick={() => setDeleteOpen(false)}
               className="rounded-2xl border border-on-surface/10 px-5 py-3 text-sm font-bold text-on-surface-variant"
             >
-              {isVietnamese ? 'Huy' : 'Cancel'}
+              {isVietnamese ? 'Hủy' : 'Cancel'}
             </button>
             <button
               type="button"
@@ -1216,14 +1231,14 @@ export default function Customers() {
               className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white"
             >
               {deletingCustomer ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />}
-              {isVietnamese ? 'Xoa tai khoan' : 'Delete account'}
+              {isVietnamese ? 'Xóa tài khoản' : 'Delete account'}
             </button>
           </>
         }
       >
         <p className="text-sm leading-6 text-on-surface-variant">
           {isVietnamese
-            ? 'Tai khoan co don hang, tra hang hoac giao dich thanh toan se khong duoc xoa de tranh lam hong lich su nghiep vu.'
+            ? 'Tài khoản có đơn hàng, trả hàng hoặc giao dịch thanh toán sẽ không được xóa để tránh làm hỏng lịch sử nghiệp vụ.'
             : 'Accounts with orders, returns, or payment transactions cannot be deleted to preserve operational history.'}
         </p>
       </Modal>
@@ -1235,10 +1250,10 @@ export default function Customers() {
         title={
           formMode === 'create'
             ? isVietnamese
-              ? 'Tao tai khoan moi'
+              ? 'Tạo tài khoản mới'
               : 'Create account'
             : isVietnamese
-              ? 'Cap nhat tai khoan'
+              ? 'Cập nhật tài khoản'
               : 'Update account'
         }
         footer={
@@ -1248,7 +1263,7 @@ export default function Customers() {
               onClick={resetForm}
               className="rounded-2xl border border-on-surface/10 px-5 py-3 text-sm font-bold text-on-surface-variant"
             >
-              {isVietnamese ? 'Dong' : 'Close'}
+              {isVietnamese ? 'Đóng' : 'Close'}
             </button>
             <button
               type="button"
@@ -1259,17 +1274,17 @@ export default function Customers() {
               {submitting ? <LoaderCircle size={16} className="animate-spin" /> : <Plus size={16} />}
               {formMode === 'create'
                 ? isVietnamese
-                  ? 'Xac nhan tao'
+                  ? 'Xác nhận tạo'
                   : 'Create account'
                 : isVietnamese
-                  ? 'Luu cap nhat'
+                  ? 'Lưu cập nhật'
                   : 'Save changes'}
             </button>
           </>
         }
       >
         <div className="grid gap-4">
-          <FieldLabel label={isVietnamese ? 'Ten tai khoan' : 'Username'}>
+          <FieldLabel label={isVietnamese ? 'Tên tài khoản' : 'Username'}>
             <input
               value={formState.username}
               onChange={(event) => setFormState((current) => ({ ...current, username: event.target.value }))}
@@ -1291,22 +1306,22 @@ export default function Customers() {
           <FieldError message={formErrors.email} />
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <FieldLabel label={isVietnamese ? 'Mat khau' : 'Password'}>
+            <FieldLabel label={isVietnamese ? 'Mật khẩu' : 'Password'}>
               <input
                 type="password"
                 value={formState.password}
                 onChange={(event) => setFormState((current) => ({ ...current, password: event.target.value }))}
-                placeholder={formMode === 'edit' ? (isVietnamese ? 'De trong neu khong doi' : 'Leave blank to keep current') : ''}
+                placeholder={formMode === 'edit' ? (isVietnamese ? 'Để trống nếu không đổi' : 'Leave blank to keep current') : ''}
                 className="w-full rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm outline-none"
               />
             </FieldLabel>
             <div className="grid gap-2">
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
-                {isVietnamese ? 'Avatar dai dien' : 'Profile avatar'}
+                {isVietnamese ? 'Avatar đại diện' : 'Profile avatar'}
               </span>
-              <div className="flex items-center gap-4 rounded-[1.5rem] border border-on-surface/10 bg-surface px-4 py-4">
+              <div className="flex items-center gap-4 rounded-xl border border-on-surface/10 bg-surface px-4 py-4">
                 <UserAvatar
-                  name={formState.username || (isVietnamese ? 'Tai khoan moi' : 'New account')}
+                  name={formState.username || (isVietnamese ? 'Tài khoản mới' : 'New account')}
                   avatarUrl={getAvatarPreviewUrl(
                     formState.username,
                     selectedAvatarTheme,
@@ -1333,8 +1348,21 @@ export default function Customers() {
                     className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white px-4 py-2 text-xs font-black text-primary transition hover:border-primary/30 hover:bg-primary/5"
                   >
                     <UserCog size={14} />
-                    {isVietnamese ? 'Chon avatar' : 'Choose avatar'}
+                    {isVietnamese ? 'Chọn avatar' : 'Choose avatar'}
                   </button>
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary/15 bg-white px-4 py-2 text-xs font-black text-primary transition hover:border-primary/30 hover:bg-primary/5">
+                    <ImagePlus size={14} />
+                    {avatarFile ? avatarFile.name : isVietnamese ? 'Tai anh that' : 'Upload image'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => {
+                        setAvatarFile(event.target.files?.[0] ?? null);
+                        setSelectedAvatarTheme(null);
+                      }}
+                    />
+                  </label>
                 </div>
               </div>
             </div>
@@ -1342,7 +1370,7 @@ export default function Customers() {
           <FieldError message={formErrors.password} />
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <FieldLabel label={isVietnamese ? 'Vai tro' : 'Role'}>
+            <FieldLabel label={isVietnamese ? 'Vai trò' : 'Role'}>
               <select
                 value={formState.role}
                 onChange={(event) =>
@@ -1361,7 +1389,7 @@ export default function Customers() {
 
             <label className="grid gap-2">
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
-                {isVietnamese ? 'Trang thai' : 'Status'}
+                {isVietnamese ? 'Trạng thái' : 'Status'}
               </span>
               <div className="flex h-full items-center rounded-2xl border border-on-surface/10 bg-surface px-4 py-3 text-sm">
                 <input
@@ -1377,10 +1405,10 @@ export default function Customers() {
                 />
                 {formState.isActive
                   ? isVietnamese
-                    ? 'Tai khoan dang hoat dong'
+                    ? 'Tài khoản đang hoạt động'
                     : 'Account is active'
                   : isVietnamese
-                    ? 'Tai khoan tam khoa'
+                    ? 'Tài khoản tạm khóa'
                     : 'Account is inactive'}
               </div>
             </label>
@@ -1392,7 +1420,7 @@ export default function Customers() {
         open={avatarPickerOpen}
         onClose={() => setAvatarPickerOpen(false)}
         size="lg"
-        title={isVietnamese ? 'Chon avatar tai khoan' : 'Choose account avatar'}
+        title={isVietnamese ? 'Chọn avatar tài khoản' : 'Choose account avatar'}
         footer={
           <>
             {formState.avatarUrl && selectedAvatarTheme === null ? (
@@ -1401,7 +1429,7 @@ export default function Customers() {
                 onClick={() => setSelectedAvatarTheme(DEFAULT_AVATAR_THEME)}
                 className="rounded-2xl border border-on-surface/10 px-5 py-3 text-sm font-bold text-primary"
               >
-                {isVietnamese ? 'Dung avatar mau' : 'Use preset avatar'}
+                {isVietnamese ? 'Dùng avatar mẫu' : 'Use preset avatar'}
               </button>
             ) : null}
             <button
@@ -1415,9 +1443,9 @@ export default function Customers() {
         }
       >
         <div className="space-y-4">
-          <div className="flex items-center gap-4 rounded-[1.75rem] border border-on-surface/10 bg-surface px-5 py-4">
+          <div className="flex items-center gap-4 rounded-xl border border-on-surface/10 bg-surface px-5 py-4">
             <UserAvatar
-              name={formState.username || (isVietnamese ? 'Tai khoan moi' : 'New account')}
+              name={formState.username || (isVietnamese ? 'Tài khoản mới' : 'New account')}
               avatarUrl={getAvatarPreviewUrl(
                 formState.username,
                 selectedAvatarTheme,
@@ -1445,14 +1473,14 @@ export default function Customers() {
                 key={theme.id}
                 type="button"
                 onClick={() => setSelectedAvatarTheme(theme.id)}
-                className={`rounded-[1.5rem] border p-4 text-left transition ${
+                className={`rounded-xl border p-4 text-left transition ${
                   selectedAvatarTheme === theme.id
                     ? 'border-primary bg-primary/5 shadow-sm'
                     : 'border-on-surface/10 bg-white hover:border-primary/20'
                 }`}
               >
                 <GeneratedAvatarSwatch
-                  initials={getInitials(formState.username || (isVietnamese ? 'Tai khoan' : 'Account'))}
+                  initials={getInitials(formState.username || (isVietnamese ? 'Tài khoản' : 'Account'))}
                   themeId={theme.id}
                 />
                 <p className="mt-3 text-sm font-black text-on-surface">{theme.label}</p>
@@ -1525,10 +1553,10 @@ function StatusBadge({
       <span className="text-xs font-bold text-on-surface-variant">
         {isActive
           ? isVietnamese
-            ? 'Hoat dong'
+            ? 'Hoạt động'
             : 'Active'
           : isVietnamese
-            ? 'Tam khoa'
+            ? 'Tạm khóa'
             : 'Inactive'}
       </span>
     </div>
@@ -1537,7 +1565,7 @@ function StatusBadge({
 
 function DetailCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1.5rem] border border-on-surface/10 bg-white px-5 py-4">
+    <div className="rounded-xl border border-on-surface/10 bg-white px-5 py-4">
       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
         {label}
       </p>
@@ -1626,9 +1654,9 @@ function translateRole(role: UserRole, isVietnamese: boolean) {
     return role;
   }
 
-  if (role === 'admin') return 'Quan tri';
-  if (role === 'staff') return 'Nhan su';
-  return 'Khach hang';
+  if (role === 'admin') return 'Quản trị';
+  if (role === 'staff') return 'Nhân sự';
+  return 'Khách hàng';
 }
 
 function getInitials(value: string) {
@@ -1691,7 +1719,7 @@ function describeAvatarTheme(
   const genderText =
     theme.faceShape === 'soft'
       ? isVietnamese
-        ? 'Nu'
+        ? 'Nữ'
         : 'Female'
       : isVietnamese
         ? 'Nam'
@@ -1699,38 +1727,38 @@ function describeAvatarTheme(
   const accessoryText =
     theme.accessory === 'glasses'
       ? isVietnamese
-        ? 'kinh'
+        ? 'kính'
         : 'glasses'
       : theme.accessory === 'cap'
         ? isVietnamese
-          ? 'mu'
+          ? 'mũ'
           : 'cap'
         : isVietnamese
-          ? 'khong phu kien'
+          ? 'không phụ kiện'
           : 'no accessory';
   const hairText =
     theme.hairStyle === 'long'
       ? isVietnamese
-        ? 'toc dai'
+        ? 'tóc dài'
         : 'long hair'
       : theme.hairStyle === 'bob'
         ? isVietnamese
-          ? 'toc bob'
+          ? 'tóc bob'
           : 'bob cut'
         : theme.hairStyle === 'curly'
           ? isVietnamese
-            ? 'toc xoan'
+            ? 'tóc xoăn'
             : 'curly hair'
           : theme.hairStyle === 'wave'
             ? isVietnamese
-              ? 'toc gon song'
+              ? 'tóc gợn sóng'
               : 'wavy hair'
             : theme.hairStyle === 'side'
               ? isVietnamese
-                ? 'toc side part'
+                ? 'tóc side part'
                 : 'side part'
               : isVietnamese
-                ? 'toc ngan'
+                ? 'tóc ngắn'
                 : 'short hair';
 
   return `${genderText}, ${hairText}, ${accessoryText}`;
@@ -1862,7 +1890,7 @@ function KpiCard({
   highlight?: string;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-[2rem] border border-on-surface-variant/5 bg-white p-8 shadow-sm">
+    <div className="group relative overflow-hidden rounded-xl border border-on-surface-variant/5 bg-white p-8 shadow-sm">
       <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-bl-full bg-primary/5 transition-transform duration-500 group-hover:scale-125" />
       <div className="mb-6 flex items-start justify-between text-[10px] font-black uppercase tracking-[0.2em]">
         <p className="text-on-surface-variant/60">{title}</p>

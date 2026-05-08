@@ -117,7 +117,7 @@ export default function ProductInventoryLowStock() {
       </div>
 
       {tab === 'lowstock' && (
-        <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm space-y-5">
+        <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm space-y-5">
           <div className="flex items-end gap-4">
             <label className="grid gap-2">
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
@@ -206,7 +206,7 @@ export default function ProductInventoryLowStock() {
       )}
 
       {tab === 'summary' && (
-        <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm space-y-5">
+        <section className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm space-y-5">
           <div className="flex justify-end">
             <button
               type="button"

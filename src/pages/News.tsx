@@ -317,7 +317,7 @@ export default function News() {
         <button
           type="button"
           onClick={openCreate}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-container px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm shadow-primary/20 transition-all hover:-translate-y-0.5"
         >
           <Plus size={18} />
           {isVietnamese ? 'Viết bài mới' : 'Write article'}
@@ -330,7 +330,7 @@ export default function News() {
         <StatCard icon={FileText} label={isVietnamese ? 'Nháp' : 'Drafts'} value={String(articles.filter((a) => a.isDraft && !a.isPublished).length)} color="amber" />
       </div>
 
-      <section className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-8 shadow-sm space-y-6">
+      <section className="rounded-xl border border-on-surface-variant/5 bg-white p-8 shadow-sm space-y-6">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-on-surface/10 bg-surface px-4 py-3">
             <Search size={16} className="shrink-0 text-on-surface-variant/50" />
@@ -367,7 +367,7 @@ export default function News() {
           </div>
         ) : articles.length === 0 ? (
           <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-primary/8 text-primary">
+            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/8 text-primary">
               <Newspaper size={28} />
             </div>
             <p className="font-bold text-on-surface">
@@ -378,91 +378,104 @@ export default function News() {
             </p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-[2rem] border border-on-surface-variant/6">
-            <div className="hidden grid-cols-[minmax(0,2fr)_120px_160px_80px_96px] gap-4 bg-surface px-5 py-4 text-[11px] font-black uppercase tracking-[0.24em] text-on-surface-variant/55 md:grid">
-              <div>{isVietnamese ? 'Bài viết' : 'Article'}</div>
-              <div>{isVietnamese ? 'Trạng thái' : 'Status'}</div>
-              <div>{isVietnamese ? 'Ngày đăng' : 'Published at'}</div>
-              <div>{isVietnamese ? 'Lượt xem' : 'Views'}</div>
-              <div className="text-right">{isVietnamese ? 'Tác vụ' : 'Actions'}</div>
-            </div>
-
-            <div className="divide-y divide-on-surface-variant/6">
-              {articles.map((article) => (
-                <div
-                  key={article.newsId}
-                  className="group grid gap-4 bg-white px-5 py-4 transition hover:bg-surface/50 md:grid-cols-[minmax(0,2fr)_120px_160px_80px_96px]"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate font-black text-on-surface">{article.title}</p>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {articles.map((article) => (
+              <div
+                key={article.newsId}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-on-surface-variant/8 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+              >
+                {/* Thumbnail */}
+                <div className="relative h-44 w-full overflow-hidden bg-surface">
+                  {article.titleImageUrl ? (
+                    <img
+                      src={article.titleImageUrl}
+                      alt={article.title}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-on-surface-variant/40">
+                      <Newspaper size={42} />
                     </div>
-                    {article.subTitle && (
-                      <p className="mt-1 truncate text-xs text-on-surface-variant/70">{article.subTitle}</p>
-                    )}
-                    <p className="mt-1 truncate text-xs text-on-surface-variant/40">{article.slug}</p>
-                  </div>
+                  )}
+                  <span
+                    className={`absolute right-3 top-3 inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest backdrop-blur ${
+                      article.isPublished
+                        ? 'bg-emerald-500/90 text-white'
+                        : 'bg-amber-500/90 text-white'
+                    }`}
+                  >
+                    {article.isPublished
+                      ? isVietnamese ? 'Đã xuất bản' : 'Published'
+                      : isVietnamese ? 'Bản nháp' : 'Draft'}
+                  </span>
+                </div>
 
-                  <div className="flex items-center">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${
-                        article.isPublished
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}
-                    >
-                      {article.isPublished
-                        ? isVietnamese ? 'Xuất bản' : 'Published'
-                        : isVietnamese ? 'Nháp' : 'Draft'}
-                    </span>
-                  </div>
+                {/* Content */}
+                <div className="flex flex-1 flex-col gap-2 p-5">
+                  <h3 className="line-clamp-2 text-base font-black text-on-surface">
+                    {article.title}
+                  </h3>
+                  {article.subTitle && (
+                    <p className="line-clamp-2 text-xs text-on-surface-variant">
+                      {article.subTitle}
+                    </p>
+                  )}
+                  <p className="text-[11px] font-mono text-on-surface-variant/40">
+                    /{article.slug}
+                  </p>
 
-                  <div className="flex items-center text-sm text-on-surface-variant">
-                    {article.publishedAt
-                      ? dateFormatter.format(new Date(article.publishedAt))
-                      : '—'}
-                  </div>
+                  <div className="mt-auto flex items-center justify-between gap-3 border-t border-on-surface-variant/8 pt-3">
+                    <div className="flex items-center gap-3 text-xs text-on-surface-variant">
+                      <span className="inline-flex items-center gap-1">
+                        <Eye size={12} />
+                        {article.views.toLocaleString()}
+                      </span>
+                      <span>
+                        {article.publishedAt
+                          ? dateFormatter.format(new Date(article.publishedAt))
+                          : isVietnamese ? 'Chưa đăng' : 'Unpublished'}
+                      </span>
+                    </div>
 
-                  <div className="flex items-center text-sm font-semibold text-on-surface">
-                    {article.views.toLocaleString()}
-                  </div>
-
-                  <div className="flex items-center justify-end gap-1.5 opacity-100 transition md:opacity-0 md:group-hover:opacity-100">
-                    <button
-                      type="button"
-                      onClick={() => void handleTogglePublish(article)}
-                      disabled={togglingId === article.newsId}
-                      title={article.isPublished
-                        ? (isVietnamese ? 'Gỡ xuất bản' : 'Unpublish')
-                        : (isVietnamese ? 'Xuất bản' : 'Publish')}
-                      className={`rounded-xl p-2 transition ${
-                        article.isPublished
-                          ? 'text-emerald-600 hover:bg-emerald-50'
-                          : 'text-on-surface-variant/50 hover:bg-surface hover:text-emerald-600'
-                      } disabled:opacity-40`}
-                    >
-                      {togglingId === article.newsId
-                        ? <LoaderCircle size={16} className="animate-spin" />
-                        : article.isPublished ? <Eye size={16} /> : <EyeOff size={16} />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openEdit(article)}
-                      className="rounded-xl p-2 text-on-surface-variant transition hover:bg-primary/5 hover:text-primary"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(article)}
-                      className="rounded-xl p-2 text-on-surface-variant transition hover:bg-red-50 hover:text-red-600"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => void handleTogglePublish(article)}
+                        disabled={togglingId === article.newsId}
+                        title={article.isPublished
+                          ? (isVietnamese ? 'Gỡ xuất bản' : 'Unpublish')
+                          : (isVietnamese ? 'Xuất bản' : 'Publish')}
+                        className={`rounded-lg p-1.5 transition ${
+                          article.isPublished
+                            ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                            : 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                        } disabled:opacity-40`}
+                      >
+                        {togglingId === article.newsId
+                          ? <LoaderCircle size={14} className="animate-spin" />
+                          : article.isPublished ? <Eye size={14} /> : <EyeOff size={14} />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openEdit(article)}
+                        className="rounded-lg bg-primary/8 p-1.5 text-primary transition hover:bg-primary/15"
+                        title={isVietnamese ? 'Chỉnh sửa' : 'Edit'}
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(article)}
+                        className="rounded-lg bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100"
+                        title={isVietnamese ? 'Xóa' : 'Delete'}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -511,7 +524,7 @@ export default function News() {
               type="button"
               onClick={() => void handleSave()}
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-primary-container px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:opacity-60"
             >
               {saving ? <LoaderCircle size={16} className="animate-spin" /> : <Plus size={16} />}
               {editTarget
@@ -679,7 +692,7 @@ function StatCard({
   };
 
   return (
-    <div className="rounded-[2rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
       <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${colors[color]}`}>
         <Icon size={22} />
       </div>

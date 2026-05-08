@@ -10,12 +10,14 @@ import {
   ImagePlus,
   LoaderCircle,
   PackageSearch,
+  Plus,
+  RefreshCw,
   Save,
   Search,
   Trash2,
   X,
 } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { apiClient } from '../lib/api';
 import { useLanguage } from '../i18n/language-context';
 import { useToast } from '../hooks/useToast';
@@ -37,6 +39,8 @@ type Product = {
   productPrice: string;
   productPriceSale: string | null;
   quantityAvailable: number;
+  quantityReserved?: number;
+  avgCost?: string | number | null;
   unit: string | null;
   description?: string | null;
   isShow: boolean | number;
@@ -51,6 +55,13 @@ type Product = {
 type ProductResponse = {
   items: Product[];
   meta: { page: number; limit: number; total: number; totalPages: number };
+};
+
+type ProductImage = {
+  productImageId: string;
+  imageUrl: string;
+  isPrimary: boolean;
+  sortOrder: number;
 };
 
 type ProductFormState = {
@@ -126,7 +137,6 @@ export default function Products() {
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   const [productModalOpen, setProductModalOpen] = useState(false);
-  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productPendingDelete, setProductPendingDelete] = useState<Product | null>(null);
@@ -134,6 +144,8 @@ export default function Products() {
   const [formErrors, setFormErrors] = useState<ProductFormErrors>({});
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState('');
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [imageBusyId, setImageBusyId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -323,8 +335,9 @@ export default function Products() {
     setFormErrors({});
     setSelectedImageFile(null);
     setImagePreviewUrl('');
+    setProductImages([]);
+    setImageBusyId(null);
     setProductModalOpen(false);
-    setPreviewModalOpen(false);
   }
 
   function openEditModal(product: Product) {
@@ -349,7 +362,12 @@ export default function Products() {
     });
     setSelectedImageFile(null);
     setImagePreviewUrl(product.primaryImageUrl ?? '');
+    setProductImages([]);
     setProductModalOpen(true);
+    void apiClient
+      .get<ProductImage[]>(`/products/${product.productId}/images`)
+      .then((images) => setProductImages(Array.isArray(images) ? images : []))
+      .catch(() => setProductImages([]));
   }
 
   function validateForm() {
@@ -374,6 +392,49 @@ export default function Products() {
   function handleImageChange(file: File | null) {
     setSelectedImageFile(file);
     setImagePreviewUrl(file ? URL.createObjectURL(file) : '');
+  }
+
+  async function uploadExtraImage(file: File | null) {
+    if (!file || !editingProductId) return;
+    setImageBusyId('upload');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('isPrimary', productImages.length === 0 ? 'true' : 'false');
+      await apiClient.postForm(`/products/${editingProductId}/images`, fd);
+      const images = await apiClient.get<ProductImage[]>(`/products/${editingProductId}/images`);
+      setProductImages(Array.isArray(images) ? images : []);
+      setReloadKey((v) => v + 1);
+    } finally {
+      setSelectedImageFile(null);
+      setImagePreviewUrl('');
+      setImageBusyId(null);
+    }
+  }
+
+  async function setPrimaryImage(imageId: string) {
+    if (!editingProductId) return;
+    setImageBusyId(imageId);
+    try {
+      await apiClient.patch(`/products/${editingProductId}/images/${imageId}/set-primary`);
+      const images = await apiClient.get<ProductImage[]>(`/products/${editingProductId}/images`);
+      setProductImages(Array.isArray(images) ? images : []);
+      setReloadKey((v) => v + 1);
+    } finally {
+      setImageBusyId(null);
+    }
+  }
+
+  async function deleteProductImage(imageId: string) {
+    if (!editingProductId) return;
+    setImageBusyId(imageId);
+    try {
+      await apiClient.delete(`/products/${editingProductId}/images/${imageId}`);
+      setProductImages((images) => images.filter((image) => image.productImageId !== imageId));
+      setReloadKey((v) => v + 1);
+    } finally {
+      setImageBusyId(null);
+    }
   }
 
   async function saveProduct() {
@@ -456,9 +517,27 @@ export default function Products() {
             {isVi ? `${meta.total} sản phẩm trong hệ thống` : `${meta.total} products total`}
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setReloadKey((v) => v + 1)}
+            disabled={loading}
+            className="admin-pill admin-pill-outline px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            {isVi ? 'Làm mới' : 'Refresh'}
+          </button>
+          <Link
+            to="/admin/products/create"
+            className="admin-pill admin-pill-primary px-4 py-2.5 text-sm font-bold"
+          >
+            <Plus size={15} />
+            {isVi ? 'Thêm sản phẩm' : 'Add product'}
+          </Link>
+        </div>
       </div>
 
-      <div className="rounded-[2rem] border border-on-surface-variant/5 bg-white p-5 shadow-sm">
+      <div className="rounded-xl border border-on-surface-variant/5 bg-white p-5 shadow-sm">
         <div className="grid gap-3 lg:grid-cols-[1.2fr_260px_auto]">
           <label className="relative">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40" />
@@ -523,7 +602,7 @@ export default function Products() {
         <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className="rounded-[2.5rem] border border-on-surface-variant/5 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-on-surface-variant/5 bg-white p-6 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -601,7 +680,13 @@ export default function Products() {
                         className="h-4 w-4 rounded border-on-surface-variant/20 accent-primary"
                       />
                     </td>
-                    <td className="px-4 py-4 font-semibold text-on-surface-variant">{product.productId}</td>
+                    <td className="px-4 py-4 font-mono text-xs text-on-surface-variant">
+                      <span title={product.productId} className="cursor-default">
+                        {product.productId.length > 12
+                          ? `${product.productId.slice(0, 12)}…`
+                          : product.productId}
+                      </span>
+                    </td>
                     <td className="px-4 py-4 font-bold text-on-surface">{product.productName}</td>
                     <td className="px-4 py-4">
                       {product.primaryImageUrl ? (
@@ -614,7 +699,26 @@ export default function Products() {
                     <td className="px-4 py-4 text-on-surface-variant">
                       {product.productPriceSale ? currency.format(Number(product.productPriceSale)) : '-'}
                     </td>
-                    <td className="px-4 py-4 text-on-surface">{product.quantityAvailable}</td>
+                    <td className="px-4 py-4 text-on-surface">
+                      <div className={`font-semibold ${product.quantityAvailable === 0 ? 'text-red-600' : product.quantityAvailable <= 10 ? 'text-amber-600' : ''}`}>
+                        {product.quantityAvailable}
+                        {product.quantityAvailable === 0 && (
+                          <span className="ml-1.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-red-600">
+                            {isVi ? 'Hết' : 'Out'}
+                          </span>
+                        )}
+                        {product.quantityAvailable > 0 && product.quantityAvailable <= 10 && (
+                          <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-600">
+                            {isVi ? 'Sắp hết' : 'Low'}
+                          </span>
+                        )}
+                      </div>
+                      {product.quantityReserved && product.quantityReserved > 0 ? (
+                        <div className="text-[10px] font-medium text-on-surface-variant/60">
+                          {isVi ? 'Đang giữ' : 'Reserved'}: {product.quantityReserved}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-4 text-on-surface-variant">{categoryPathMap.get(product.categoryId) ?? product.categoryId}</td>
                     <td className="px-4 py-4 text-on-surface-variant">
                       {origins.find((origin) => origin.originId === product.originId)?.originName ?? '-'}
@@ -639,7 +743,19 @@ export default function Products() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => void apiClient.patch(`/products/${product.productId}/toggle-visibility`).then(() => setReloadKey((v) => v + 1))}
+                          title={Boolean(product.isShow) ? (isVi ? 'Ẩn sản phẩm' : 'Hide') : (isVi ? 'Hiện sản phẩm' : 'Show')}
+                          onClick={() =>
+                            void apiClient
+                              .patch(`/products/${product.productId}/toggle-visibility`)
+                              .then(() => setReloadKey((v) => v + 1))
+                              .catch((e) =>
+                                showToast({
+                                  tone: 'error',
+                                  title: isVi ? 'Cập nhật hiển thị thất bại' : 'Failed to update visibility',
+                                  description: e instanceof Error ? e.message : '',
+                                }),
+                              )
+                          }
                           className="rounded-xl p-2 text-on-surface-variant transition hover:bg-primary/5 hover:text-primary"
                         >
                           {Boolean(product.isShow) ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -800,10 +916,43 @@ export default function Products() {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(event) => handleImageChange(event.target.files?.[0] ?? null)}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    handleImageChange(file);
+                    void uploadExtraImage(file);
+                  }}
                 />
               </label>
-              {imagePreviewUrl ? <img src={imagePreviewUrl} alt="" className="h-28 w-28 rounded-2xl object-cover" /> : null}
+              {selectedImageFile ? <img src={imagePreviewUrl} alt="" className="h-28 w-28 rounded-2xl object-cover" /> : null}
+              {productImages.length > 0 ? (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {productImages.map((image) => (
+                    <div key={image.productImageId} className="overflow-hidden rounded-2xl border border-on-surface/10 bg-surface">
+                      <img src={image.imageUrl} alt="" className="h-20 w-full object-cover" />
+                      <div className="flex gap-1 p-1">
+                        <button
+                          type="button"
+                          disabled={image.isPrimary || imageBusyId === image.productImageId}
+                          onClick={() => void setPrimaryImage(image.productImageId)}
+                          className="flex-1 rounded-xl bg-white px-2 py-1 text-[10px] font-bold text-primary disabled:opacity-40"
+                        >
+                          {imageBusyId === image.productImageId ? (
+                            <LoaderCircle size={10} className="mx-auto animate-spin" />
+                          ) : image.isPrimary ? (isVi ? 'Chính' : 'Main') : (isVi ? 'Đặt chính' : 'Set main')}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={imageBusyId === image.productImageId}
+                          onClick={() => void deleteProductImage(image.productImageId)}
+                          className="rounded-xl bg-red-50 px-2 py-1 text-[10px] font-bold text-red-500 disabled:opacity-40"
+                        >
+                          {isVi ? 'Xóa' : 'Del'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </Field>
 
             <label className="inline-flex items-center gap-3 rounded-2xl border border-on-surface/8 bg-surface px-4 py-3">
@@ -885,7 +1034,6 @@ export default function Products() {
         </p>
       </Modal>
 
-      {previewModalOpen ? null : null}
     </div>
   );
 }

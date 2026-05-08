@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, KeyRound, MapPin, Package, LogOut, Save, LoaderCircle, CheckCircle2, AlertCircle, Heart } from 'lucide-react';
+import { User, KeyRound, MapPin, Package, LogOut, Save, LoaderCircle, CheckCircle2, AlertCircle, Heart, ImagePlus } from 'lucide-react';
 import { clientApi, logoutClient } from '../../lib/client-api';
 import { useClientSession } from '../../hooks/useClientSession';
 
@@ -10,16 +10,17 @@ type Profile = {
   email: string;
   fullName?: string;
   phoneNumber?: string;
-  avatar?: string;
+  avatarUrl?: string | null;
 };
 
 export default function Account() {
   const navigate = useNavigate();
-  const { session } = useClientSession();
+  const { session, setSession } = useClientSession();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
 
@@ -46,12 +47,51 @@ export default function Account() {
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      await clientApi.patch('/users/me', form);
+      const updated = await clientApi.patch<Profile>('/users/me', form);
+      setProfile(updated);
+      if (session) {
+        setSession({
+          ...session,
+          user: {
+            ...session.user,
+            fullName: updated.fullName ?? undefined,
+            phoneNumber: updated.phoneNumber ?? undefined,
+            avatarUrl: updated.avatarUrl ?? null,
+          },
+        });
+      }
       showToast('success', 'Cập nhật hồ sơ thành công');
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'Cập nhật thất bại');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (file: File | null) => {
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const data = new FormData();
+      data.append('file', file);
+      const updated = await clientApi.postForm<Profile>('/users/me/avatar', data);
+      setProfile(updated);
+      if (session) {
+        setSession({
+          ...session,
+          user: {
+            ...session.user,
+            fullName: updated.fullName ?? session.user.fullName,
+            phoneNumber: updated.phoneNumber ?? session.user.phoneNumber,
+            avatarUrl: updated.avatarUrl ?? null,
+          },
+        });
+      }
+      showToast('success', 'Da cap nhat anh dai dien');
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Tai anh that bai');
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -87,7 +127,7 @@ export default function Account() {
 
   if (loading) {
     return (
-      <div style={{ background: '#f2f0eb', minHeight: '60vh' }} className="flex items-center justify-center">
+      <div className="client-surface flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#006241] border-t-transparent" />
       </div>
     );
@@ -96,7 +136,7 @@ export default function Account() {
   const initials = (profile?.fullName ?? profile?.username ?? 'U').slice(0, 2).toUpperCase();
 
   return (
-    <div style={{ background: '#f2f0eb', minHeight: '80vh' }}>
+    <div className="client-surface min-h-[80vh]">
       <div className="mx-auto max-w-5xl px-4 py-10 lg:px-6">
         <div className="mb-8">
           <p className="text-xs font-bold uppercase tracking-[0.25em]" style={{ color: '#006241' }}>
@@ -123,13 +163,29 @@ export default function Account() {
           {/* Sidebar */}
           <div className="space-y-3">
             {/* Avatar card */}
-            <div className="rounded-2xl bg-white p-5 text-center shadow-sm">
-              <div
-                className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full text-xl font-black text-white"
-                style={{ background: '#1E3932' }}
-              >
-                {initials}
-              </div>
+            <div className="client-card p-5 text-center">
+              <label className="group relative mx-auto mb-3 block h-16 w-16 cursor-pointer overflow-hidden rounded-full">
+                {profile?.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt={profile?.fullName ?? profile?.username ?? ''} className="h-full w-full object-cover" />
+                ) : (
+                  <span
+                    className="flex h-full w-full items-center justify-center text-xl font-black text-white"
+                    style={{ background: '#1E3932' }}
+                  >
+                    {initials}
+                  </span>
+                )}
+                <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-white opacity-0 transition group-hover:opacity-100">
+                  {uploadingAvatar ? <LoaderCircle size={18} className="animate-spin" /> : <ImagePlus size={18} />}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingAvatar}
+                  onChange={(event) => void handleAvatarUpload(event.target.files?.[0] ?? null)}
+                />
+              </label>
               <p className="font-bold text-[#1E3932]">
                 {profile?.fullName ?? profile?.username}
               </p>
@@ -137,7 +193,7 @@ export default function Account() {
             </div>
 
             {/* Nav */}
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <div className="client-card overflow-hidden">
               {[
                 { id: 'profile', label: 'Thông tin cá nhân', icon: User },
                 { id: 'password', label: 'Đổi mật khẩu', icon: KeyRound },
@@ -183,7 +239,7 @@ export default function Account() {
           </div>
 
           {/* Main panel */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
+          <div className="client-card p-6">
             {activeTab === 'profile' ? (
               <>
                 <h2 className="mb-5 text-lg font-black text-[#1E3932]">Thông tin cá nhân</h2>
@@ -196,7 +252,7 @@ export default function Account() {
                       value={form.fullName}
                       onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
                       placeholder="Nguyễn Văn A"
-                      className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
+                      className="client-input w-full px-4 py-2.5 text-sm"
                     />
                   </div>
                   <div>
@@ -225,15 +281,14 @@ export default function Account() {
                       value={form.phoneNumber}
                       onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))}
                       placeholder="0901234567"
-                      className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
+                      className="client-input w-full px-4 py-2.5 text-sm"
                     />
                   </div>
                 </div>
                 <button
                   onClick={() => void handleSaveProfile()}
                   disabled={saving}
-                  className="mt-6 flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white disabled:opacity-60 active:scale-95"
-                  style={{ background: '#00754A' }}
+                  className="client-pill-primary mt-6 flex items-center gap-2 px-6 py-3 text-sm font-bold disabled:opacity-60"
                 >
                   {saving ? <LoaderCircle size={15} className="animate-spin" /> : <Save size={15} />}
                   {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
@@ -259,15 +314,14 @@ export default function Account() {
                           setPasswords((p) => ({ ...p, [field.key]: e.target.value }))
                         }
                         required
-                        className="w-full rounded-xl border border-black/10 bg-[#f2f0eb] px-4 py-2.5 text-sm outline-none focus:border-[#006241]"
+                        className="client-input w-full px-4 py-2.5 text-sm"
                       />
                     </div>
                   ))}
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white disabled:opacity-60 active:scale-95"
-                    style={{ background: '#00754A' }}
+                    className="client-pill-primary flex items-center gap-2 px-6 py-3 text-sm font-bold disabled:opacity-60"
                   >
                     {saving ? <LoaderCircle size={15} className="animate-spin" /> : <KeyRound size={15} />}
                     {saving ? 'Đang cập nhật...' : 'Đổi mật khẩu'}

@@ -6,6 +6,7 @@ export type ClientSession = {
     email: string;
     fullName?: string;
     avatar?: string;
+    avatarUrl?: string | null;
     phoneNumber?: string;
     role: string;
   };

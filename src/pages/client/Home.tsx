@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -22,6 +22,7 @@ import {
 import { clientApi } from '../../lib/client-api';
 import { useCart } from '../../hooks/useCart';
 import { useClientSession } from '../../hooks/useClientSession';
+import { triggerCartFlyAnimation } from '../../hooks/useCartAnimation';
 
 type Product = {
   productId: string;
@@ -77,17 +78,39 @@ const TESTIMONIALS = [
   { name: 'Lê Văn Hùng', role: 'HTX nông nghiệp Cần Thơ', text: 'Giá cả cạnh tranh, tư vấn kỹ thuật nhiệt tình. Sẽ tiếp tục mua hàng ở đây lâu dài.', stars: 5 },
 ];
 
-const STATS = [
+const DEFAULT_STATS = [
   { value: '15.000+', label: 'Nông dân tin tưởng' },
   { value: '500+', label: 'Sản phẩm chính hãng' },
   { value: '63', label: 'Tỉnh thành giao hàng' },
   { value: '98%', label: 'Tỷ lệ hài lòng' },
 ];
 
+const DEFAULT_WHY_US = [
+  { emoji: '✅', title: 'Hàng chính hãng 100%', desc: 'Toàn bộ sản phẩm có giấy chứng nhận và nguồn gốc rõ ràng. Cam kết không hàng giả, hàng nhái.', icon: ShieldCheck },
+  { emoji: '🚚', title: 'Giao hàng toàn quốc', desc: 'Đối tác vận chuyển uy tín, giao hàng 2–4 ngày. Miễn phí vận chuyển đơn hàng từ 500.000đ.', icon: Truck },
+  { emoji: '🎧', title: 'Hỗ trợ kỹ thuật', desc: 'Đội ngũ kỹ sư nông nghiệp tư vấn trực tiếp. Hotline miễn phí 1800 6863, hỗ trợ 7 ngày/tuần.', icon: HeadphonesIcon },
+  { emoji: '♻️', title: 'Đổi trả dễ dàng', desc: 'Chính sách đổi trả trong 7 ngày nếu sản phẩm lỗi hoặc không đúng mô tả. Hoàn tiền 100%.', icon: RefreshCw },
+];
+
+type HomepageContentConfig = {
+  hero?: { title?: string; subtitle?: string; buttonText?: string; bgColor?: string };
+  stats?: Array<{ value: string; label: string }>;
+  sale_banner?: { title?: string; subtitle?: string; buttonText?: string };
+  why_us?: Array<{ title: string; description: string }>;
+};
+
+function loadHomepageContent(): HomepageContentConfig {
+  try {
+    const raw = localStorage.getItem('homepage_content_config');
+    if (raw) return JSON.parse(raw) as HomepageContentConfig;
+  } catch {}
+  return {};
+}
+
 // ── Product Card (compact for carousel) ──────────────────────────────────────
 function ProductCard({ product, onAddToCart, adding }: {
   product: Product;
-  onAddToCart: () => void;
+  onAddToCart: (e: MouseEvent<HTMLButtonElement>) => void;
   adding: boolean;
   key?: string;
 }) {
@@ -98,7 +121,7 @@ function ProductCard({ product, onAddToCart, adding }: {
   const outOfStock = product.quantityAvailable === 0;
 
   return (
-    <div className="group flex w-56 shrink-0 flex-col overflow-hidden rounded-2xl border border-black/6 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:w-64">
+    <div className="client-card-soft group flex w-56 shrink-0 flex-col overflow-hidden transition-all duration-300 sm:w-64">
       <div className="relative overflow-hidden bg-[#f2f0eb]">
         <Link to={`/client/products/${product.productId}`}>
           {product.primaryImageUrl ? (
@@ -111,7 +134,7 @@ function ProductCard({ product, onAddToCart, adding }: {
           )}
         </Link>
         {hasDiscount && discountPct > 0 && (
-          <span className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-black text-white shadow">
+          <span className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-black text-white">
             -{discountPct}%
           </span>
         )}
@@ -158,12 +181,11 @@ function ProductCard({ product, onAddToCart, adding }: {
           )}
           <div className="mt-3 flex gap-2">
             <Link to={`/client/products/${product.productId}`}
-              className="flex-1 rounded-full border border-[#006241] py-2 text-center text-xs font-bold text-[#006241] transition hover:bg-[#006241] hover:text-white">
+              className="client-pill-outline flex-1 py-2 text-center text-xs font-bold">
               Chi tiết
             </Link>
-            <button onClick={onAddToCart} disabled={adding || outOfStock}
-              className="flex flex-1 items-center justify-center gap-1 rounded-full py-2 text-xs font-bold text-white transition disabled:opacity-50 active:scale-95"
-              style={{ background: '#00754A' }}>
+            <button onClick={(e) => onAddToCart(e)} disabled={adding || outOfStock}
+              className="client-pill-primary flex flex-1 items-center justify-center gap-1 py-2 text-xs font-bold disabled:opacity-50">
               {adding
                 ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 : <><ShoppingCart size={11} />Thêm</>}
@@ -179,7 +201,7 @@ function ProductCard({ product, onAddToCart, adding }: {
 function ProductCarousel({ products, addingId, onAddToCart, loading }: {
   products: Product[];
   addingId: string | null;
-  onAddToCart: (id: string) => void;
+  onAddToCart: (id: string, e: MouseEvent<HTMLButtonElement>) => void;
   loading?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -193,7 +215,7 @@ function ProductCarousel({ products, addingId, onAddToCart, loading }: {
     return (
       <div className="flex gap-4 overflow-hidden">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-80 w-56 shrink-0 animate-pulse rounded-2xl bg-white sm:w-64" />
+          <div key={i} className="client-card h-80 w-56 shrink-0 animate-pulse sm:w-64" />
         ))}
       </div>
     );
@@ -205,7 +227,7 @@ function ProductCarousel({ products, addingId, onAddToCart, loading }: {
     <div className="relative">
       {/* Prev button */}
       <button onClick={() => scroll('left')}
-        className="absolute -left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-lg transition hover:bg-[#006241] hover:text-white">
+        className="absolute -left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white transition hover:bg-[#006241] hover:text-white">
         <ChevronLeft size={18} />
       </button>
 
@@ -218,14 +240,14 @@ function ProductCarousel({ products, addingId, onAddToCart, loading }: {
             key={p.productId}
             product={p}
             adding={addingId === p.productId}
-            onAddToCart={() => onAddToCart(p.productId)}
+            onAddToCart={(e) => onAddToCart(p.productId, e)}
           />
         ))}
       </div>
 
       {/* Next button */}
       <button onClick={() => scroll('right')}
-        className="absolute -right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-lg transition hover:bg-[#006241] hover:text-white">
+        className="absolute -right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white transition hover:bg-[#006241] hover:text-white">
         <ChevronRight size={18} />
       </button>
     </div>
@@ -242,9 +264,42 @@ export default function Home() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [loadingFeatured, setLoadingFeatured] = useState(true);
   const [loadingBest, setLoadingBest] = useState(true);
   const [loadingSale, setLoadingSale] = useState(true);
+
+  const [sectionConfig] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('homepage_sections_config');
+      if (saved) {
+        const arr = JSON.parse(saved) as { id: string; enabled: boolean }[];
+        return Object.fromEntries(arr.map(s => [s.id, s.enabled]));
+      }
+    } catch {}
+    return {};
+  });
+
+  const [contentCfg] = useState<HomepageContentConfig>(loadHomepageContent);
+
+  // Derived content values with fallbacks
+  const heroBgColor = contentCfg.hero?.bgColor ?? '#1E3932';
+  const heroTitle = contentCfg.hero?.title ?? 'Mọi mùa vụ đều bắt đầu từ đây.';
+  const heroSubtitle = contentCfg.hero?.subtitle ?? 'Cung cấp đầy đủ vật tư nông nghiệp — phân bón, thuốc BVTV, hạt giống, dụng cụ — chính hãng, giá tốt, giao nhanh toàn quốc.';
+  const heroButtonText = contentCfg.hero?.buttonText ?? 'Khám phá ngay';
+  const statsData = contentCfg.stats ?? DEFAULT_STATS;
+  const saleBannerTitle = contentCfg.sale_banner?.title ?? 'Giảm giá lên đến 30% cho nhiều sản phẩm 🔥';
+  const saleBannerSubtitle = contentCfg.sale_banner?.subtitle ?? 'Đừng bỏ lỡ! Số lượng có hạn.';
+  const saleBannerButton = contentCfg.sale_banner?.buttonText ?? 'Xem ưu đãi →';
+  const whyUsData = DEFAULT_WHY_US.map((def, i) => {
+    const override = contentCfg.why_us?.[i];
+    return { emoji: def.emoji, icon: def.icon, title: override?.title ?? def.title, desc: override?.description ?? def.desc };
+  });
+
+  function isSectionEnabled(id: string): boolean {
+    return sectionConfig[id] ?? true; // default true if not set
+  }
 
   useEffect(() => {
     // Featured products (marked isFeatured = true)
@@ -278,10 +333,24 @@ export default function Home() {
       .catch(() => {});
   }, []);
 
-  const handleAddToCart = async (productId: string) => {
+  const handleAddToCart = async (productId: string, e: MouseEvent<HTMLButtonElement>) => {
+    triggerCartFlyAnimation(e.currentTarget);
     if (!session) { window.location.href = '/client/login'; return; }
     setAddingId(productId);
     try { await addItem(productId, 1); } finally { setAddingId(null); }
+  };
+
+  const handleNewsletterSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim()) return;
+    setNewsletterStatus('loading');
+    try {
+      await clientApi.post('/newsletter/subscribe', { email: newsletterEmail });
+      setNewsletterStatus('success');
+      setNewsletterEmail('');
+    } catch {
+      setNewsletterStatus('error');
+    }
   };
 
   return (
@@ -298,11 +367,7 @@ export default function Home() {
       `}</style>
 
       {/* ===== HERO ===== */}
-      <section style={{ background: '#1E3932' }} className="relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-        <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full opacity-20" style={{ background: '#006241', filter: 'blur(80px)' }} />
-        <div className="absolute right-1/3 top-0 h-96 w-96 rounded-full opacity-10" style={{ background: '#00754A', filter: 'blur(100px)' }} />
-
+      {isSectionEnabled('hero') && (<section style={{ background: heroBgColor }} className="relative overflow-hidden">
         <div className="mx-auto max-w-7xl px-6 py-16 lg:py-24">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
@@ -311,21 +376,18 @@ export default function Home() {
                 <Leaf size={12} /> Nông nghiệp bền vững · Chất lượng được chứng nhận
               </div>
               <h1 className="text-4xl font-black leading-tight text-white lg:text-6xl">
-                Mọi mùa vụ<br />
-                <span style={{ color: '#d4e9e2' }}>đều bắt đầu</span><br />
-                từ đây.
+                {heroTitle}
               </h1>
               <p className="mt-6 max-w-md text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                Cung cấp đầy đủ vật tư nông nghiệp — phân bón, thuốc BVTV, hạt giống, dụng cụ — chính hãng, giá tốt, giao nhanh toàn quốc.
+                {heroSubtitle}
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link to="/client/products"
-                  className="flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 active:scale-95"
-                  style={{ background: '#00754A' }}>
-                  Khám phá ngay <ArrowRight size={16} />
+                  className="client-pill-primary flex items-center gap-2 px-7 py-3.5 text-sm font-bold">
+                  {heroButtonText} <ArrowRight size={16} />
                 </Link>
                 <Link to="/client/news"
-                  className="flex items-center gap-2 rounded-full border px-7 py-3.5 text-sm font-bold transition-all hover:-translate-y-0.5"
+                  className="flex items-center gap-2 rounded-full border px-7 py-3.5 text-sm font-bold transition-all active:scale-95"
                   style={{ borderColor: 'rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.8)' }}>
                   Đọc tin tức
                 </Link>
@@ -347,9 +409,9 @@ export default function Home() {
                 <div className="leaf-3 absolute bottom-16 left-12 select-none text-lg">🌱</div>
                 <div className="leaf-4 absolute bottom-20 right-4 select-none text-2xl">🌾</div>
                 <div className="float-box absolute left-1/2 top-1/2" style={{ transform: 'translate(-50%, -50%) rotateX(10deg) rotateY(-15deg)', transformStyle: 'preserve-3d' }}>
-                  <div className="relative flex h-52 w-44 flex-col items-center justify-center overflow-hidden rounded-2xl"
-                    style={{ background: 'linear-gradient(145deg, #2d5a3d, #1a3d2a)', boxShadow: '8px 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: 'rgba(0,117,74,0.4)', border: '1px solid rgba(0,117,74,0.5)' }}>
+                  <div className="relative flex h-52 w-44 flex-col items-center justify-center overflow-hidden rounded-xl"
+                    style={{ background: '#1E3932', boxShadow: 'var(--client-card-shadow)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl" style={{ background: 'rgba(0,117,74,0.4)', border: '1px solid rgba(0,117,74,0.5)' }}>
                       <span className="text-4xl">🌾</span>
                     </div>
                     <p className="text-center text-xs font-black uppercase tracking-widest text-white/80">Phân bón</p>
@@ -357,7 +419,6 @@ export default function Home() {
                     <div className="mt-3 flex gap-1">
                       {[1,2,3,4,5].map((s) => <Star key={s} size={8} fill="#d4e9e2" className="text-[#d4e9e2]" />)}
                     </div>
-                    <div className="absolute inset-0 rounded-2xl" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%)' }} />
                   </div>
                 </div>
               </div>
@@ -368,24 +429,24 @@ export default function Home() {
         <svg viewBox="0 0 1440 80" className="block w-full" style={{ marginBottom: '-2px' }}>
           <path fill="#f2f0eb" d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" />
         </svg>
-      </section>
+      </section>)}
 
       {/* ===== STATS ===== */}
-      <section style={{ background: '#f2f0eb' }} className="py-10">
+      {isSectionEnabled('stats') && (<section style={{ background: '#f2f0eb' }} className="py-10">
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {STATS.map((s) => (
-              <div key={s.label} className="rounded-2xl bg-white p-5 text-center shadow-sm">
+            {statsData.map((s) => (
+              <div key={s.label} className="client-card p-5 text-center">
                 <p className="text-3xl font-black" style={{ color: '#006241' }}>{s.value}</p>
                 <p className="mt-1 text-xs text-gray-500">{s.label}</p>
               </div>
             ))}
           </div>
         </div>
-      </section>
+      </section>)}
 
       {/* ===== CATEGORIES ===== */}
-      {categories.length > 0 && (
+      {isSectionEnabled('categories') && categories.length > 0 && (
         <section style={{ background: '#f2f0eb' }} className="py-14">
           <div className="mx-auto max-w-7xl px-6">
             <div className="mb-8 flex items-end justify-between">
@@ -402,7 +463,7 @@ export default function Home() {
                 const Icon = getCategoryIcon(cat.categorySlug);
                 return (
                   <Link key={cat.categoryId} to={`/client/products?categoryId=${cat.categoryId}`}
-                    className="group flex flex-col items-center gap-3 rounded-2xl bg-white p-4 text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+                    className="client-card group flex flex-col items-center gap-3 p-4 text-center transition-all duration-200">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full transition-all duration-200 group-hover:scale-110" style={{ background: '#d4e9e2' }}>
                       <Icon size={22} style={{ color: '#006241' }} />
                     </div>
@@ -416,7 +477,7 @@ export default function Home() {
       )}
 
       {/* ===== FEATURED PRODUCTS (carousel) ===== */}
-      {(loadingFeatured || featuredProducts.length > 0) && (
+      {isSectionEnabled('featured') && (loadingFeatured || featuredProducts.length > 0) && (
         <section className="py-16" style={{ background: '#fff' }}>
           <div className="mx-auto max-w-7xl px-6">
             <div className="mb-8 flex items-end justify-between">
@@ -431,7 +492,7 @@ export default function Home() {
             <ProductCarousel
               products={featuredProducts}
               addingId={addingId}
-              onAddToCart={(id) => void handleAddToCart(id)}
+              onAddToCart={(id, e) => void handleAddToCart(id, e)}
               loading={loadingFeatured}
             />
           </div>
@@ -439,7 +500,7 @@ export default function Home() {
       )}
 
       {/* ===== BEST SELLERS (carousel) ===== */}
-      {(loadingBest || bestSellerProducts.length > 0) && (
+      {isSectionEnabled('best_sellers') && (loadingBest || bestSellerProducts.length > 0) && (
         <section className="py-16" style={{ background: '#f2f0eb' }}>
           <div className="mx-auto max-w-7xl px-6">
             <div className="mb-8 flex items-end justify-between">
@@ -454,7 +515,7 @@ export default function Home() {
             <ProductCarousel
               products={bestSellerProducts}
               addingId={addingId}
-              onAddToCart={(id) => void handleAddToCart(id)}
+              onAddToCart={(id, e) => void handleAddToCart(id, e)}
               loading={loadingBest}
             />
           </div>
@@ -462,7 +523,7 @@ export default function Home() {
       )}
 
       {/* ===== SALE BANNER ===== */}
-      <section style={{ background: 'linear-gradient(135deg, #c82014 0%, #e53e3e 100%)' }}>
+      {isSectionEnabled('sale_banner') && (<section style={{ background: '#c82014' }}>
         <div className="mx-auto max-w-7xl px-6 py-12">
           <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
             <div>
@@ -470,19 +531,19 @@ export default function Home() {
                 <Flame size={20} className="text-yellow-300" />
                 <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/70">Siêu ưu đãi</p>
               </div>
-              <h2 className="text-2xl font-black text-white">Giảm giá lên đến 30% cho nhiều sản phẩm 🔥</h2>
-              <p className="mt-2 text-sm text-white/70">Đừng bỏ lỡ! Số lượng có hạn.</p>
+              <h2 className="text-2xl font-black text-white">{saleBannerTitle}</h2>
+              <p className="mt-2 text-sm text-white/70">{saleBannerSubtitle}</p>
             </div>
             <Link to="/client/products"
-              className="shrink-0 rounded-full bg-white px-8 py-3.5 text-sm font-bold text-red-600 transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-95">
-              Xem ưu đãi →
+              className="shrink-0 rounded-full bg-white px-8 py-3.5 text-sm font-bold text-red-600 transition-all active:scale-95">
+              {saleBannerButton}
             </Link>
           </div>
         </div>
-      </section>
+      </section>)}
 
       {/* ===== SALE PRODUCTS (carousel) ===== */}
-      {(loadingSale || saleProducts.length > 0) && (
+      {isSectionEnabled('sale_products') && (loadingSale || saleProducts.length > 0) && (
         <section className="py-16" style={{ background: '#fff' }}>
           <div className="mx-auto max-w-7xl px-6">
             <div className="mb-8 flex items-end justify-between">
@@ -499,7 +560,7 @@ export default function Home() {
             <ProductCarousel
               products={saleProducts}
               addingId={addingId}
-              onAddToCart={(id) => void handleAddToCart(id)}
+              onAddToCart={(id, e) => void handleAddToCart(id, e)}
               loading={loadingSale}
             />
           </div>
@@ -507,21 +568,15 @@ export default function Home() {
       )}
 
       {/* ===== WHY CHOOSE US ===== */}
-      <section style={{ background: '#1E3932' }} className="relative overflow-hidden py-16">
-        <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      {isSectionEnabled('why_us') && (<section style={{ background: '#1E3932' }} className="relative overflow-hidden py-16">
         <div className="relative mx-auto max-w-7xl px-6">
           <div className="mb-12 text-center">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em]" style={{ color: '#d4e9e2' }}>Tại sao chọn chúng tôi</p>
             <h2 className="text-3xl font-black text-white">Cam kết từ chúng tôi</h2>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {[
-              { emoji: '✅', title: 'Hàng chính hãng 100%', desc: 'Toàn bộ sản phẩm có giấy chứng nhận và nguồn gốc rõ ràng. Cam kết không hàng giả, hàng nhái.', icon: ShieldCheck },
-              { emoji: '🚚', title: 'Giao hàng toàn quốc', desc: 'Đối tác vận chuyển uy tín, giao hàng 2–4 ngày. Miễn phí vận chuyển đơn hàng từ 500.000đ.', icon: Truck },
-              { emoji: '🎧', title: 'Hỗ trợ kỹ thuật', desc: 'Đội ngũ kỹ sư nông nghiệp tư vấn trực tiếp. Hotline miễn phí 1800 6863, hỗ trợ 7 ngày/tuần.', icon: HeadphonesIcon },
-              { emoji: '♻️', title: 'Đổi trả dễ dàng', desc: 'Chính sách đổi trả trong 7 ngày nếu sản phẩm lỗi hoặc không đúng mô tả. Hoàn tiền 100%.', icon: RefreshCw },
-            ].map((item) => (
-              <div key={item.title} className="rounded-2xl p-6 text-center"
+            {whyUsData.map((item) => (
+              <div key={item.title} className="rounded-xl p-6 text-center"
                 style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full text-2xl" style={{ background: 'rgba(0,117,74,0.3)' }}>{item.emoji}</div>
                 <h3 className="mb-2 font-black text-white">{item.title}</h3>
@@ -530,10 +585,10 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </section>)}
 
       {/* ===== TESTIMONIALS ===== */}
-      <section style={{ background: '#fff' }} className="py-16">
+      {isSectionEnabled('testimonials') && (<section style={{ background: '#fff' }} className="py-16">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-12 text-center">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em]" style={{ color: '#006241' }}>Khách hàng nói gì</p>
@@ -541,7 +596,7 @@ export default function Home() {
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="rounded-2xl bg-[#f2f0eb] p-6">
+              <div key={t.name} className="rounded-xl bg-[#f2f0eb] p-6">
                 <div className="mb-4 flex gap-1">
                   {Array.from({ length: t.stars }).map((_, i) => <Star key={i} size={14} fill="#006241" className="text-[#006241]" />)}
                 </div>
@@ -559,10 +614,10 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </section>)}
 
       {/* ===== NEWS ===== */}
-      {news.length > 0 && (
+      {isSectionEnabled('news') && news.length > 0 && (
         <section style={{ background: '#f2f0eb' }} className="py-16">
           <div className="mx-auto max-w-7xl px-6">
             <div className="mb-8 flex items-end justify-between">
@@ -577,7 +632,7 @@ export default function Home() {
             <div className="grid gap-6 md:grid-cols-3">
               {news.map((article, idx) => (
                 <Link key={article.newsId} to={`/client/news/${article.slug}`}
-                  className="group overflow-hidden rounded-2xl bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                  className="client-card group overflow-hidden transition-all duration-300">
                   <div className="relative overflow-hidden" style={{ background: '#d4e9e2' }}>
                     {article.titleImageUrl ? (
                       <img src={article.titleImageUrl} alt={article.title}
@@ -628,7 +683,7 @@ export default function Home() {
               { step: '2', emoji: '🛒', title: 'Đặt hàng online', desc: 'Thêm vào giỏ hàng, nhập địa chỉ giao hàng và chọn phương thức thanh toán phù hợp.' },
               { step: '3', emoji: '🚚', title: 'Nhận hàng tận nơi', desc: 'Hàng được đóng gói cẩn thận và giao đến tận tay bạn trong 2–4 ngày làm việc.' },
             ].map((item) => (
-              <div key={item.step} className="relative rounded-2xl bg-white p-6 text-center shadow-sm">
+              <div key={item.step} className="client-card relative p-6 text-center">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl" style={{ background: '#d4e9e2' }}>{item.emoji}</div>
                 <div className="absolute left-4 top-4 flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white" style={{ background: '#006241' }}>{item.step}</div>
                 <h3 className="mb-2 font-black text-[#1E3932]">{item.title}</h3>
@@ -638,8 +693,7 @@ export default function Home() {
           </div>
           <div className="mt-10 text-center">
             <Link to="/client/products"
-              className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 active:scale-95"
-              style={{ background: '#00754A' }}>
+              className="client-pill-primary inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold">
               <ShoppingCart size={16} /> Bắt đầu mua sắm
             </Link>
           </div>
@@ -654,15 +708,32 @@ export default function Home() {
           </div>
           <h2 className="text-2xl font-black" style={{ color: '#1E3932' }}>Nhận thông tin khuyến mãi</h2>
           <p className="mt-2 text-sm text-gray-500">Đăng ký email để nhận ưu đãi độc quyền và kiến thức nông nghiệp mỗi tuần.</p>
-          <form className="mt-6 flex gap-2" onSubmit={(e) => e.preventDefault()}>
-            <input type="email" placeholder="Nhập email của bạn..."
-              className="flex-1 rounded-full border border-black/10 bg-[#f2f0eb] px-5 py-3 text-sm outline-none focus:border-[#006241]" />
-            <button type="submit"
-              className="rounded-full px-6 py-3 text-sm font-bold text-white transition active:scale-95"
-              style={{ background: '#00754A' }}>
-              Đăng ký
-            </button>
-          </form>
+          {newsletterStatus === 'success' ? (
+            <div className="mt-6 flex items-center justify-center gap-2 rounded-full bg-[#d4e9e2] px-6 py-3 text-sm font-bold text-[#006241]">
+              ✓ Đăng ký thành công! Cảm ơn bạn.
+            </div>
+          ) : (
+            <form className="mt-6 flex gap-2" onSubmit={(e) => void handleNewsletterSubmit(e)}>
+              <input
+                type="email"
+                value={newsletterEmail}
+                onChange={(e) => { setNewsletterEmail(e.target.value); setNewsletterStatus('idle'); }}
+                placeholder="Nhập email của bạn..."
+                required
+                className="client-input flex-1 px-5 py-3 text-sm"
+              />
+              <button
+                type="submit"
+                disabled={newsletterStatus === 'loading'}
+                className="client-pill-primary px-6 py-3 text-sm font-bold disabled:opacity-60"
+              >
+                {newsletterStatus === 'loading' ? '...' : 'Đăng ký'}
+              </button>
+            </form>
+          )}
+          {newsletterStatus === 'error' && (
+            <p className="mt-2 text-xs text-red-500">Có lỗi xảy ra, vui lòng thử lại.</p>
+          )}
           <p className="mt-3 text-xs text-gray-400">Không spam. Hủy đăng ký bất cứ lúc nào.</p>
         </div>
       </section>

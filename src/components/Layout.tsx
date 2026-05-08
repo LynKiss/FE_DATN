@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import AdminNewOrderToast from './AdminNewOrderToast';
 
 const COLLAPSED_KEY = 'admin_sidebar_collapsed';
 
@@ -70,6 +71,7 @@ export default function Layout() {
             </motion.div>
           </AnimatePresence>
         </main>
+        <AdminNewOrderToast collapsed={collapsed} />
       </div>
     </div>
   );
