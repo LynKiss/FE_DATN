@@ -165,7 +165,7 @@ export default function Cart() {
     });
   };
 
-  if (!session) {
+  if (!session && !cart?.items.length) {
     return (
       <div className="client-surface flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
@@ -174,14 +174,22 @@ export default function Cart() {
             Bạn chưa đăng nhập
           </h2>
           <p className="mt-2 text-sm text-gray-500">
-            Vui lòng đăng nhập để xem giỏ hàng và voucher dành cho bạn.
+            Đăng nhập để xem giỏ hàng và nhận voucher, hoặc tiếp tục mua hàng với tư cách khách.
           </p>
-          <Link
-            to="/client/login"
-            className="client-pill-primary mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold"
-          >
-            Đăng nhập
-          </Link>
+          <div className="mt-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link
+              to="/client/login"
+              className="client-pill-primary inline-flex items-center gap-2 px-6 py-3 text-sm font-bold"
+            >
+              Đăng nhập
+            </Link>
+            <Link
+              to="/client/products"
+              className="client-pill-dark-outline inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold"
+            >
+              Tiếp tục mua sắm
+            </Link>
+          </div>
         </div>
       </div>
     );

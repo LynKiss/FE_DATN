@@ -21,11 +21,22 @@ import {
   PublicPaymentSettings,
 } from '../../lib/commerce-settings';
 import { clientApi } from '../../lib/client-api';
-import { refreshGlobalCart, useCart } from '../../hooks/useCart';
+import { clearGuestCart, refreshGlobalCart, useCart } from '../../hooks/useCart';
 import { useClientSession } from '../../hooks/useClientSession';
+
+type GuestShipping = {
+  recipientName: string;
+  phone: string;
+  email?: string;
+  addressLine: string;
+  ward?: string;
+  district?: string;
+  province: string;
+};
 
 type LocationState = {
   shippingAddressId?: string;
+  guestShipping?: GuestShipping;
   deliveryId?: string;
   shippingAddress?: string;
   deliveryName?: string;
@@ -141,6 +152,7 @@ export default function Payment() {
     totalPayment: string;
     paymentMethod: PaymentMethodKey;
     isBackorder?: boolean;
+    isGuest?: boolean;
   } | null>(null);
   // Idempotency key — sinh 1 lần khi component mount, gửi cùng request /orders.
   // Nếu user double-click hoặc retry sau timeout, BE sẽ trả về order cũ thay vì tạo mới.
@@ -217,12 +229,9 @@ export default function Payment() {
     };
   }, [simulateOpen]);
 
-  if (!session) {
-    void navigate('/client/login');
-    return null;
-  }
+  const isGuest = !session;
 
-  if (!state.shippingAddressId || !state.deliveryId) {
+  if (!state.deliveryId || (!state.shippingAddressId && !state.guestShipping)) {
     void navigate('/client/checkout');
     return null;
   }
@@ -268,13 +277,40 @@ export default function Payment() {
 
   const handlePlaceOrder = async () => {
     if (!availableMethods.length) {
-      alert('Hien tai khong co phuong thuc thanh toan nao kha dung.');
+      alert('Hiện tại không có phương thức thanh toán nào khả dụng.');
       return;
     }
 
     setPlacing(true);
     try {
-      const order = await clientApi.post<CreateOrderResponse>(
+      let order: CreateOrderResponse;
+
+      if (isGuest) {
+        if (!cart?.items.length || !state.guestShipping) {
+          alert('Giỏ hàng trống hoặc thiếu thông tin giao hàng.');
+          return;
+        }
+        order = await clientApi.post<CreateOrderResponse>(
+          '/orders/guest',
+          {
+            shipping: state.guestShipping,
+            deliveryId: state.deliveryId,
+            paymentMethod: method,
+            note: state.note || undefined,
+            discountCode: state.discountCode || undefined,
+            items: cart.items.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+            })),
+          },
+          { 'X-Idempotency-Key': idempotencyKeyRef.current },
+        );
+        clearGuestCart();
+        setSuccess({ orderId: order.id, totalPayment: order.totalPayment, paymentMethod: method, isGuest: true });
+        return;
+      }
+
+      order = await clientApi.post<CreateOrderResponse>(
         '/orders',
         {
           shippingAddressId: state.shippingAddressId,
@@ -423,16 +459,25 @@ export default function Payment() {
             </p>
           </div>
 
+          {success.isGuest && (
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left">
+              <p className="text-xs font-bold text-amber-700">Lưu lại thông tin đơn hàng</p>
+              <p className="mt-1 text-sm font-black text-[#1E3932]">Mã đơn: #{success.orderId.slice(0, 8).toUpperCase()}</p>
+              <p className="text-xs text-gray-500">Dùng mã đơn + số điện thoại để tra cứu trạng thái đơn hàng.</p>
+            </div>
+          )}
           <div className="mt-6 flex gap-3">
-            <Link
-              to={`/client/orders/${success.orderId}`}
-              className="flex-1 rounded-full border border-[#006241] py-3 text-sm font-bold text-[#006241] transition hover:bg-[#006241] hover:text-white"
-            >
-              Xem đơn hàng
-            </Link>
+            {!success.isGuest && (
+              <Link
+                to={`/client/orders/${success.orderId}`}
+                className="flex-1 rounded-full border border-[#006241] py-3 text-sm font-bold text-[#006241] transition hover:bg-[#006241] hover:text-white"
+              >
+                Xem đơn hàng
+              </Link>
+            )}
             <Link
               to="/client"
-              className="flex-1 rounded-full py-3 text-sm font-bold text-white transition active:scale-95"
+              className={`rounded-full py-3 text-sm font-bold text-white transition active:scale-95 ${success.isGuest ? 'flex-1' : ''}`}
               style={{ background: '#00754A' }}
             >
               Về trang chủ

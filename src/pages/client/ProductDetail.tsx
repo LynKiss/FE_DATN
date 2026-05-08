@@ -255,10 +255,15 @@ export default function ProductDetail() {
   }, [session, id, reviews]);
 
   const handleAddToCart = async () => {
-    if (!session) { void navigate('/client/login'); return; }
     setAdding(true);
     try {
-      await addItem(id!, quantity);
+      const primaryImg = sortedImages[0]?.imageUrl ?? null;
+      await addItem(id!, quantity, !session ? {
+        productName: product!.productName,
+        primaryImageUrl: primaryImg,
+        unitPrice: displayPrice,
+        availableQuantity: product!.quantityAvailable,
+      } : undefined);
       setAddedMsg(true);
       setTimeout(() => setAddedMsg(false), 2500);
     } catch {
@@ -269,9 +274,14 @@ export default function ProductDetail() {
   };
 
   const handleBuyNow = async () => {
-    if (!session) { void navigate('/client/login'); return; }
     try {
-      await addItem(id!, quantity);
+      const primaryImg = sortedImages[0]?.imageUrl ?? null;
+      await addItem(id!, quantity, !session ? {
+        productName: product!.productName,
+        primaryImageUrl: primaryImg,
+        unitPrice: displayPrice,
+        availableQuantity: product!.quantityAvailable,
+      } : undefined);
       void navigate('/client/cart');
     } catch {
       showToast({ tone: 'error', title: 'Không thể thêm vào giỏ hàng, vui lòng thử lại' });

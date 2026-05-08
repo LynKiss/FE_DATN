@@ -88,8 +88,27 @@ export default function Checkout() {
     label: '',
   });
 
+  const [guestForm, setGuestForm] = useState({
+    recipientName: '',
+    phone: '',
+    email: '',
+    addressLine: '',
+    ward: '',
+    district: '',
+    province: '',
+  });
+
   useEffect(() => {
-    if (!session) { void navigate('/client/login'); return; }
+    if (!session) {
+      void clientApi.get<DeliveryMethod[]>('/delivery-methods').then((deliveries) => {
+        const list = deliveries ?? [];
+        setDeliveryMethods(list);
+        const def = list.find((d) => d.isDefault);
+        if (def) setSelectedDeliveryId(def.id);
+        else if (list[0]) setSelectedDeliveryId(list[0].id);
+      }).catch(() => {}).finally(() => setLoadingAddresses(false));
+      return;
+    }
 
     void Promise.all([
       clientApi.get<Address[]>('/users/me/addresses'),
@@ -171,7 +190,7 @@ export default function Checkout() {
     }
   };
 
-  if (!session || !cart) return null;
+  if (!cart) return null;
 
   const selectedDelivery = deliveryMethods.find((d) => d.id === selectedDeliveryId);
   const shipping = selectedDelivery ? Number(selectedDelivery.basePrice) : 0;
@@ -202,7 +221,35 @@ export default function Checkout() {
   };
 
   const handleContinue = () => {
-    if (!selectedAddressId || !selectedDeliveryId) return;
+    if (!selectedDeliveryId) return;
+    if (!session) {
+      if (!guestForm.recipientName || !guestForm.phone || !guestForm.addressLine || !guestForm.province) return;
+      const addrText = [guestForm.recipientName, guestForm.phone, guestForm.addressLine, guestForm.ward, guestForm.district, guestForm.province].filter(Boolean).join(', ');
+      void navigate('/client/payment', {
+        state: {
+          guestShipping: {
+            recipientName: guestForm.recipientName,
+            phone: guestForm.phone,
+            email: guestForm.email || undefined,
+            addressLine: guestForm.addressLine,
+            ward: guestForm.ward || undefined,
+            district: guestForm.district || undefined,
+            province: guestForm.province,
+          },
+          deliveryId: selectedDeliveryId,
+          shippingAddress: addrText,
+          deliveryName: selectedDelivery?.name ?? '',
+          shippingCost: shipping,
+          note,
+          discountCode: appliedDiscountCode || undefined,
+          discountAmount: appliedDiscountAmount,
+          subtotal,
+          total,
+        },
+      });
+      return;
+    }
+    if (!selectedAddressId) return;
     const addr = addresses.find((a) => a.id === selectedAddressId);
     const addrText = addr
       ? [addr.recipientName, addr.phone, addr.addressLine, addr.ward, addr.district, addr.province]
@@ -257,7 +304,48 @@ export default function Checkout() {
                 <MapPin size={20} className="text-[#006241]" /> Địa chỉ giao hàng
               </h2>
 
-              {loadingAddresses ? (
+              {!session ? (
+                <div className="client-card border-2 border-[#006241] p-5">
+                  <p className="mb-1 text-xs font-bold uppercase tracking-wider text-[#006241]">Đặt hàng với tư cách khách</p>
+                  <p className="mb-4 text-xs text-gray-400">Thông tin giao hàng của bạn</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {([
+                      { key: 'recipientName', label: 'Họ và tên *', placeholder: 'Nguyễn Văn A' },
+                      { key: 'phone', label: 'Số điện thoại *', placeholder: '0901234567' },
+                      { key: 'email', label: 'Email (tùy chọn, nhận thông báo)', placeholder: 'email@example.com', span: true },
+                      { key: 'addressLine', label: 'Địa chỉ cụ thể *', placeholder: '123 Đường ABC', span: true },
+                      { key: 'ward', label: 'Phường/Xã', placeholder: 'Phường 5' },
+                      { key: 'district', label: 'Quận/Huyện', placeholder: 'Quận 12' },
+                    ] as Array<{ key: string; label: string; placeholder: string; span?: boolean }>).map((field) => (
+                      <div key={field.key} className={field.span ? 'sm:col-span-2' : ''}>
+                        <label className="mb-1 block text-xs font-semibold text-gray-500">{field.label}</label>
+                        <input
+                          value={guestForm[field.key as keyof typeof guestForm]}
+                          onChange={(e) => setGuestForm((f) => ({ ...f, [field.key]: e.target.value }))}
+                          placeholder={field.placeholder}
+                          className="client-input w-full px-4 py-2.5 text-sm"
+                        />
+                      </div>
+                    ))}
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-500">Tỉnh/Thành phố *</label>
+                      <select
+                        value={guestForm.province}
+                        onChange={(e) => setGuestForm((f) => ({ ...f, province: e.target.value }))}
+                        className="client-input w-full px-4 py-2.5 text-sm"
+                      >
+                        <option value="">-- Chọn tỉnh/thành phố --</option>
+                        {VIETNAM_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs text-gray-400">
+                    Đã có tài khoản?{' '}
+                    <a href="/client/login" className="font-semibold text-[#006241] hover:underline">Đăng nhập</a>{' '}
+                    để tích điểm và theo dõi đơn hàng dễ hơn.
+                  </p>
+                </div>
+              ) : loadingAddresses ? (
                 <div className="flex justify-center py-8">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#006241] border-t-transparent" />
                 </div>
@@ -435,7 +523,11 @@ export default function Checkout() {
               </Link>
               <button
                 onClick={handleContinue}
-                disabled={!selectedAddressId || !selectedDeliveryId || addingAddress}
+                disabled={
+                !selectedDeliveryId || (session
+                  ? (!selectedAddressId || addingAddress)
+                  : (!guestForm.recipientName || !guestForm.phone || !guestForm.addressLine || !guestForm.province))
+              }
                 className="client-pill-primary flex flex-1 items-center justify-center gap-2 py-3 text-sm font-bold disabled:opacity-50"
               >
                 Tiếp tục thanh toán <ChevronRight size={16} />
